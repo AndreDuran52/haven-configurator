@@ -1,5 +1,5 @@
-// Run geometry, default fill and derived end caps (§8). Split out of the
-// prototype's layout.ts; absorb.ts, placement.ts and normalize.ts hold the rest.
+// Run geometry, default fill and derived end caps (§8). absorb.ts, placement.ts
+// and normalize.ts hold the rest of the prototype's layout.ts.
 import { ABSORB_FLOOR, WEDGE_AUTO_OFFSET, WEDGE_RANGE } from './pieces';
 import type { Config, CornerId, EndCapState, EndKind, RunEnd, RunId, RunPiece, Shape } from './types';
 
@@ -57,17 +57,21 @@ export function seat(id: string, length: number, arm: RunEnd | null): RunPiece {
   return arm ? { id, kind: 'oneArm', length, arm } : { id, kind: 'armless', length };
 }
 
-/** §8 default fill: arm at the open end (if any) + one seat for the rest; normalize auto-splits. */
+/** §8 default fill: one seat for the whole run, with an arm at the open end if its cushion stays >= 6. */
 export function defaultFill(len: number, open: RunEnd | null, A: number, alloc: Alloc): RunPiece[] {
   if (len <= 0) return [];
+  if (len < ABSORB_FLOOR) return [{ id: alloc('p'), kind: 'gap', length: len }];
   const arm = open && len - A >= ABSORB_FLOOR ? open : null;
   return [seat(alloc('p'), len, arm)];
 }
 
+/** Index of the piece at a run end. */
+export const endIndex = (pieces: RunPiece[], end: RunEnd): number => (end === 'end' ? pieces.length - 1 : 0);
+
 /** End cap is DERIVED from the pieces at the open end, never stored. */
 export function endCapState(pieces: RunPiece[], open: RunEnd): EndCapState {
   const n = pieces.length;
-  const end = pieces[open === 'end' ? n - 1 : 0];
+  const end = pieces[endIndex(pieces, open)];
   if (!end || end.kind === 'gap') return 'unfilled';
   if (end.kind === 'oneArm' && end.arm === open) return 'arm';
   if (end.kind === 'table') {
@@ -80,4 +84,16 @@ export function endCapState(pieces: RunPiece[], open: RunEnd): EndCapState {
 export function dissolveGroup(pieces: RunPiece[], group: string | undefined): void {
   if (!group) return;
   for (const p of pieces) if (p.splitGroup === group) delete p.splitGroup;
+}
+
+/** G1: a manual edit of a split half clears both halves' tags. */
+export function clearJoin(pieces: RunPiece[], tag: string | undefined): void {
+  if (!tag) return;
+  for (const p of pieces) if (p.joinedBy === tag) delete p.joinedBy;
+}
+
+/** A manual edit of a piece: it leaves its split group and its G1 pair. */
+export function detach(pieces: RunPiece[], p: RunPiece): void {
+  dissolveGroup(pieces, p.splitGroup);
+  clearJoin(pieces, p.joinedBy);
 }

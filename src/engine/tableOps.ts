@@ -1,84 +1,134 @@
-// Table moves, reorder and table drag snapping (§6, §7).
+// Table moves and table-drag snapping (§5.4 "Tables", §6).
 import { buildHaven } from './buildHaven';
 import { isSeat } from './pieces';
-import { absorb } from './absorb';
-import { runIds } from './layout';
-import { insertPiece } from './placement';
-import { edit, findPiece } from './ops';
-import type { Config, Placement } from './types';
+import { settle } from './absorb';
+import { endCapState, endIndex, openEnd, runIds, type Alloc } from './layout';
+import { insertPiece, takeTable } from './placement';
+import { edit, findPiece, noRoom, notAllowed, type Outcome } from './edit';
+import type { BuildResult, Config, EditResult, Placement, Pt, RunId } from './types';
+
+/** Snap hysteresis: a new anchor must be this much nearer than the current one (§5.4). */
+export const SNAP_HYSTERESIS = 6;
 
 /**
- * §6 tables go anywhere. Same run + seam = pure reorder (no lengths change;
- * `seam` indexes the run WITHOUT the table). Otherwise: take it out (the
- * source run absorbs), then place it (the target run absorbs).
+ * Body of moveTable, on a draft. The table comes out first and (G1) the seat it
+ * split merges back; every placement is resolved against that run. Same run +
+ * seam = a pure reorder (no lengths change). Anywhere else: the source run
+ * absorbs the freed width (or shrinks, lock off), then the table is placed.
  */
-export function moveTable(config: Config, id: string, placement: Placement): Config {
-  return edit(config, (d, alloc) => {
-    const f = findPiece(d, id);
-    if (!f || f.piece.kind !== 'table') return false;
-    const src = d.runs[f.run]!;
-    src.splice(f.index, 1);
-    if (placement.run === f.run && placement.at === 'seam') {
-      if (placement.seam === f.index || placement.seam < 0 || placement.seam > src.length) return false;
-      src.splice(placement.seam, 0, f.piece);
-      return true;
-    }
-    if (d.lockOutside && !absorb(src, { seam: f.index }, f.piece.length, d.dims.A, alloc)) return false;
-    return insertPiece(d, alloc, f.piece, placement);
-  });
-}
-
-/** §7 reorder: drag a piece along its run. Pure permutation, lengths untouched. */
-export function reorderPiece(config: Config, id: string, toIndex: number): Config {
-  return edit(config, (d) => {
-    const f = findPiece(d, id);
-    if (!f || f.piece.kind === 'gap' || toIndex === f.index) return false;
-    const pieces = d.runs[f.run]!;
-    pieces.splice(f.index, 1);
-    if (!Number.isInteger(toIndex) || toIndex < 0 || toIndex > pieces.length) return false;
-    pieces.splice(toIndex, 0, f.piece);
+export function moveTableIn(d: Config, alloc: Alloc, id: string, placement: Placement): Outcome {
+  const f = findPiece(d, id);
+  if (!f || f.piece.kind !== 'table') return notAllowed('No such table');
+  const src = d.runs[f.run]!;
+  const { table, anchor, merged } = takeTable(src, f.index);
+  if (placement.run === f.run && placement.at === 'seam') {
+    const s = placement.seam;
+    if (!Number.isInteger(s) || s < 0 || s > src.length) return notAllowed('No such seam');
+    if (!merged && s === f.index) return null;
+    src.splice(s, 0, table);
     return true;
-  });
+  }
+  if (!settle(d, f.run, anchor, table.length, alloc)) return noRoom();
+  return insertPiece(d, alloc, table, placement);
 }
 
-// ---------------------------------------------------------------------------
-// Table dragging (§6): discrete snap targets, previewed with the pure ops.
+export function moveTable(config: Config, id: string, placement: Placement): EditResult {
+  return edit(config, (d, alloc) => moveTableIn(d, alloc, id, placement));
+}
+
+/** The config with the table taken out (G1 merge applied, width absorbed), for drag anchors. */
+function withoutTable(config: Config, id: string): Config {
+  const r = edit(config, (d, alloc): Outcome => {
+    const f = findPiece(d, id)!;
+    const { table, anchor } = takeTable(d.runs[f.run]!, f.index);
+    return settle(d, f.run, anchor, table.length, alloc) || noRoom();
+  });
+  return r.config;
+}
+
+const centre = (b: BuildResult, id: string): Pt | null => {
+  const p = b.pieces.find((q) => q.id === id);
+  return p ? [p.bbox.x + p.bbox.w / 2, p.bbox.y + p.bbox.h / 2] : null;
+};
+
+/** A point `dist` inches along the run from its open end (negative = beyond the end), mid-depth. */
+function alongFromOpenEnd(b: BuildResult, run: RunId, dist: number): Pt {
+  const r = b.runs.find((q) => q.id === run)!;
+  const s = r.openEnd === 'start' ? dist : r.available - dist;
+  const inward = run === 'right' ? -1 : 1;
+  const across = (r.axis === 'x' ? r.origin[1] : r.origin[0]) + (inward * b.D) / 2;
+  return r.axis === 'x' ? [r.origin[0] + s, across] : [across, r.origin[1] + s];
+}
 
 /**
- * Every place a table can snap to by position: each seam of each run (seams of
- * the run WITHOUT this table) and the middle of each seat. 'replaceArm' is not
- * a drag target: it lands on the same spot as "outside the arm", so the UI
- * offers it through the end-cap menu instead.
+ * Every place the table can snap to while dragged, with its anchor point in
+ * plan inches: each seam and seat midpoint (the table's centre once placed),
+ * plus the two run-end anchors: `replaceArm` on the arm's centre, and "outside
+ * the arm" half a table beyond the open end. Placements are resolved against
+ * the config with the table removed (G1), and only feasible ones are listed.
  */
-export function tableTargets(config: Config, id: string): Placement[] {
-  const out: Placement[] = [];
+export function anchoredTargets(config: Config, id: string): { placement: Placement; anchor: Pt }[] {
+  const f = findPiece(config, id);
+  if (!f || f.piece.kind !== 'table') return [];
+  const w = f.piece.length;
+  const postBuilt = buildHaven(withoutTable(config, id));
+  const out: { placement: Placement; anchor: Pt }[] = [];
   for (const run of runIds(config.shape)) {
-    const ps = config.runs[run]!.filter((p) => p.id !== id);
-    for (let seam = 0; seam <= ps.length; seam++) out.push({ run, at: 'seam', seam });
-    for (const p of ps) if (isSeat(p)) out.push({ run, at: 'split', pieceId: p.id });
+    // moveTable resolves placements in the source run against the table-less list (G1 merge applied).
+    const ps = run === f.run ? takeListForSource(config, id) : config.runs[run]!;
+    const open = openEnd(config.shape, run);
+    const endIsArm = open !== null && ps.length > 0 && ps[endIndex(ps, open)]!.kind === 'oneArm';
+    const openSeam = open === 'end' ? ps.length : 0;
+    const candidates: Placement[] = [];
+    for (let seam = 0; seam <= ps.length; seam++) {
+      if (!(endIsArm && seam === openSeam)) candidates.push({ run, at: 'seam', seam });
+    }
+    for (const p of ps) if (isSeat(p)) candidates.push({ run, at: 'split', pieceId: p.id });
+    for (const placement of candidates) {
+      const r = moveTable(config, id, placement);
+      if (r.rejected) continue;
+      const a = centre(buildHaven(r.config), id);
+      if (a) out.push({ placement, anchor: a });
+    }
+    if (!open) continue;
+    const state = endCapState(ps, open);
+    if (state === 'arm' && !moveTable(config, id, { run, at: 'replaceArm' }).rejected) {
+      out.push({ placement: { run, at: 'replaceArm' }, anchor: alongFromOpenEnd(postBuilt, run, config.dims.A / 2) });
+    }
+    if (endIsArm && !moveTable(config, id, { run, at: 'seam', seam: openSeam }).rejected) {
+      out.push({ placement: { run, at: 'seam', seam: openSeam }, anchor: alongFromOpenEnd(postBuilt, run, -w / 2) });
+    }
   }
   return out;
 }
 
+/** The source run as moveTable resolves it: table removed, G1 halves merged, lengths untouched. */
+function takeListForSource(config: Config, id: string) {
+  const f = findPiece(config, id)!;
+  const list = JSON.parse(JSON.stringify(config.runs[f.run])) as NonNullable<Config['runs'][RunId]>;
+  takeTable(list, f.index);
+  return list;
+}
+
+const samePlacement = (a: Placement, b: Placement) => JSON.stringify(a) === JSON.stringify(b);
+
 /**
- * Drag preview / drop: the feasible target whose resulting table centre is
- * nearest the pointer. Always call it with the DRAG-START config, so hovering
- * over targets on the way never leaves a trace.
+ * Drag preview / drop: the anchor nearest the pointer wins, but the current
+ * target is kept until another is SNAP_HYSTERESIS inches nearer. Always call it
+ * with the DRAG-START config, so hovering on the way never leaves a trace.
  */
-export function snapTable(config: Config, id: string, pointer: [number, number]): Config {
-  let best = config;
-  let bestDist = Infinity;
-  for (const t of tableTargets(config, id)) {
-    const next = moveTable(config, id, t);
-    const p = buildHaven(next).pieces.find((q) => q.id === id);
-    if (!p) continue;
-    const cx = p.bbox.x + p.bbox.w / 2;
-    const cy = p.bbox.y + p.bbox.h / 2;
-    const dist = Math.hypot(cx - pointer[0], cy - pointer[1]);
-    if (dist < bestDist) {
-      best = next;
-      bestDist = dist;
-    }
-  }
-  return best;
+export function snapTable(
+  startConfig: Config,
+  id: string,
+  pointer: Pt,
+  current?: Placement,
+): { placement: Placement | null; result: EditResult } {
+  const targets = anchoredTargets(startConfig, id);
+  const dist = (a: Pt) => Math.hypot(a[0] - pointer[0], a[1] - pointer[1]);
+  let best: { placement: Placement; anchor: Pt } | null = null;
+  for (const t of targets) if (!best || dist(t.anchor) < dist(best.anchor)) best = t;
+  if (!best) return { placement: null, result: { config: startConfig, rejected: null } };
+  const cur = current && targets.find((t) => samePlacement(t.placement, current));
+  if (cur && dist(cur.anchor) - dist(best.anchor) <= SNAP_HYSTERESIS) best = cur;
+  return { placement: best.placement, result: moveTable(startConfig, id, best.placement) };
 }

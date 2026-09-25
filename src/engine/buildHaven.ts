@@ -2,8 +2,11 @@
 // rebalances or splits (the ops already stored the final lengths).
 import { available, corners, endCapState, openEnd, runEnds, runIds, wedgeC } from './layout';
 import { MAX_PIECE, cushionOf, half, isSeat } from './pieces';
-import { coffeeClearances, collectWarnings, opening, seatCount, wedgeFace, wedgeReadout } from './seating';
+import { coffeeClearances, rectPoly } from './clearance';
+import { ruleViolation } from './rules';
+import { collectWarnings, opening, seatCount, wedgeFace, wedgeReadout } from './seating';
 import type {
+  Bounds,
   BuildResult,
   BuiltGap,
   BuiltPiece,
@@ -17,13 +20,6 @@ import type {
   RunEnd,
   RunId,
 } from './types';
-
-const rectPoly = (r: Rect): Pt[] => [
-  [r.x, r.y],
-  [r.x + r.w, r.y],
-  [r.x + r.w, r.y + r.h],
-  [r.x, r.y + r.h],
-];
 
 /** Arm side as seen FACING the piece from the opening (see the report for the derivation). */
 const FACING: Record<RunId, Record<RunEnd, Facing>> = {
@@ -104,6 +100,9 @@ export function buildHaven(config: Config): BuildResult {
   const runs: BuiltRun[] = [];
 
   if (!(D > B)) errors.push(`depth ${D}" must exceed the back ${B}"`);
+  if (!Number.isInteger(D) || !Number.isInteger(C)) errors.push(`D ${D} and C ${C} must be whole inches`);
+  const rule = ruleViolation(c);
+  if (rule) errors.push(rule.message);
 
   for (const run of runIds(c.shape)) {
     const stored = c.runs[run];
@@ -194,12 +193,13 @@ export function buildHaven(config: Config): BuildResult {
       arm: null,
       backs: [],
       cushionRect: null,
-      height: l.kind === 'ottoman' ? c.dims.seatHeight : null,
+      height: l.kind === 'ottoman' ? c.dims.ottomanHeight : c.dims.coffeeTableHeight,
       splitGroup: null,
     });
   }
 
   const clearances = coffeeClearances(c, pieces);
+  const bounds = boundsOf([...pieces.flatMap((p) => p.polygon), ...gaps.flatMap((g) => rectPoly(g.rect))]);
   return {
     shape: c.shape,
     W: c.W,
@@ -217,5 +217,15 @@ export function buildHaven(config: Config): BuildResult {
     warnings: collectWarnings(c, C, clearances),
     errors,
     exportBlocked: gaps.length > 0 || errors.length > 0,
+    bounds,
+    heights: { ...c.dims },
   };
+}
+
+/** G4: plan extents (feeds the SVG viewBox, the ortho fit and the elevations). */
+function boundsOf(points: Pt[]): Bounds {
+  if (points.length === 0) return { minX: 0, minY: 0, maxX: 0, maxY: 0 };
+  const xs = points.map((p) => p[0]);
+  const ys = points.map((p) => p[1]);
+  return { minX: Math.min(...xs), minY: Math.min(...ys), maxX: Math.max(...xs), maxY: Math.max(...ys) };
 }

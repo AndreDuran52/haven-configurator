@@ -1,109 +1,95 @@
-// Every edit is a pure op: (config, ...args) => config.
-// - Input is never mutated (each op edits a JSON-cloned draft).
-// - A rejected / no-op edit returns the SAME reference (`next === prev`).
-// - Output always satisfies the run invariant (finalize() asserts it).
-// This file: the edit() choke point, measurements, wedge, lock, settings, shape.
+// Measurements, wedge, lock and settings (§5.3). These ALWAYS hold the typed
+// outside sizes (regardless of the lock): the runs absorb the change.
 import { half } from './pieces';
 import { reshapeRuns } from './absorb';
-import { available, clampWedge, defaultFill, makeAlloc, openEnd, runIds, wedgeC, type Alloc } from './layout';
-import { finalize } from './normalize';
-import type { Config, RunId, RunPiece, Runs, Shape } from './types';
+import { clampWedge, wedgeC } from './layout';
+import { edit, refuse, type Outcome } from './edit';
+import { minMessage, shortfall, wedgeFits } from './limits';
+import type { Config, EditResult } from './types';
 
-/** Clone -> mutate draft -> normalise + assert. The JSON clone also enforces "config is plain data". */
-export function edit(config: Config, fn: (draft: Config, alloc: Alloc) => boolean): Config {
-  const draft = JSON.parse(JSON.stringify(config)) as Config;
-  const alloc = makeAlloc(draft);
-  if (!fn(draft, alloc)) return config;
-  return finalize(draft, alloc);
-}
+export const D_MIN = 30;
+export const D_MAX = 48;
 
-export function findPiece(c: Config, id: string): { run: RunId; index: number; piece: RunPiece } | null {
-  for (const run of runIds(c.shape)) {
-    const index = c.runs[run]?.findIndex((p) => p.id === id) ?? -1;
-    if (index >= 0) return { run, index, piece: c.runs[run]![index]! };
-  }
-  return null;
-}
+/** Candidate config with new sizes but the old pieces, for `limits`. */
+const withSizes = (c: Config, s: Partial<Pick<Config, 'W' | 'L' | 'R' | 'D' | 'wedgeC'>>): Config => ({ ...c, ...s });
 
-// ---------------------------------------------------------------------------
-// Measurements, wedge, lock, settings. These ALWAYS hold the typed outside
-// sizes (regardless of the lock): the runs absorb the change.
-
-export function setMeasurements(config: Config, patch: Partial<Pick<Config, 'W' | 'L' | 'R' | 'D'>>): Config {
-  return edit(config, (d, alloc) => {
+export function setMeasurements(config: Config, patch: Partial<Pick<Config, 'W' | 'L' | 'R' | 'D'>>): EditResult {
+  return edit(config, (d, alloc): Outcome => {
     const oldC = wedgeC(d);
     const next = {
       W: half(patch.W ?? d.W),
       L: half(patch.L ?? d.L),
       R: half(patch.R ?? d.R),
-      D: half(patch.D ?? d.D),
+      D: Math.round(patch.D ?? d.D),
     };
-    if (!(next.D > d.dims.B)) return false;
+    if (!(next.D >= D_MIN && next.D <= D_MAX) || !(next.D > d.dims.B)) {
+      return refuse('infeasible', `Depth must be ${D_MIN}–${D_MAX}″`);
+    }
+    if (![next.W, next.L, next.R].every(Number.isFinite)) return refuse('infeasible', 'Not a size');
     const dW = next.W - d.W;
     const dL = next.L - d.L;
     const dR = next.R - d.R;
+    if (!dW && !dL && !dR && next.D === d.D) return null;
     Object.assign(d, next);
     // §5: a manual wedge sticks when D changes, clamped into the new D..D+30 range.
     if (d.wedgeC !== null) d.wedgeC = clampWedge(d.wedgeC, d.D);
-    const changed = dW || dL || dR || next.D !== config.D;
-    return !!changed && reshapeRuns(d, alloc, wedgeC(d) - oldC, dW, dL, dR);
+    if (reshapeRuns(d, alloc, wedgeC(d) - oldC, dW, dL, dR)) return true;
+    const min = shortfall(withSizes(config, { ...next, wedgeC: d.wedgeC }));
+    return refuse('infeasible', minMessage(min), min);
   });
 }
 
-/** §5 wedge slider: snaps to 1", clamps to D..D+30, becomes manual. Outside sizes held. */
-export function setWedge(config: Config, C: number): Config {
-  return edit(config, (d, alloc) => {
-    const oldC = wedgeC(d);
-    d.wedgeC = clampWedge(Math.round(C), d.D);
-    if (config.wedgeC === d.wedgeC) return false;
-    return reshapeRuns(d, alloc, d.wedgeC - oldC, 0, 0, 0);
+/**
+ * §5 wedge slider: snaps to 1", clamps to D..D+30 and becomes manual. G3: if
+ * the runs can't absorb the target, it stops at the last whole inch that fits
+ * (scanning from the current C toward the target) instead of being refused.
+ */
+export function setWedge(config: Config, C: number): EditResult {
+  return edit(config, (d, alloc): Outcome => {
+    const cur = wedgeC(d);
+    const target = clampWedge(Math.round(C), d.D);
+    let to = target;
+    if (!wedgeFits(config, target)) {
+      to = cur;
+      const step = Math.sign(target - cur);
+      while (to !== target && wedgeFits(config, to + step)) to += step;
+    }
+    if (to === cur) {
+      if (to !== target) return refuse('noRoom', 'No room for a bigger wedge');
+      if (config.wedgeC !== null) return null;
+    }
+    d.wedgeC = to;
+    return reshapeRuns(d, alloc, to - cur, 0, 0, 0) || refuse('noRoom', 'No room for a bigger wedge');
   });
 }
 
-export function resetWedge(config: Config): Config {
-  return edit(config, (d, alloc) => {
-    if (d.wedgeC === null) return false;
+/** Back to auto (C = D + 16). Refused with the minimum W/L/R if that C doesn't fit (the slider clamps, this doesn't). */
+export function resetWedge(config: Config): EditResult {
+  return edit(config, (d, alloc): Outcome => {
+    if (d.wedgeC === null) return null;
     const oldC = wedgeC(d);
     d.wedgeC = null;
-    return reshapeRuns(d, alloc, wedgeC(d) - oldC, 0, 0, 0);
+    if (reshapeRuns(d, alloc, wedgeC(d) - oldC, 0, 0, 0)) return true;
+    const min = shortfall(withSizes(config, { wedgeC: null }));
+    return refuse('infeasible', minMessage(min), min);
   });
 }
 
 /** Turning the lock ON freezes the (already derived) W/L/R; OFF lets runs grow. */
-export function setLock(config: Config, on: boolean): Config {
+export function setLock(config: Config, on: boolean): EditResult {
   return edit(config, (d) => {
-    if (d.lockOutside === on) return false;
+    if (d.lockOutside === on) return null;
     d.lockOutside = on;
     return true;
   });
 }
 
-export function setSeatWidth(config: Config, width: number): Config {
+export function setSeatWidth(config: Config, width: number): EditResult {
   return edit(config, (d) => {
     const w = half(width);
-    if (!(w > 0) || w === d.seatWidth) return false;
+    if (!(w > 0)) return refuse('notAllowed', 'Seat width must be positive');
+    if (w === d.seatWidth) return null;
     d.seatWidth = w;
-    return true;
-  });
-}
-
-/**
- * Shape picker. A leg that survives keeps its pieces (its space L-C / R-C is
- * unchanged); the back and any new leg get the §8 default fill, because the
- * back's end kinds (wedge/open) change with the shape.
- */
-export function setShape(config: Config, shape: Shape): Config {
-  return edit(config, (d, alloc) => {
-    if (d.shape === shape) return false;
-    const old = d.runs;
-    d.shape = shape;
-    const runs: Runs = {};
-    for (const run of runIds(shape)) {
-      const len = available(d, run);
-      if (len < 0) return false;
-      runs[run] = run !== 'back' && old[run] ? old[run] : defaultFill(len, openEnd(shape, run), d.dims.A, alloc);
-    }
-    d.runs = runs;
     return true;
   });
 }

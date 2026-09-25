@@ -11,6 +11,8 @@ export const MIN_SEAT = 20;
  * 20" rule above stays a warning, which is why test 3b's 13" seats are legal.
  */
 export const ABSORB_FLOOR = 6;
+/** A table split needs at least this much cushion left to share (6" each side). */
+export const SPLIT_MIN_CUSHION = 12;
 
 export const TABLE_MIN = 16;
 export const TABLE_MAX = 40;
@@ -40,6 +42,10 @@ export const PIECE_LIBRARY = [
 /** Round to the 0.5" grid. `+ 0` normalises -0 so configs survive a JSON round trip. */
 export const half = (x: number): number => Math.round(x * 2) / 2 + 0;
 
+/** G10: inches <-> integer half-inches, so sums and splits are exact. */
+export const toH = (inches: number): number => Math.round(inches * 2);
+export const toIn = (halves: number): number => halves / 2 + 0;
+
 export const isSeat = (p: RunPiece): boolean => p.kind === 'armless' || p.kind === 'oneArm';
 export const armLen = (p: RunPiece, A: number): number => (p.kind === 'oneArm' ? A : 0);
 export const cushionOf = (p: RunPiece, A: number): number => p.length - armLen(p, A);
@@ -55,35 +61,27 @@ export function defaultLength(kind: Exclude<RunPieceKind, 'gap'>, A: number): nu
  * gets the extra 0.5 in magnitude when x/2 is off-grid.
  */
 export function splitHalf(x: number): [number, number] {
-  const h = Math.round(x * 2);
+  const h = toH(x);
   const a = Math.sign(h) * Math.ceil(Math.abs(h) / 2);
-  return [a / 2 + 0, (h - a) / 2 + 0];
+  return [toIn(a), toIn(h - a)];
 }
 
 /**
- * Equal cushions for n pieces of one logical seat. The arm (if any) sits on the
- * piece at the `arm` end and is extra to its cushion. Remainder half-inches go
- * to the pieces FARTHEST FROM THE ARM first (run-start first when armless).
+ * G9: n pieces of equal overall footprint (arm included) for one logical seat.
+ * Remainder half-inches go to the pieces FARTHEST FROM THE ARM; with no arm, to
+ * the pieces nearest the run start.
  */
-export function distribute(total: number, n: number, arm: RunEnd | null, A: number): number[] {
-  const cushion = total - (arm ? A : 0);
-  const halves = Math.round(cushion * 2);
+export function distribute(total: number, n: number, arm: RunEnd | null): number[] {
+  const halves = toH(total);
   const base = Math.floor(halves / n);
   const rem = halves - base * n;
   const order = Array.from({ length: n }, (_, i) => (arm === 'start' ? n - 1 - i : i));
-  const cushions = new Array<number>(n).fill(base);
-  for (let k = 0; k < rem; k++) cushions[order[k]!]! += 1;
-  return cushions.map((c, i) => {
-    const hasArm = (arm === 'start' && i === 0) || (arm === 'end' && i === n - 1);
-    return c / 2 + (hasArm ? A : 0);
-  });
+  const out = new Array<number>(n).fill(base);
+  for (let k = 0; k < rem; k++) out[order[k]!]! += 1;
+  return out.map(toIn);
 }
 
-/** Auto-split (§7): the fewest equal-cushion pieces with every piece <= 108 incl. arm. */
-export function splitLengths(total: number, arm: RunEnd | null, A: number): number[] {
-  for (let n = 1; n < 1000; n++) {
-    const lengths = distribute(total, n, arm, A);
-    if (lengths.every((l) => l <= MAX_PIECE)) return lengths;
-  }
-  throw new Error(`cannot split ${total}`);
+/** Auto-split (§7): n = ceil(len / 108) pieces of equal footprint. */
+export function splitLengths(total: number, arm: RunEnd | null): number[] {
+  return distribute(total, Math.max(1, Math.ceil(toH(total) / toH(MAX_PIECE))), arm);
 }

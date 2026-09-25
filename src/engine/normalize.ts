@@ -1,11 +1,9 @@
-// Normalisation after every op (gaps, split groups, auto-split) and the
-// finalize() invariant check.
-import { MAX_PIECE, half, isSeat, splitLengths } from './pieces';
-import { available, runIds, runSum, seat, wedgeC, type Alloc } from './layout';
+// Normalisation after every op: gaps, split groups, auto-split (G9) and G1
+// join tags. finalize() = normalise + derive W/L/R + assert the invariants.
+import { MAX_PIECE, isSeat, splitLengths } from './pieces';
+import { runIds, runSum, seat, wedgeC, type Alloc } from './layout';
+import { assertInvariants } from './rules';
 import type { Config, RunPiece, Runs } from './types';
-
-// ---------------------------------------------------------------------------
-// Normalisation (runs after every op): gaps, split groups, auto-split.
 
 function validBlock(pieces: RunPiece[], block: number[]): boolean {
   const arms = block.filter((i) => pieces[i]!.kind === 'oneArm');
@@ -15,7 +13,26 @@ function validBlock(pieces: RunPiece[], block: number[]): boolean {
   return pieces[i]!.arm === 'start' ? i === block[0] : i === block[block.length - 1];
 }
 
-export function normalizeRun(input: RunPiece[], A: number, alloc: Alloc): RunPiece[] {
+/**
+ * G1 tags survive only while the table sits directly between its two halves
+ * (lone seats, not split-group members); anything else clears them.
+ */
+function validateJoins(pieces: RunPiece[]): void {
+  const tags = new Set(pieces.flatMap((p) => (p.joinedBy ? [p.joinedBy] : [])));
+  for (const tag of tags) {
+    const idx = pieces.flatMap((p, i) => (p.joinedBy === tag ? [i] : []));
+    const t = pieces[idx[0]! + 1];
+    const ok =
+      idx.length === 2 &&
+      idx[1] === idx[0]! + 2 &&
+      t?.kind === 'table' &&
+      t.id === tag &&
+      idx.every((i) => isSeat(pieces[i]!) && !pieces[i]!.splitGroup);
+    if (!ok) for (const i of idx) delete pieces[i]!.joinedBy;
+  }
+}
+
+export function normalizeRun(input: RunPiece[], alloc: Alloc): RunPiece[] {
   // 1. Merge adjacent gaps, drop empty ones.
   const merged: RunPiece[] = [];
   for (const p of input) {
@@ -48,8 +65,8 @@ export function normalizeRun(input: RunPiece[], A: number, alloc: Alloc): RunPie
     if (list.length === 1 && validBlock(merged, list[0]!)) continue;
     for (const b of list) for (const i of b) delete merged[i]!.splitGroup;
   }
-  // 3. Every logical seat (a lone seat or a whole group) is re-split into the
-  //    fewest equal-cushion pieces <= 108". Groups re-merge when they fit.
+  // 3. Every logical seat (a lone seat or a whole group) is re-split into
+  //    ceil(len / 108) pieces of equal footprint. Groups re-merge when they fit.
   const out: RunPiece[] = [];
   for (let i = 0; i < merged.length; ) {
     const p = merged[i]!;
@@ -68,7 +85,7 @@ export function normalizeRun(input: RunPiece[], A: number, alloc: Alloc): RunPie
     }
     const total = runSum(block);
     const arm = block.find((q) => q.kind === 'oneArm')?.arm ?? null;
-    const lengths = splitLengths(total, arm, A);
+    const lengths = splitLengths(total, arm);
     if (lengths.length === 1) {
       out.push(seat(p.id, total, arm));
       continue;
@@ -79,6 +96,7 @@ export function normalizeRun(input: RunPiece[], A: number, alloc: Alloc): RunPie
       out.push({ ...seat(block[k]?.id ?? alloc('p'), len, hasArm ? arm : null), splitGroup: group });
     });
   }
+  validateJoins(out);
   return out;
 }
 
@@ -91,26 +109,20 @@ export function deriveOutside(c: Config): void {
   if (c.runs.right) c.R = runSum(c.runs.right) + C;
 }
 
-/**
- * Normalise every run, derive W/L/R when unlocked, then assert the §8/§12.9
- * invariant (each run sums exactly to its available space). A failure here is
- * an engine bug, so it throws rather than returning a half-valid config.
- */
-export function finalize(draft: Config, alloc: Alloc): Config {
-  const ids = runIds(draft.shape);
+/** Normalise every run of the shape (dropping runs it lacks) and derive W/L/R when unlocked. */
+export function normalizeConfig(draft: Config, alloc: Alloc): void {
   const runs: Runs = {};
-  for (const r of ids) runs[r] = normalizeRun(draft.runs[r] ?? [], draft.dims.A, alloc);
+  for (const r of runIds(draft.shape)) runs[r] = normalizeRun(draft.runs[r] ?? [], alloc);
   draft.runs = runs;
   if (!draft.lockOutside) deriveOutside(draft);
-  for (const r of ids) {
-    const av = available(draft, r);
-    const sum = runSum(runs[r]!);
-    if (av < 0 || sum !== av) throw new Error(`engine invariant: run ${r} sums ${sum}, available ${av}`);
-    for (const p of runs[r]!) {
-      if (p.length <= 0 || half(p.length) !== p.length || (p.kind !== 'gap' && p.length > MAX_PIECE)) {
-        throw new Error(`engine invariant: bad piece ${JSON.stringify(p)}`);
-      }
-    }
-  }
+}
+
+/**
+ * Normalise, then assert the §11 invariant. A failure here is an engine bug
+ * (ops refuse rule breaks before this point), so it throws.
+ */
+export function finalize(draft: Config, alloc: Alloc): Config {
+  normalizeConfig(draft, alloc);
+  assertInvariants(draft);
   return draft;
 }

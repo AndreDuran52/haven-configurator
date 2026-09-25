@@ -1,8 +1,9 @@
-// Haven configurator engine — model A: "explicit lengths + rebalancing ops".
+// Haven configurator engine — model A: "explicit lengths + rebalancing ops"
+// with the grafts G1–G11 of plan §5.1.
 //
 // The Config stores every run piece with an explicit length. buildHaven() only
-// lays out and validates; every edit is a pure op (config, ...args) => config
-// (see ops.ts) that rebalances so each run still sums exactly to its space.
+// lays out and validates; every edit is a pure op (config, ...args) => EditResult
+// (see edit.ts) that rebalances so each run still sums exactly to its space.
 // Config is plain JSON data: no classes, no Maps, no undefined-valued keys.
 
 export type Shape = 'U' | 'L-left' | 'L-right';
@@ -29,6 +30,11 @@ export interface RunPiece {
    * 108". Any manual edit of a member dissolves the group.
    */
   splitGroup?: string;
+  /**
+   * G1: the two halves of a seat split around table <id> carry that id. When the
+   * table stops sitting directly between them, the halves merge back first.
+   */
+  joinedBy?: string;
 }
 
 export type LooseKind = 'ottoman' | 'coffeeTable';
@@ -49,14 +55,23 @@ export interface HavenDims {
   A: number;
   /** Back = frame + back cushion. Seat depth = D - B. */
   B: number;
+  /** Depth of the back frame (the rest of B is the back cushion). */
+  backFrame: number;
   legHeight: number;
+  /** Top of the body / bottom of the seat cushion. */
+  deckHeight: number;
   seatHeight: number;
+  /** Seat cushion thickness mid-span (crown) and at its ends (edge). */
   cushionCrown: number;
   cushionEdge: number;
   armHeight: number;
   backHeight: number;
   tableHeight: number;
+  ottomanHeight: number;
+  coffeeTableHeight: number;
 }
+
+export type TableFinish = 'walnut' | 'darkWood';
 
 export type Runs = Partial<Record<RunId, RunPiece[]>>;
 
@@ -76,6 +91,11 @@ export interface Config {
   loose: LoosePiece[];
   /** Comfortable seat width for seat counting (§8, default 28). */
   seatWidth: number;
+  /** G8: snug seat width (default 24). */
+  snugWidth: number;
+  /** Key into the FABRICS data table ('boucle-white' to start). */
+  fabric: string;
+  tableFinish: TableFinish;
   dims: HavenDims;
   /** Deterministic id counter so ops stay pure. */
   nextId: number;
@@ -93,6 +113,19 @@ export type Placement =
 export type EndCap = 'arm' | 'table' | 'open';
 /** Derived from the pieces; 'armTable' = table outside the arm. */
 export type EndCapState = EndCap | 'armTable' | 'unfilled';
+
+/** G6: why an edit was refused. `min` gives the smallest sizes that would fit. */
+export interface Rejection {
+  code: 'noRoom' | 'infeasible' | 'notAllowed';
+  message: string;
+  min?: Partial<Record<'W' | 'L' | 'R' | 'C', number>>;
+}
+
+/** G6: every op returns this. When refused, `config` is the input reference. */
+export interface EditResult {
+  config: Config;
+  rejected: Rejection | null;
+}
 
 // ---------------------------------------------------------------------------
 // buildHaven output
@@ -179,7 +212,8 @@ export type WarningCode =
   | 'wedgeFaceUnder8'
   | 'openingUnder60'
   | 'seatDepthUnder24'
-  | 'coffeeClearanceUnder14';
+  | 'coffeeClearanceUnder14'
+  | 'coffeeOverlap';
 
 export interface Warning {
   code: WarningCode;
@@ -194,13 +228,28 @@ export interface SeatCount {
   label: string;
 }
 
+/**
+ * G7: Euclidean distance (1 decimal) from a coffee table to each sofa region:
+ * back run, left/right legs, and the back-left/back-right wedges (their angled
+ * face). null = the shape has no pieces there.
+ */
 export interface Clearance {
   pieceId: string;
   back: number | null;
   left: number | null;
   right: number | null;
-  front: number | null;
+  backLeft: number | null;
+  backRight: number | null;
   min: number | null;
+  /** The table intersects a sofa piece. */
+  overlap: boolean;
+}
+
+export interface Bounds {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
 }
 
 export interface BuildResult {
@@ -222,4 +271,8 @@ export interface BuildResult {
   /** Invariant violations (a hand-edited or corrupt config). Ops never produce these. */
   errors: string[];
   exportBlocked: boolean;
+  /** G4: plan extents of every piece, gap and loose piece. */
+  bounds: Bounds;
+  /** G4: the height profile values (profiles.ts). */
+  heights: HavenDims;
 }
