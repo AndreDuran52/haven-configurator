@@ -1,0 +1,437 @@
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -1,4 +1,5 @@
+-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
++import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
++import { lazy, Suspense } from 'react'
+ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+ import { AuthProvider, useAuth } from '@/features/auth/AuthContext'
+ import { LoginPage } from '@/features/auth/LoginPage'
+@@ -14,6 +15,11 @@
+ import { SettingsPage } from '@/pages/SettingsPage'
+ import type { ReactNode } from 'react'
+ 
++// Haven Configurator: route-level code split. Nothing under features/haven is
++// imported statically from the tracker.
++const HavenPage = lazy(() => import('@/features/haven/HavenPage'))
++const HavenSharePage = lazy(() => import('@/features/haven/share/SharePage'))
++
+ function AdminOnly({ children }: { children: ReactNode }) {
+   const { profile } = useAuth()
+   if (profile?.role !== 'admin') return <Navigate to="/projects" replace />
+@@ -44,6 +50,16 @@
+ 
+ function AppContent() {
+   const { session, loading, profile } = useAuth()
++  const { pathname } = useLocation()
++
++  // Public client share link: rendered before the auth gate, no account needed.
++  if (pathname === '/h' || pathname.startsWith('/h/')) {
++    return (
++      <Suspense fallback={null}>
++        <HavenSharePage />
++      </Suspense>
++    )
++  }
+ 
+   if (loading) {
+     return (
+@@ -61,6 +77,15 @@
+ 
+   return (
+     <Routes>
++      {/* Full-bleed, no tracker chrome: safe to hand the iPad to a client. */}
++      <Route
++        path="/configurator/*"
++        element={
++          <Suspense fallback={null}>
++            <HavenPage />
++          </Suspense>
++        }
++      />
+       <Route element={<AppLayout />}>
+         <Route path="/dashboard" element={<DashboardPage />} />
+         <Route path="/projects" element={<ProjectsPage />} />
+--- a/vite.config.ts
++++ b/vite.config.ts
+@@ -9,6 +9,14 @@
+     port: process.env.PORT ? Number(process.env.PORT) : undefined,
+   },
+   plugins: [react(), tailwindcss()],
++  build: {
++    rollupOptions: {
++      input: {
++        main: path.resolve(__dirname, 'index.html'),
++        share: path.resolve(__dirname, 'share.html'),
++      },
++    },
++  },
+   resolve: {
+     alias: {
+       '@': path.resolve(__dirname, './src'),
+--- a/tsconfig.node.json
++++ b/tsconfig.node.json
+@@ -19,5 +19,5 @@
+     "erasableSyntaxOnly": true,
+     "noFallthroughCasesInSwitch": true
+   },
+-  "include": ["vite.config.ts"]
++  "include": ["vite.config.ts", "vitest.config.ts"]
+ }
+--- a/.oxlintrc.json
++++ b/.oxlintrc.json
+@@ -1,8 +1,50 @@
+ {
+   "$schema": "./node_modules/oxlint/configuration_schema.json",
+-  "plugins": ["react", "typescript", "oxc"],
++  "plugins": [
++    "react",
++    "typescript",
++    "oxc"
++  ],
+   "rules": {
+     "react/rules-of-hooks": "error",
+-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
+-  }
+-}
++    "react/only-export-components": [
++      "warn",
++      {
++        "allowConstantExport": true
++      }
++    ],
++    "no-restricted-imports": [
++      "error",
++      {
++        "patterns": [
++          {
++            "group": [
++              "three",
++              "three/*",
++              "@react-three/*"
++            ],
++            "message": "three.js may only be imported inside src/features/haven/three/ (lazy 3D chunk)."
++          },
++          {
++            "group": [
++              "**/haven/three/*",
++              "./three/*",
++              "../three/*"
++            ],
++            "message": "Load the 3D view only via lazy(() => import('./three/ThreeView'))."
++          }
++        ]
++      }
++    ]
++  },
++  "overrides": [
++    {
++      "files": [
++        "src/features/haven/three/**"
++      ],
++      "rules": {
++        "no-restricted-imports": "off"
++      }
++    }
++  ]
++}
+\ No newline at end of file
+--- a/package.json
++++ b/package.json
+@@ -7,7 +7,9 @@
+     "dev": "vite",
+     "build": "tsc -b && vite build",
+     "lint": "oxlint",
+-    "preview": "vite preview"
++    "preview": "vite preview",
++    "test": "vitest run",
++    "test:watch": "vitest"
+   },
+   "dependencies": {
+     "@base-ui/react": "^1.6.0",
+@@ -15,11 +17,14 @@
+     "@dnd-kit/sortable": "^10.0.0",
+     "@dnd-kit/utilities": "^3.2.2",
+     "@fontsource-variable/geist": "^5.2.9",
++    "@react-three/drei": "^10.7.8",
++    "@react-three/fiber": "^9.8.0",
+     "@supabase/supabase-js": "^2.110.0",
+     "@tailwindcss/vite": "^4.3.2",
+     "@tanstack/react-query": "^5.101.2",
+     "class-variance-authority": "^0.7.1",
+     "clsx": "^2.1.1",
++    "jspdf": "^4.2.1",
+     "lucide-react": "^1.23.0",
+     "pdfjs-dist": "^6.1.200",
+     "radix-ui": "^1.6.1",
+@@ -27,17 +32,22 @@
+     "react-dom": "^19.2.7",
+     "react-router-dom": "^7.18.1",
+     "shadcn": "^4.12.0",
++    "svg2pdf.js": "^2.8.1",
+     "tailwind-merge": "^3.6.0",
+     "tailwindcss": "^4.3.2",
+-    "tw-animate-css": "^1.4.0"
++    "three": "^0.186.1",
++    "tw-animate-css": "^1.4.0",
++    "zustand": "^5.0.15"
+   },
+   "devDependencies": {
+     "@types/node": "^24.13.2",
+     "@types/react": "^19.2.17",
+     "@types/react-dom": "^19.2.3",
++    "@types/three": "^0.186.0",
+     "@vitejs/plugin-react": "^5.0.0",
+     "oxlint": "^1.71.0",
+     "typescript": "~6.0.2",
+-    "vite": "^7.1.0"
++    "vite": "^7.1.0",
++    "vitest": "^5.0.1"
+   }
+ }
+--- /dev/null
++++ b/vitest.config.ts
+@@ -0,0 +1,13 @@
++import path from 'node:path'
++import { defineConfig } from 'vitest/config'
++
++// Separate from vite.config.ts so tests don't boot the React/Tailwind plugins.
++export default defineConfig({
++  resolve: {
++    alias: { '@': path.resolve(import.meta.dirname, './src') },
++  },
++  test: {
++    include: ['src/**/*.test.ts'],
++    environment: 'node',
++  },
++})
+--- /dev/null
++++ b/share.html
+@@ -0,0 +1,14 @@
++<!doctype html>
++<html lang="en">
++  <head>
++    <meta charset="UTF-8" />
++    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
++    <title>Venegas Designs — Haven layout</title>
++    <meta property="og:title" content="Your Haven sectional layout — Venegas Designs" />
++    <!-- No manifest link: a client's Add to Home Screen must not install the tracker. -->
++  </head>
++  <body>
++    <div id="root"></div>
++    <script type="module" src="/src/features/haven/share/main.tsx"></script>
++  </body>
++</html>
+--- /dev/null
++++ b/scripts/check-bundle.mjs
+@@ -0,0 +1,19 @@
++// Fails if three.js reaches the JS that index.html loads eagerly (entry +
++// modulepreloads), or if that entry JS grows past the budget. Run after build.
++import { readFileSync, statSync } from 'node:fs'
++
++const BUDGET_KB = 850
++const html = readFileSync('dist/index.html', 'utf8')
++const eager = [...html.matchAll(/(?:src|href)="\/(assets\/[^"]+\.js)"/g)].map((m) => m[1])
++const leaks = eager.filter((f) => readFileSync(`dist/${f}`, 'utf8').includes('THREE.WebGLRenderer'))
++const kb = eager.reduce((sum, f) => sum + statSync(`dist/${f}`).size, 0) / 1000
++
++if (leaks.length) {
++  console.error(`three.js leaked into the eager bundle: ${leaks.join(', ')}`)
++  process.exit(1)
++}
++if (kb > BUDGET_KB) {
++  console.error(`eager JS is ${kb.toFixed(1)} kB (budget ${BUDGET_KB} kB)`)
++  process.exit(1)
++}
++console.log(`ok: eager JS ${kb.toFixed(1)} kB across ${eager.length} file(s), no three.js`)
+--- /dev/null
++++ b/src/features/haven/HavenPage.tsx
+@@ -0,0 +1,29 @@
++import { lazy, Suspense, useMemo, useState } from 'react'
++import { useStore } from 'zustand'
++import { buildHaven } from './engine/buildHaven'
++import { createHavenStore } from './state/store'
++import { PlanView } from './views/PlanView'
++import { makeShopSheetPdf } from './export/shopSheet'
++
++// The ONLY path to three.js: a dynamic import behind the 3D toggle.
++const ThreeView = lazy(() => import('./three/ThreeView'))
++
++export default function HavenPage() {
++  const [store] = useState(() => createHavenStore())
++  const config = useStore(store, (s) => s.present)
++  const pieces = useMemo(() => buildHaven(config), [config])
++  const [view, setView] = useState<'plan' | '3d'>('plan')
++  return (
++    <div className="fixed inset-0 bg-canvas">
++      <button type="button" onClick={() => void makeShopSheetPdf(document.querySelector('svg')!)}>pdf</button>
++      <button type="button" onClick={() => setView(view === 'plan' ? '3d' : 'plan')}>toggle</button>
++      {view === 'plan' ? (
++        <PlanView pieces={pieces} />
++      ) : (
++        <Suspense fallback={<p>Loading 3D…</p>}>
++          <ThreeView pieces={pieces} />
++        </Suspense>
++      )}
++    </div>
++  )
++}
+--- /dev/null
++++ b/src/features/haven/views/PlanView.tsx
+@@ -0,0 +1,11 @@
++import type { Piece } from '../engine/types'
++
++export function PlanView({ pieces }: { pieces: Piece[] }) {
++  return (
++    <svg viewBox="-10 -10 210 150" className="w-full">
++      {pieces.map((p) => (
++        <rect key={p.id} x={p.x} y={p.y} width={p.w} height={p.d} fill="none" stroke="currentColor" strokeWidth={0.5} />
++      ))}
++    </svg>
++  )
++}
+--- /dev/null
++++ b/src/features/haven/share/SharePage.tsx
+@@ -0,0 +1,10 @@
++import { useLocation } from 'react-router-dom'
++import { buildHaven, STANDARD_U } from '../engine/buildHaven'
++import { PlanView } from '../views/PlanView'
++
++// Public, read-only, no Supabase import.
++export default function SharePage() {
++  const { hash } = useLocation()
++  void hash
++  return <PlanView pieces={buildHaven(STANDARD_U)} />
++}
+--- /dev/null
++++ b/src/features/haven/share/main.tsx
+@@ -0,0 +1,12 @@
++import { StrictMode } from 'react'
++import { createRoot } from 'react-dom/client'
++import '@/index.css'
++import { buildHaven, STANDARD_U } from '../engine/buildHaven'
++import { PlanView } from '../views/PlanView'
++
++// Public entry: no AuthProvider, no QueryClient, no Supabase, no router.
++createRoot(document.getElementById('root')!).render(
++  <StrictMode>
++    <PlanView pieces={buildHaven(STANDARD_U)} />
++  </StrictMode>,
++)
+--- /dev/null
++++ b/src/features/haven/engine/buildHaven.ts
+@@ -0,0 +1,14 @@
++import type { HavenConfig, Piece } from './types'
++
++export const STANDARD_U: HavenConfig = { schema: 1, shape: 'U', W: 188, L: 132, R: 132, D: 44, C: 60 }
++
++/** Stub: pure config -> pieces. */
++export function buildHaven(config: HavenConfig): Piece[] {
++  const { W, D, C } = config
++  return [
++    { id: 'w1', kind: 'wedge', x: 0, y: 0, w: C, d: C },
++    { id: 't1', kind: 'table', x: C, y: 0, w: 32, d: D },
++    { id: 'a1', kind: 'armless', x: C + 32, y: 0, w: W - 2 * C - 32, d: D },
++    { id: 'w2', kind: 'wedge', x: W - C, y: 0, w: C, d: C },
++  ]
++}
+--- /dev/null
++++ b/src/features/haven/engine/buildHaven.test.ts
+@@ -0,0 +1,9 @@
++import { describe, expect, it } from 'vitest'
++import { buildHaven, STANDARD_U } from './buildHaven'
++
++describe('buildHaven (placement smoke test)', () => {
++  it('back run of the Standard U sums to W', () => {
++    const back = buildHaven(STANDARD_U).filter((p) => p.y === 0)
++    expect(back.reduce((s, p) => s + p.w, 0)).toBe(188)
++  })
++})
+--- /dev/null
++++ b/src/features/haven/engine/types.ts
+@@ -0,0 +1,19 @@
++// Pure engine types — no React, no three.
++export type Shape = 'U' | 'L-left' | 'L-right'
++export interface HavenConfig {
++  schema: 1
++  shape: Shape
++  W: number
++  L: number
++  R: number
++  D: number
++  C: number
++}
++export interface Piece {
++  id: string
++  kind: 'wedge' | 'armless' | 'one-arm' | 'table'
++  x: number
++  y: number
++  w: number
++  d: number
++}
+--- /dev/null
++++ b/src/features/haven/export/shopSheet.ts
+@@ -0,0 +1,7 @@
++// Export path: jspdf + svg2pdf load only when the user taps Export.
++export async function makeShopSheetPdf(svg: SVGSVGElement): Promise<Blob> {
++  const [{ jsPDF }, { svg2pdf }] = await Promise.all([import('jspdf'), import('svg2pdf.js')])
++  const doc = new jsPDF({ orientation: 'landscape', unit: 'in', format: 'letter' })
++  await svg2pdf(svg, doc, { x: 0.5, y: 0.5, width: 10, height: 7.5 })
++  return doc.output('blob')
++}
+--- /dev/null
++++ b/src/features/haven/three/ThreeView.tsx
+@@ -0,0 +1,25 @@
++import { Canvas } from '@react-three/fiber'
++import { ContactShadows, OrbitControls, OrthographicCamera, RoundedBox, useGLTF } from '@react-three/drei'
++import type { Piece } from '../engine/types'
++
++function Pillow() {
++  const gltf = useGLTF('/models/square-pillow.glb')
++  return <primitive object={gltf.scene} />
++}
++
++export default function ThreeView({ pieces }: { pieces: Piece[] }) {
++  return (
++    <Canvas dpr={[1, 2]}>
++      <OrthographicCamera makeDefault position={[200, 200, 200]} zoom={3} />
++      <OrbitControls makeDefault />
++      <ambientLight intensity={0.8} />
++      {pieces.map((p) => (
++        <RoundedBox key={p.id} args={[p.w, 18, p.d]} position={[p.x + p.w / 2, 9, p.y + p.d / 2]} radius={2}>
++          <meshStandardMaterial color="#f4f1ea" />
++        </RoundedBox>
++      ))}
++      <Pillow />
++      <ContactShadows position={[0, 0, 0]} scale={400} blur={2} />
++    </Canvas>
++  )
++}
+--- /dev/null
++++ b/src/features/haven/state/store.ts
+@@ -0,0 +1,25 @@
++import { createStore } from 'zustand/vanilla'
++import type { HavenConfig } from '../engine/types'
++import { STANDARD_U } from '../engine/buildHaven'
++
++export interface HavenState {
++  past: HavenConfig[]
++  present: HavenConfig
++  future: HavenConfig[]
++  set: (next: HavenConfig) => void
++  undo: () => void
++}
++
++export const createHavenStore = (initial: HavenConfig = STANDARD_U) =>
++  createStore<HavenState>((set) => ({
++    past: [],
++    present: initial,
++    future: [],
++    set: (next) => set((s) => ({ past: [...s.past, s.present], present: next, future: [] })),
++    undo: () =>
++      set((s) =>
++        s.past.length
++          ? { past: s.past.slice(0, -1), present: s.past[s.past.length - 1], future: [s.present, ...s.future] }
++          : s,
++      ),
++  }))
