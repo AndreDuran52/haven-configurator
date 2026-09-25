@@ -25,7 +25,7 @@ Layout: `src/{engine, ortho, state, plan, three, ui, export}` (plan §4). The sh
 2. **Config is the only domain state.** Everything else (`BuildResult`, dimensions, seats, warnings, fits) is derived and never stored. Drafts during a gesture; one commit per gesture = one undo step.
 3. **The plan wins over the spec.** Rules, numbers and tests come from `docs/HAVEN-PLAN.md`; don't "fix" them from the spec.
 4. **Lazy 3D and PDF.** three / `@react-three/*` only inside `src/three/**`, reached only through `lazy()` / `import()`; jsPDF and svg2pdf only through `await import()` in `src/export/`. `src/ortho/**` never imports three. No vendor `manualChunks`.
-5. **Entry-chunk budget.** `npm run check:bundle` must pass: entry JS within budget (plan §3), no `THREE.WebGLRenderer` or `jsPDF` markers in entry files.
+5. **Entry-chunk budget.** `npm run check:bundle` must pass: entry JS within budget (314 kB raw / 102 kB gzip since H2, set in `scripts/check-bundle.mjs`), no `THREE.WebGLRenderer` or `jsPDF` markers in entry files. Dialogs and other rarely used UI load with `lazy()`.
 6. **Share links are forever.** Codec changes bump the version, add a decoder/migration, and keep every golden link passing. Links carry geometry, fabric and finish only: never names, project numbers or prices.
 7. **No hidden network.** No CDN HDRIs, no Draco decoder, nothing cross-origin; `.glb` exported without Draco. The app must work offline after one online load (from H2).
 8. **No backend, no login** unless Andre explicitly starts H7 option (b). `priceFor` stays a stub, never rendered.
@@ -37,12 +37,12 @@ Layout: `src/{engine, ortho, state, plan, three, ui, export}` (plan §4). The sh
 
 Each milestone: `git fetch`, branch from `origin/main` (`h0b-scaffold`, `h1-engine`, `h2-plan-view`, `h3-ortho`, `h4-editing`, `h5-look`, `h6-exports`), build only that §10 block, meet its done-when list, open a PR, **stop**. Andre previews (localhost or the Vercel preview; from H2 on, installed on the iPad) and it merges on Andre's word. Tick the box below in the same PR.
 
-**Current status: H1 engine** (pure engine + tests in `src/engine/`; the app is still the H0b placeholder).
+**Current status: H2 plan view** (plan view, inputs, URL/draft state and the service worker; no editing gestures or 3D yet).
 
 - [x] H0 Docs hand-off (plan, spec, prototypes, evidence in `docs/`)
 - [x] H0b Scaffold (Vite, strict TS, oxlint guards, vitest, bundle budget, manifest, Vercel)
 - [x] H1 Engine + tests (nine §12 tests first, then G1–G11, E-tests, property test)
-- [ ] H2 Plan view + inputs, URL/draft state, service worker
+- [x] H2 Plan view + inputs, URL/draft state, service worker
 - [ ] H3 Read-only orthographic 3D viewer (Q1 = camera with spring-back orbit, plan §7.1; Q9, Q10, Q12–Q14 defaults accepted)
 - [ ] H4 Editing (seams, tables, tray, tap menu, loose pieces)
 - [ ] H5 Look (pillows, textures, Sketch; needs Q16 assets)

@@ -2,11 +2,13 @@
 // "Entry JS" = every JS file dist/index.html loads eagerly (entry script +
 // modulepreloads). Fails if that exceeds the budget, or if three.js or jsPDF
 // leaked into it (both must stay behind lazy()/import()).
-// At the end of H2 tighten the budget to the measured entry + 15 %, rounded up.
+// Tightened at the end of H2 (plan §3): measured entry 272.2 kB raw / 88.3 kB
+// gzip (engine + plan view + store + UI + react-dom; the dialogs load lazily)
+// + 15 %, rounded up. Raise it only on purpose, and say why in the PR.
 import { readFileSync } from 'node:fs'
 import { gzipSync } from 'node:zlib'
 
-const BUDGET = { rawKb: 350, gzipKb: 110 }
+const BUDGET = { rawKb: 314, gzipKb: 102 }
 const MARKERS = [
   { name: 'three.js', text: 'THREE.WebGLRenderer' },
   { name: 'jsPDF', text: 'jsPDF' },
