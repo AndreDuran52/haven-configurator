@@ -630,6 +630,8 @@ These are deduplicated from the spec audit (ENG-, 3D-, EXP-, PLAT-, ORTHO- ids) 
 
 **Auto-fit.** Presets, rotation and resize re-fit until the user touches the camera (`controlstart`). After that, a resize keeps the user's zoom. *Measured* both ways: rotation refit 4.764 → 3.155 px/in; a user zoom of 4.58 was kept across rotation.
 
+**Spring-back orbit (Q1, Andre 2026-09-25).** "You can move around, but when you let go of the left mouse button it snaps back to the normal spot / angle (like looking at it from a top right view)." On release (`controlend`: mouse up, last finger lifted), the camera tweens back to the active preset (angle, target and fit zoom) with the same `rotateTo` / `moveTo` / `zoomTo` sequence as applying a preset; the default preset is the 3/4 (top-right). Orbiting is a way to look around, not a way to leave the camera somewhere. **To confirm on the iPad in H3:** whether a pinch-zoom also springs back (default: yes, everything returns to the preset), and whether the spring-back applies in every preset or only in 3/4 (default: every preset). With spring-back on, the auto-fit rule above always applies, because the camera always comes back to a preset.
+
 ### 7.2 Presets
 
 **World mapping.** Plan (x, y, height) maps to three (X, Y, Z) = (x − cx, height, y − cy), where (cx, cy) is the centre of the plan's bounding box. The world must be centred because ContactShadows renders its blur pass at the world origin. `camera.up` is always (0, 1, 0).
@@ -1223,11 +1225,11 @@ No cross-repo code coupling in any option: no shared packages, no shared databas
 
 ## 13. Open questions for Andre
 
-Answer in a word. **Q1 has no default and must be answered before H3.** Every other default applies if there is no answer, except that Q9, Q10, Q12–Q14 must be answered or explicitly accepted before H3 (they show at true scale in the elevations). Numbering is stable: questions that no longer apply are kept and marked.
+Answer in a word. **Q1 is answered (camera, spring-back orbit), and Q9, Q10, Q12–Q14 defaults are accepted (2026-09-25), so H3 is unblocked.** Every other default applies if there is no answer, except that Q9, Q10, Q12–Q14 must be answered or explicitly accepted before H3 (they show at true scale in the elevations). Numbering is stable: questions that no longer apply are kept and marked.
 
 | # | Question | Default |
 |---|---|---|
-| **Q1** | "Orthographic" means the 3D camera (flat, to-scale views you can still orbit), or a drafting sheet (plan + front + side laid out together)? *camera / drafting / both* | **must answer before H3** (plan assumes camera; drafting or both → H3-alt) |
+| **Q1** | "Orthographic" means the 3D camera (flat, to-scale views you can still orbit), or a drafting sheet (plan + front + side laid out together)? *camera / drafting / both* | **Answered 2026-09-25: camera**, with a **spring-back orbit**: you can orbit and move around, and on release the view springs back to its preset (the default is the top-right 3/4 view). See §7.1. H3 (not H3-alt) |
 | Q2 | Where does it live? | **Answered 2026-09-25:** standalone app, own GitHub repo, own Vercel project, own Claude Code environment (§3) |
 | Q3 | Haven before or after the other app's order-intake work? | **Not applicable** (separate repo; no shared milestone sequence) |
 | Q4 | Keep a perspective "photo" toggle in 3D as well? *yes / no* | no |
@@ -1235,12 +1237,12 @@ Answer in a word. **Q1 has no default and must be answered before H3.** Every ot
 | Q6 | When a long run splits, equal frames or equal seat cushions? *frames / cushions* | frames (§7 literal) |
 | Q7 | Arm side named as you face the piece (LAF/RAF)? *yes / no* | yes |
 | Q8 | "Opening under 60″" warns if either width or depth is under 60? *yes / no* | yes |
-| Q9 | Table top flush with the arm at 23″ (§14)? *yes / or give height* | yes (confirm before H3) |
-| Q10 | Back = 4″ frame + 6″ cushion (§14)? *yes / or give split* | yes (confirm before H3) |
+| Q9 | Table top flush with the arm at 23″ (§14)? *yes / or give height* | **Default accepted 2026-09-25:** yes |
+| Q10 | Back = 4″ frame + 6″ cushion (§14)? *yes / or give split* | **Default accepted 2026-09-25:** yes |
 | Q11 | Ottoman: free size (starts 36 × 36) and listed on the shop sheet? *yes / no* | yes |
-| Q12 | Back and back cushion stop at each table and at the arm? *yes / no* | yes (confirm before H3) |
-| Q13 | One seat cushion and one back cushion per piece? *yes / or give max cushion width* | yes (confirm before H3) |
-| Q14 | Legs 1.5″ round, 3″ in from each corner? *yes / or give spec* | yes (confirm before H3) |
+| Q12 | Back and back cushion stop at each table and at the arm? *yes / no* | **Default accepted 2026-09-25:** yes |
+| Q13 | One seat cushion and one back cushion per piece? *yes / or give max cushion width* | **Default accepted 2026-09-25:** yes |
+| Q14 | Legs 1.5″ round, 3″ in from each corner? *yes / or give spec* | **Default accepted 2026-09-25:** yes |
 | Q15 | Pillows: 2 square + 1 ball per wedge, 1 square per arm? *yes / or give counts* | yes |
 | Q16 | Before H5: the pillow `.glb`s, fabric/wood textures, the sketch reference image, and which fabrics besides white bouclé (names + texture maps)? *yes / date* | needed before H5; H5 waits |
 | Q17 | Share links go to clients (no names, no prices)? *yes / no* | yes |
