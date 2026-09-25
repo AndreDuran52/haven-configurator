@@ -1,0 +1,49 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["react", "typescript", "oxc"],
+  "ignorePatterns": ["docs/**", "dist/**"],
+  "rules": {
+    "react/rules-of-hooks": "error",
+    "react/only-export-components": ["warn", { "allowConstantExport": true }],
+    "no-restricted-imports": [
+      "error",
+      {
+        "patterns": [
+          {
+            "group": ["three", "three/**", "@react-three/**"],
+            "message": "three.js and @react-three/* may only be imported inside src/three/** (plan §3)."
+          }
+        ]
+      }
+    ]
+  },
+  "overrides": [
+    {
+      "files": ["src/three/**"],
+      "rules": {
+        "no-restricted-imports": "off"
+      }
+    },
+    {
+      "files": ["src/engine/**"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              { "name": "react", "message": "src/engine/** is pure TypeScript (plan §3)." },
+              { "name": "react-dom", "message": "src/engine/** is pure TypeScript (plan §3)." },
+              { "name": "zustand", "message": "src/engine/** is pure TypeScript (plan §3)." }
+            ],
+            "patterns": [
+              {
+                "group": ["react/**", "zustand/**", "three", "three/**", "@react-three/**", "@/**", "../**"],
+                "message": "src/engine/** only imports ./ siblings (plan §3)."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

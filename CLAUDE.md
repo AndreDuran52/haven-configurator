@@ -37,10 +37,10 @@ Layout: `src/{engine, ortho, state, plan, three, ui, export}` (plan §4). The sh
 
 Each milestone: `git fetch`, branch from `origin/main` (`h0b-scaffold`, `h1-engine`, `h2-plan-view`, `h3-ortho`, `h4-editing`, `h5-look`, `h6-exports`), build only that §10 block, meet its done-when list, open a PR, **stop**. Andre previews (localhost or the Vercel preview; from H2 on, installed on the iPad) and it merges on Andre's word. Tick the box below in the same PR.
 
-**Current status: planned, nothing built** (docs only, H0).
+**Current status: H0b scaffold** (placeholder page, gate in place; no engine yet).
 
 - [x] H0 Docs hand-off (plan, spec, prototypes, evidence in `docs/`)
-- [ ] H0b Scaffold (Vite, strict TS, oxlint guards, vitest, bundle budget, manifest, Vercel)
+- [x] H0b Scaffold (Vite, strict TS, oxlint guards, vitest, bundle budget, manifest, Vercel)
 - [ ] H1 Engine + tests (nine §12 tests first, then G1–G11, E-tests, property test)
 - [ ] H2 Plan view + inputs, URL/draft state, service worker
 - [ ] H3 Read-only orthographic 3D viewer (**needs Q1 answered**; Q9, Q10, Q12–Q14 answered or accepted)
@@ -58,7 +58,7 @@ Open questions: plan §13. Only Q1 has no default.
 npm test && npm run lint && npm run build && npm run check:bundle
 ```
 
-From H2 also `npm run e2e`, and screenshots at 1180×820, 820×1180 and 390×844.
+`npm run e2e` (needs a build; in cloud sandboxes `HAVEN_CHROMIUM=/opt/pw-browsers/chromium`) runs from H0b too. From H2 on it is part of the gate, and screenshots at 1180×820, 820×1180 and 390×844.
 
 ## Verification practices
 
