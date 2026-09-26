@@ -1,13 +1,11 @@
 // The on-screen plan: fits PlanDrawing to its container (plan §8 "Screen fit").
 // H2 has no plan gestures, so the fit follows the live config (a measurement
 // draft rescales as you type); H4 freezes k / viewBox during a gesture.
-import { useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { builtOf, useHaven, useLive } from '@/state/store';
-import { fitScreen } from './dimLayout';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { builtOf, useHaven, useHavenStore, useLive } from '@/state/store';
+import { planFit } from './planFit';
 import { PlanDrawing } from './PlanDrawing';
 import { LIGHT } from './theme';
-
-const PAD_PX = 12;
 
 export function PlanView() {
   const live = useLive();
@@ -18,14 +16,24 @@ export function PlanView() {
 
   useLayoutEffect(() => {
     const el = wrap.current!;
-    const measure = () => setSize({ w: el.clientWidth, h: el.clientHeight });
+    // Whole pixels, floored: the 3D view uses the same box (parity hand-off).
+    const measure = () => {
+      const r = el.getBoundingClientRect();
+      setSize({ w: Math.floor(r.width), h: Math.floor(r.height) });
+    };
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
 
-  const fit = useMemo(() => (size.w > 40 && size.h > 40 ? fitScreen(built, size.w, size.h, PAD_PX) : null), [built, size]);
+  const fit = useMemo(() => (size.w > 40 && size.h > 40 ? planFit(built, size.w, size.h) : null), [built, size]);
+  const store = useHavenStore();
+
+  // Publish the drawn scale and centre for the Plan -> 3D hand-off (parity, plan §7.2).
+  useEffect(() => {
+    if (fit) store.getState().setUi({ planFit: { S: fit.S, cx: fit.cx, cy: fit.cy } });
+  }, [fit, store]);
 
   return (
     <div ref={wrap} className="relative h-full w-full overflow-hidden" data-testid="plan-view">
@@ -35,7 +43,7 @@ export function PlanView() {
           data-k={fit.k}
           width={size.w}
           height={size.h}
-          viewBox={viewBox(fit.layout.bounds, PAD_PX * fit.k)}
+          viewBox={`${fit.viewBox.x} ${fit.viewBox.y} ${fit.viewBox.w} ${fit.viewBox.h}`}
           className="plan-svg block"
           role="img"
           aria-label={`Plan: ${built.shape}, ${built.W} by ${Math.max(built.L, built.R)} inches, ${built.seats.label}`}
@@ -47,6 +55,3 @@ export function PlanView() {
     </div>
   );
 }
-
-const viewBox = (b: { x: number; y: number; w: number; h: number }, pad: number) =>
-  `${b.x - pad} ${b.y - pad} ${b.w + 2 * pad} ${b.h + 2 * pad}`;

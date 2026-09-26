@@ -13,7 +13,8 @@ export function launchBrowser() {
   return chromium.launch({
     executablePath: process.env.HAVEN_CHROMIUM || undefined,
     headless: true,
-    args: ['--disable-background-networking', '--disable-component-update', '--no-first-run'],
+    // software WebGL (SwiftShader) so the 3D view renders headless
+    args: ['--disable-background-networking', '--disable-component-update', '--no-first-run', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist', '--enable-webgl'],
   })
 }
 

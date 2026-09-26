@@ -5,11 +5,27 @@ import { createContext, createElement, useContext, useState, type ReactNode } fr
 import { useStore } from 'zustand';
 import { createStore, type StoreApi } from 'zustand/vanilla';
 import { buildHaven, type BuildResult, type Config } from '@/engine';
+import { DEFAULT_PRESET, type PresetName } from '@/ortho/presets';
 import * as H from './history';
 import { DEFAULT_START, type StartChoice } from './start';
 
+/** The plan view's exact scale (CSS px per inch) and the plan point at its centre. */
+export interface PlanFit {
+  S: number;
+  cx: number;
+  cy: number;
+}
+
 export interface UiState {
   view: 'plan' | '3d';
+  /** The active 3D preset (plan §7.2); the default is the 3/4 (top right). */
+  preset: PresetName;
+  /** Set once by the first Plan -> 3D switch: 3D opens at the plan's scale and centre (plan §7.2). */
+  handoff: PlanFit | null;
+  seen3d: boolean;
+  planFit: PlanFit | null;
+  /** Show loose pieces in Front / Side (hidden there by default, plan §7.4). */
+  showLoose: boolean;
   look: 'cad' | 'sketch';
   selectedId: string | null;
   /** The last Start-menu choice; Reset returns to its preset. */
@@ -28,6 +44,7 @@ export interface HavenState extends H.History {
   undo: () => void;
   redo: () => void;
   setUi: (patch: Partial<UiState>) => void;
+  setView: (view: UiState['view']) => void;
   toast: (text: string) => void;
 }
 
@@ -42,13 +59,32 @@ export function createHavenStore(initial: Config, ui: Partial<UiState> = {}): Ha
     };
     return {
       ...H.initHistory(initial),
-      ui: { view: 'plan', look: 'cad', selectedId: null, lastStart: DEFAULT_START, readOnly: false, toast: null, ...ui },
+      ui: {
+        view: 'plan',
+        preset: DEFAULT_PRESET,
+        handoff: null,
+        seen3d: false,
+        planFit: null,
+        showLoose: false,
+        look: 'cad',
+        selectedId: null,
+        lastStart: DEFAULT_START,
+        readOnly: false,
+        toast: null,
+        ...ui,
+      },
       setDraft: (next) => apply((h) => H.setDraft(h, next)),
       cancelDraft: () => apply(H.cancelDraft),
       commit: (next, opts) => apply((h) => H.commit(h, next, opts)),
       undo: () => apply(H.undo),
       redo: () => apply(H.redo),
       setUi: (patch) => set({ ui: { ...get().ui, ...patch } }),
+      setView: (view) => {
+        const u = get().ui;
+        if (view === u.view) return;
+        const first = view === '3d' && !u.seen3d;
+        set({ ui: { ...u, view, ...(first ? { seen3d: true, handoff: u.planFit } : {}) } });
+      },
       toast: (text) => set({ ui: { ...get().ui, toast: { text, at: Date.now() } } }),
     };
   });
