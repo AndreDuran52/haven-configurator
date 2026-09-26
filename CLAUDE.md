@@ -48,6 +48,7 @@ Each milestone: `git fetch`, branch from `origin/main` (`h0b-scaffold`, `h1-engi
 - [x] H5 Look (procedural pillows per Andre's photo, swatches, Sketch; Q16 fabric list still to come)
 - [x] H6 Sheets (PDF/PNG), share links + `?view`, local Saved layouts (one simple sheet per Andre, 2026-09-26)
 - [x] H5b Look pass: the real Haven (tight seat, 10″ frame, loose back cushions, table at 18″, inset legs, karate-chop pillows; Andre, 2026-09-27)
+- [ ] H5c Andre's Blender pillow (`src/three/models/pillow-square.glb`, loader done) + puffier back cushions (done)
 - [ ] H7 Cloud saves + tracker hand-off (optional; do not start unless Andre asks)
 - [ ] H8 Blender round-trip (later; do not start unless Andre asks)
 

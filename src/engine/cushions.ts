@@ -19,11 +19,15 @@ export const BACK_CUSHION_LEAN = 4;
 const GAP = 0.5;
 /**
  * The soft shape three/softGeometry builds inside each box (inches): the front
- * and back panels bulge `bulge` at the middle; round the edges the boxing is a
- * half-round of `radius` (t/2 − bulge, so it stays in the box); the depth
- * tapers to `taper` at the top, and the top sags `slump` at the middle.
+ * and back panels dome out `bulge` at the middle; round the edges the boxing
+ * is a half-round of `radius` (t/2 − bulge, so it stays in the box); the depth
+ * tapers to `taper` at the top; the top is crowned `crown` higher in the middle
+ * than at its rolled ends; the corners pull in by `pinch` of their depth (down
+ * fill). The crown and the bulge only reach the box's faces, never past them,
+ * so the peak below depends on the radius and taper alone. Andre (2026-09-27):
+ * "a little bit more puffy".
  */
-export const BACK_CUSHION_SHAPE = { bulge: 1, radius: 3, taper: 0.875, slump: 0.6 } as const;
+export const BACK_CUSHION_SHAPE = { bulge: 1.5, radius: 2.5, taper: 0.875, crown: 1.2, pinch: 0.4 } as const;
 
 /**
  * The box height whose soft top, leaning back, peaks at `top` from `bottom`.

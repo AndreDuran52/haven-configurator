@@ -4,6 +4,7 @@ import { Color, MeshBasicMaterial, Vector3, type Mesh, type Object3D, type Ortho
 import type { CameraControlsImpl } from '@react-three/drei';
 import type { OrthoFit } from '@/ortho/orthoFit';
 import type { PresetName } from '@/ortho/presets';
+import { softModelsInUse } from './models';
 
 const D2R = Math.PI / 180;
 const BLACK = new MeshBasicMaterial({ color: 0x000000 });
@@ -39,6 +40,8 @@ export interface Haven3dApi {
   capture: (opts?: { silhouette?: boolean; only?: string }) => string;
   /** names of the visible meshes that start with `prefix` */
   meshNames: (prefix: string) => string[];
+  /** which of Andre's Blender models are loaded and in use */
+  models: () => { square: boolean; ball: boolean };
 }
 
 declare global {
@@ -67,6 +70,7 @@ export function installTestApi(ctx: TestApiContext): () => void {
     },
     apply: ctx.apply,
     setTopAt: ctx.setTopAt,
+    models: softModelsInUse,
     fit: (name) => {
       const f = ctx.fit(name);
       return { zoom: f.zoom, target: [...f.target], spanU: f.spanU, spanV: f.spanV };

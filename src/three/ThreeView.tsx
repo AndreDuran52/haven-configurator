@@ -13,6 +13,7 @@ import { aimKeyLight } from './keyLight';
 import { FLOOR_MARGIN, makeMaterials } from './materials';
 import { Overlay } from './Overlay';
 import { Pillows } from './Pillows';
+import { loadSoftModels, type SoftModels } from './models';
 import { buildParts } from './parts';
 import { CAMERA_DISTANCE, Rig } from './Rig';
 import { SofaModel } from './SofaModel';
@@ -46,6 +47,15 @@ export default function ThreeView() {
   const parts = useMemo(() => buildParts(built, live.tableStyle), [built, live.tableStyle]);
   const showPillows = useHaven((s) => s.ui.pillows);
   const pillows = useMemo(() => (showPillows ? pillowAnchors(built) : []), [built, showPillows]);
+  // Andre's Blender pillows: the procedural ones show until they load.
+  const [models, setModels] = useState<SoftModels | null>(null);
+  useEffect(() => {
+    let on = true;
+    void loadSoftModels().then((m) => on && setModels(m));
+    return () => {
+      on = false;
+    };
+  }, []);
   const points = useMemo(() => fitPoints(built, { loose: showLoose, pillows: showPillows }), [built, showLoose, showPillows]);
   const world = useMemo(() => worldBounds(built), [built]);
   const mats = useMemo(() => makeMaterials(live.fabric, live.tableFinish), [live.fabric, live.tableFinish]);
@@ -103,7 +113,7 @@ export default function ThreeView() {
         <directionalLight position={[1200, 500, 300]} intensity={0.3} />
         <group position={[world.offset[0], 0, world.offset[1]]}>
           <SofaModel parts={parts} mats={mats} showLoose={showLoose} />
-          <Pillows anchors={pillows} mats={mats.pillow} />
+          <Pillows anchors={pillows} mats={mats.pillow} models={models} />
         </group>
         <mesh name="floor" position={[0, FLOOR_TOP - FLOOR_THICKNESS / 2, 0]} material={mats.floor}>
           <boxGeometry args={[floorW, FLOOR_THICKNESS, floorD]} />

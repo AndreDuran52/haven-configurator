@@ -689,7 +689,7 @@ Dimetric 45/30 was evaluated and **not shipped**: it looks almost identical to I
 | Ottoman | rounded prism w × d on 1″ legs, top at `ottomanHeight` 18, fabric |
 | Coffee table | slab w × d, top at `coffeeTableHeight` 16, `tableFinish` |
 | Gap (Blank) | flat hatched floor decal, 0.1″ thick, same hatch as the plan, with its "unfilled 68″" label drawn into the decal texture (H3; an HTML label was the alternative); included in bounds and fit |
-| Pillows (H5, H5b) | procedural down-feather "karate chop" squares and ball pillows at the wedge and arm-end anchors (engine `pillowAnchors`) |
+| Pillows (H5, H5b, H5c) | down-feather "karate chop" squares and ball pillows at the wedge and arm-end anchors (engine `pillowAnchors`): Andre's Blender `.glb` when it is in `src/three/models/` (`three/models.ts` refits it into the anchor's box), else procedural |
 
 Loose pieces are hidden in the Front/Side presets and in the vector elevation by default (a centred coffee table would hide the back run), with a "show loose pieces" toggle.
 
@@ -1149,6 +1149,15 @@ Two profiles:
 - **Measured (Playwright, iPad landscape Front, ±1 px):** frame 27.08″, arm 23.06″, seat 17.97″ at its end and mid-span, back cushion top 30.83″; ticks within 0.7 px of the edges; Top parity IoU unchanged.
 - **Noticed, not built:** the U photo's back-right corner is square while the back-left is a wedge (the engine has one wedge size for both corners); the L photo's chaise end pad. Ask Andre.
 
+### H5c: Blender pillow + puffier back cushions (Andre, 2026-09-27)
+- **Asked:** the pillow shape and the back cushions "could be a little bit more puffy". Andre chose to supply the square pillow from Blender.
+- **As built:**
+  - `three/models.ts`: `.glb` files in `src/three/models/` (listed by `import.meta.glob`, so nothing is fetched when absent; hashed and precached) load with `GLTFLoader`, no Draco. Meshes are merged, fitted exactly into the engine's box (20 × 20 × 7″ square, 11″ ball) with UVs in inches, and painted in the app's pillow tones. Missing or broken files fall back to the procedural shapes. The live view swaps them in when loaded; the sheet render awaits them.
+  - Back cushions: a broader, deeper dome on the panels (bulge 1.5″), a crowned top with rolled ends, bowed end walls, pinched corners; still inside the 8″ box, peak 31″.
+  - `src/three/models/README.md` holds Andre's export checklist.
+- **Measured:** with a test model the h5 e2e sees it in use, online and offline, and the sheet exports; 3D chunks 275 kB gzip (GLTFLoader ~14 kB).
+- **Waiting on:** `pillow-square.glb` from Andre. A Blender back cushion would need width stretching (a 3D 9-slice), later if wanted.
+
 ### H7: Cloud saves + tracker hand-off (optional, later; Andre decides, do not start until told)
 The configurator is complete without H7. Options, in order of cost:
 - **(a) Stay local (default).** Layouts live on each device; share links and PDFs move them between devices and people. Nothing to build.
@@ -1288,7 +1297,7 @@ Answer in a word. **Q1 is answered (camera, spring-back orbit), and Q9, Q10, Q12
 | Q13 | One seat cushion and one back cushion per piece? *yes / or give max cushion width* | **Default accepted 2026-09-25:** yes. **Changed 2026-09-27 (Andre, H5b):** the seat is **tight** (one upholstered block per piece, a seam in the middle, no separate cushion); loose back cushions one per ~36″ of seat, split evenly, two per wedge |
 | Q14 | Legs 1.5″ round, 3″ in from each corner? *yes / or give spec* | **Default accepted 2026-09-25:** yes. **Changed 2026-09-27 (Andre, H5b):** inset more, barely visible: 5″ in from every outside edge |
 | Q15 | Pillows: 2 square + 1 ball per wedge, 1 square per arm? *yes / or give counts* | yes. **2026-09-26:** Andre wants pillows like the showroom photo, which shows 2 square (one taupe, one light) + 1 ball at each corner **and** each arm end (built that way in H5). **2026-09-27 (H5b):** down-feather "karate chop" squares (taupe + oatmeal linen), balls cream at the arms and mocha at the corners |
-| Q16 | Before H5: the pillow `.glb`s, fabric/wood textures, the sketch reference image, and which fabrics besides white bouclé (names + texture maps)? *yes / date* | **2026-09-26:** Andre said start H5 without them. Built with defaults: procedural pillows from the showroom photo, procedural bouclé/wood at true scale, Sketch per the §10 description. Still wanted: the fabric list (names + colours), and the sketch reference if the style should change |
+| Q16 | Before H5: the pillow `.glb`s, fabric/wood textures, the sketch reference image, and which fabrics besides white bouclé (names + texture maps)? *yes / date* | **2026-09-26:** Andre said start H5 without them. Built with defaults: procedural pillows from the showroom photo, procedural bouclé/wood at true scale, Sketch per the §10 description. Still wanted: the fabric list (names + colours), and the sketch reference if the style should change. **2026-09-27 (H5c):** the square pillow comes from Andre's Blender model (`src/three/models/pillow-square.glb`) |
 | Q17 | Share links go to clients (no names, no prices)? *yes / no* | yes |
 | Q18 | *(Rewritten.)* Before H7: which option for saves across devices and hand-off to the production tracker? *(a) stay local + share links/PDFs / (b) own small backend / (c) PDF uploaded by hand* | (a), with (c) whenever a sheet should live on a tracker item; H7 not started unless Andre asks |
 | Q19 | Attach the shop sheet to a tracker item automatically? | **Not applicable** (folded into Q18 option c: by hand) |
