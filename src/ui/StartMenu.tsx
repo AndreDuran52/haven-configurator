@@ -9,6 +9,7 @@ import { presetFor, startLabel, type StartChoice } from '@/state/start';
 import { useHavenStore } from '@/state/store';
 import { Button, Segmented } from './controls';
 import { Dialog } from './Dialog';
+import { SavedList } from './SavedList';
 
 export default function StartMenu({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const store = useHavenStore();
@@ -78,6 +79,10 @@ export default function StartMenu({ open, onOpenChange }: { open: boolean; onOpe
         <Button onClick={startBlank}>Start blank</Button>
       </div>
       {error && <p className="text-sm text-danger">{error}</p>}
+      <div className="flex flex-col gap-2">
+        <h3 className="text-sm font-semibold">Saved on this device</h3>
+        {open && <SavedList onOpen={(c, name) => load(c, `Opened "${name}"`)} onToast={(t) => store.getState().toast(t)} />}
+      </div>
     </Dialog>
   );
 }

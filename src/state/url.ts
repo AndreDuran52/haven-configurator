@@ -37,3 +37,12 @@ export function initialConfig(hash: string): { config: Config; message: string |
   const message = d ? (d.error === 'newer' ? NEWER_MESSAGE : DAMAGED_MESSAGE) : null;
   return { config: standardU(), message };
 }
+
+/** The two links the Share dialog offers (plan §9): the working link, and the read-only client link. */
+export function shareLinks(c: Config, loc: Pick<Location, 'origin' | 'pathname'> = window.location): { edit: string; view: string } {
+  const code = encode(c);
+  return { edit: `${loc.origin}${loc.pathname}#${HASH_KEY}=${code}`, view: `${loc.origin}${loc.pathname}?view#${HASH_KEY}=${code}` };
+}
+
+/** "Edit a copy": the same URL without ?view. */
+export const editUrl = (loc: Pick<Location, 'pathname' | 'hash'>): string => `${loc.pathname}${loc.hash}`;

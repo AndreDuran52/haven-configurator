@@ -6,6 +6,7 @@ import { fixes } from './fixes.mjs'
 import { h2 } from './h2.mjs'
 import { h4 } from './h4.mjs'
 import { h5 } from './h5.mjs'
+import { h6 } from './h6.mjs'
 import { reporter } from './lib.mjs'
 import { ortho } from './ortho.mjs'
 import { smoke } from './smoke.mjs'
@@ -23,6 +24,7 @@ try {
   await fixes(browser, BASE, check)
   await h4(browser, BASE, check)
   await h5(browser, BASE, check)
+  await h6(browser, BASE, check)
 } finally {
   await browser.close()
   await server.close()

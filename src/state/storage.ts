@@ -3,6 +3,8 @@
 // without it, so every call is wrapped and failures read as "nothing stored".
 export const KEYS = {
   draft: 'haven:draft',
+  saved: 'haven:saved',
+  sheetViews: 'haven:sheetViews',
 } as const;
 
 function store(): Storage | null {
