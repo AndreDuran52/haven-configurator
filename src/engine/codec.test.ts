@@ -35,7 +35,7 @@ function randomConfig(seed: number): Config {
     else if (k === 7 && pick && pick.p.kind !== 'gap' && pick.p.kind !== 'table') {
       const t = c.runs.back!.find((p) => p.kind === 'table') ?? c.runs[pick.run]!.find((p) => p.kind === 'table');
       if (t) next = raw.moveTable(c, t.id, { run: pick.run, at: 'split', pieceId: pick.p.id }).config;
-    } else if (k === 8) next = { ...c, snugWidth: 22 + Math.floor(r() * 4), tableFinish: r() > 0.5 ? 'darkWood' : 'walnut' };
+    } else if (k === 8) next = { ...c, snugWidth: 22 + Math.floor(r() * 4), tableFinish: r() > 0.5 ? 'darkWood' : 'walnut', tableStyle: r() > 0.5 ? 'allWood' : 'standard' };
     else if (k === 9) next = { ...c, dims: { ...c.dims, cushionCrown: 7 + Math.floor(r() * 3), ottomanHeight: 17 } };
     c = next;
   }

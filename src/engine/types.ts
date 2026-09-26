@@ -72,6 +72,8 @@ export interface HavenDims {
 }
 
 export type TableFinish = 'walnut' | 'darkWood';
+/** 'standard': a 2″ wood top on a fabric base (the Haven table); 'allWood': solid wood. */
+export type TableStyle = 'standard' | 'allWood';
 
 export type Runs = Partial<Record<RunId, RunPiece[]>>;
 
@@ -96,6 +98,8 @@ export interface Config {
   /** Key into the FABRICS data table ('boucle-white' to start). */
   fabric: string;
   tableFinish: TableFinish;
+  /** Applies to every table insert (Andre, 2026-09-26). */
+  tableStyle: TableStyle;
   dims: HavenDims;
   /** Deterministic id counter so ops stay pure. */
   nextId: number;

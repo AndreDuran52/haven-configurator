@@ -2,7 +2,7 @@
 import { ABSORB_FLOOR, TABLE_DEFAULT, half } from './pieces';
 import { available, clampWedge, defaultFill, makeAlloc, openEnd, runIds, seat } from './layout';
 import { finalize } from './normalize';
-import type { Config, HavenDims, Shape, TableFinish } from './types';
+import type { Config, HavenDims, Shape, TableFinish, TableStyle } from './types';
 
 /** §3 heights and depths. Q9, Q10, Q12–Q14, Q29 defaults accepted by Andre (2026-09-25). */
 export const DEFAULT_DIMS: HavenDims = {
@@ -25,6 +25,7 @@ export const DEFAULT_MEASURES = { W: 188, L: 132, R: 132, D: 44 } as const;
 export const DEPTH_PRESETS = [44, 40, 36] as const;
 export const DEFAULT_FABRIC = 'boucle-white';
 export const DEFAULT_FINISH: TableFinish = 'walnut';
+export const DEFAULT_TABLE_STYLE: TableStyle = 'standard';
 
 // §8 seating / warning thresholds
 export const SEAT_WIDTH_DEFAULT = 28;
@@ -46,6 +47,7 @@ export interface PresetOptions {
   lockOutside?: boolean;
   fabric?: string;
   tableFinish?: TableFinish;
+  tableStyle?: TableStyle;
   dims?: Partial<HavenDims>;
 }
 
@@ -66,6 +68,7 @@ function base(shape: Shape, o: PresetOptions, W: number): Config {
     snugWidth: o.snugWidth ?? SNUG_SEAT_WIDTH,
     fabric: o.fabric ?? DEFAULT_FABRIC,
     tableFinish: o.tableFinish ?? DEFAULT_FINISH,
+    tableStyle: o.tableStyle ?? DEFAULT_TABLE_STYLE,
     dims: { ...DEFAULT_DIMS, ...o.dims },
     nextId: 1,
   };

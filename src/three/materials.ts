@@ -51,11 +51,11 @@ function walnutMap() {
     512,
     (g, s) => {
       const r = rng(11);
-      g.fillStyle = '#5a3a24';
+      g.fillStyle = '#7b5538';
       g.fillRect(0, 0, s, s);
       for (let i = 0; i < 140; i++) {
         const y = r() * s;
-        g.strokeStyle = r() < 0.5 ? 'rgba(40,24,14,0.35)' : 'rgba(120,80,50,0.25)';
+        g.strokeStyle = r() < 0.5 ? 'rgba(52,32,18,0.35)' : 'rgba(150,108,72,0.25)';
         g.lineWidth = 0.5 + r() * 2.5;
         g.beginPath();
         g.moveTo(0, y);

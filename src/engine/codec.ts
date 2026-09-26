@@ -1,4 +1,4 @@
-// Share-link codec, text format v1 (§9). Compact, versioned, URL-safe.
+// Share-link codec, text format v2 (§9). Compact, versioned, URL-safe.
 //
 //   1UW188L132R132D44_bt32s36_la72_ra72.k7
 //   │└─ header ──────┘ └ runs ─────────┘ └ checksum (2 base36)
@@ -10,6 +10,7 @@
 // Header: shape (U | l = L-left | r = L-right), then letter+number fields:
 //   W L R D (always) · C manual wedge · K lock off · S seat width (≠ 28)
 //   N snug width (≠ 24) · X<key><n> dims overrides · F fabric · T table finish
+//   Y table style (v2; ≠ standard)
 // Runs:  _b _l _r, then pieces: s armless · a one-arm (+ S|E when the arm is not
 //   at the run's open end) · t table · g gap; "~" joins auto-split siblings;
 //   "j" marks a seat half split around the adjacent table (G1).
@@ -18,17 +19,24 @@
 // finish only: never names, project numbers or prices. Golden links per version
 // are kept forever (codec.golden.test.ts); a format change bumps LINK_VERSION
 // and adds a decoder/migration.
+//
+// Versions: v1 (H1) · v2 adds Y (table style, 2026-09-26). A link is written at
+// the LOWEST version that can express the config, so every layout that v1 could
+// already share keeps its exact v1 link; an older app shown a v2 link says
+// "newer" instead of "damaged".
 import { buildHaven } from './buildHaven';
-import { DEFAULT_DIMS, DEFAULT_FABRIC, DEFAULT_FINISH, SEAT_WIDTH_DEFAULT, SNUG_SEAT_WIDTH } from './defaults';
+import { DEFAULT_DIMS, DEFAULT_FABRIC, DEFAULT_FINISH, DEFAULT_TABLE_STYLE, SEAT_WIDTH_DEFAULT, SNUG_SEAT_WIDTH } from './defaults';
 import { openEnd, runIds } from './layout';
-import type { Config, HavenDims, LoosePiece, RunId, RunPiece, Runs, Shape, TableFinish } from './types';
+import type { Config, HavenDims, LoosePiece, RunId, RunPiece, Runs, Shape, TableFinish, TableStyle } from './types';
 
-export const LINK_VERSION = 1;
+export const LINK_VERSION = 2;
 
 /** Append-only: a fabric's index is its link code. */
 export const FABRIC_CODES: readonly string[] = [DEFAULT_FABRIC];
 /** Append-only: a finish's index is its link code. */
 export const FINISH_CODES: readonly TableFinish[] = [DEFAULT_FINISH, 'darkWood'];
+/** Append-only (v2): a table style's index is its link code. */
+export const TABLE_STYLE_CODES: readonly TableStyle[] = [DEFAULT_TABLE_STYLE, 'allWood'];
 
 const SHAPE: Record<Shape, string> = { U: 'U', 'L-left': 'l', 'L-right': 'r' };
 const SHAPE_INV: Record<string, Shape> = { U: 'U', l: 'L-left', r: 'L-right' };
@@ -66,7 +74,9 @@ function code(list: readonly string[], value: string, what: string): number {
 }
 
 export function encode(c: Config): string {
-  let h = `${LINK_VERSION}${SHAPE[c.shape]}W${num(c.W)}L${num(c.L)}R${num(c.R)}D${num(c.D)}`;
+  const style = code(TABLE_STYLE_CODES, c.tableStyle, 'table style');
+  const version = style ? 2 : 1;
+  let h = `${version}${SHAPE[c.shape]}W${num(c.W)}L${num(c.L)}R${num(c.R)}D${num(c.D)}`;
   if (c.wedgeC !== null) h += `C${num(c.wedgeC)}`;
   if (!c.lockOutside) h += 'K';
   if (c.seatWidth !== SEAT_WIDTH_DEFAULT) h += `S${num(c.seatWidth)}`;
@@ -78,6 +88,7 @@ export function encode(c: Config): string {
   const finish = code(FINISH_CODES, c.tableFinish, 'table finish');
   if (fabric) h += `F${fabric}`;
   if (finish) h += `T${finish}`;
+  if (style) h += `Y${style}`;
   const parts = [h];
   for (const run of ['back', 'left', 'right'] as RunId[]) {
     const ps = c.runs[run];
@@ -106,7 +117,7 @@ export function decode(link: string): DecodeResult {
   const version = Number(m[1]);
   if (version > LINK_VERSION) return { error: 'newer' };
   if (checksum(`${m[1]}${m[2]}`) !== m[3]) return { error: 'damaged' };
-  const decoders: Record<number, (b: string) => Config | null> = { 1: decodeV1 };
+  const decoders: Record<number, (b: string) => Config | null> = { 1: (b) => decodeBody(b, 1), 2: (b) => decodeBody(b, 2) };
   const config = decoders[version]?.(m[2]!) ?? null;
   // Later versions: migrations[v](config), chained up to the current schema.
   if (!config || buildHaven(config).errors.length > 0) return { error: 'damaged' };
@@ -116,12 +127,13 @@ export function decode(link: string): DecodeResult {
 const NUM = '(\\d+(?:\\.5)?)';
 const SNUM = '(-?\\d+(?:\\.5)?)'; // loose pieces may sit at negative coordinates
 
-function decodeHeader(fields: string) {
+function decodeHeader(fields: string, version: number) {
   const vals: Record<string, number> = {};
   const dims: HavenDims = { ...DEFAULT_DIMS };
   let unlocked = false;
   let ok = true;
-  const left = fields.replace(/(X[A-Za-z]|[WLRDCSNFT])(\d+(?:\.5)?)|(K)/g, (_all, key?: string, n?: string, k?: string) => {
+  const keys = version >= 2 ? /(X[A-Za-z]|[WLRDCSNFTY])(\d+(?:\.5)?)|(K)/g : /(X[A-Za-z]|[WLRDCSNFT])(\d+(?:\.5)?)|(K)/g;
+  const left = fields.replace(keys, (_all, key?: string, n?: string, k?: string) => {
     if (k) {
       if (unlocked) ok = false;
       unlocked = true;
@@ -170,19 +182,20 @@ function decodeRun(body: string, oe: 'start' | 'end' | null, id: () => string): 
   return unpaired ? null : pieces;
 }
 
-function decodeV1(s: string): Config | null {
+function decodeBody(s: string, version: number): Config | null {
   const [head, ...rest] = s.split('_');
   const hm = /^([Ulr])(.*)$/.exec(head!);
   if (!hm) return null;
   const shape = SHAPE_INV[hm[1]!]!;
-  const h = decodeHeader(hm[2]!);
+  const h = decodeHeader(hm[2]!, version);
   if (!h) return null;
   const get = (k: string): number | null => (k in h.vals ? h.vals[k]! : null);
   const [W, L, R, D] = [get('W'), get('L'), get('R'), get('D')];
   if (W === null || L === null || R === null || D === null) return null;
   const fabric = FABRIC_CODES[get('F') ?? 0];
   const tableFinish = FINISH_CODES[get('T') ?? 0];
-  if (!fabric || !tableFinish) return null;
+  const tableStyle = TABLE_STYLE_CODES[get('Y') ?? 0];
+  if (!fabric || !tableFinish || !tableStyle) return null;
   let nextId = 1;
   const id = () => `p${nextId++}`;
   const runs: Runs = {};
@@ -217,6 +230,7 @@ function decodeV1(s: string): Config | null {
     snugWidth: get('N') ?? SNUG_SEAT_WIDTH,
     fabric,
     tableFinish,
+    tableStyle,
     dims: h.dims,
     nextId,
   };

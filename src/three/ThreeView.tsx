@@ -42,7 +42,7 @@ export default function ThreeView() {
   const built = builtOf(live);
   // Loose pieces are hidden in the elevations by default (a centred coffee table hides the back run).
   const showLoose = showLooseUi || !isElevation(preset);
-  const parts = useMemo(() => buildParts(built), [built]);
+  const parts = useMemo(() => buildParts(built, live.tableStyle), [built, live.tableStyle]);
   const points = useMemo(() => fitPoints(built, { loose: showLoose }), [built, showLoose]);
   const world = useMemo(() => worldBounds(built), [built]);
   const mats = useMemo(() => makeMaterials(live.fabric, live.tableFinish), [live.fabric, live.tableFinish]);

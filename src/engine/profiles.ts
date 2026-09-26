@@ -20,12 +20,18 @@ export interface Profiles {
   seatCushion: { t0: number; z0: number; edge: number; crown: number };
   arm: ZRange;
   table: ZRange;
+  /** Standard table: a 2″ wood top on a fabric base. */
+  tableTop: ZRange;
+  tableBase: ZRange;
   ottoman: ZRange;
   coffeeTable: ZRange;
 }
 
 /** The back cushion stops this far below the frame top (§7.4: 10–26 under a 27 back). */
 export const BACK_CUSHION_DROP = 1;
+
+/** The standard table's wood top thickness (Andre, 2026-09-26). */
+export const TABLE_TOP_THICKNESS = 2;
 
 export function profiles(d: HavenDims): Profiles {
   return {
@@ -36,6 +42,8 @@ export function profiles(d: HavenDims): Profiles {
     seatCushion: { t0: d.B, z0: d.deckHeight, edge: d.deckHeight + d.cushionEdge, crown: d.deckHeight + d.cushionCrown },
     arm: { z0: d.legHeight, z1: d.armHeight },
     table: { z0: d.legHeight, z1: d.tableHeight },
+    tableTop: { z0: d.tableHeight - TABLE_TOP_THICKNESS, z1: d.tableHeight },
+    tableBase: { z0: d.legHeight, z1: d.tableHeight - TABLE_TOP_THICKNESS },
     ottoman: { z0: 0, z1: d.ottomanHeight },
     coffeeTable: { z0: 0, z1: d.coffeeTableHeight },
   };
