@@ -3,7 +3,7 @@
 // undo step). The part the runs can't absorb is shaded; the engine clamps (G3).
 import * as Slider from '@radix-ui/react-slider';
 import { WEDGE_RANGE, resetWedge, setWedge, wedgeC, wedgeRange } from '@/engine';
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { builtOf, useHaven, useHavenStore, useLive } from '@/state/store';
 import { Button, WarnChip } from './controls';
 
@@ -19,9 +19,28 @@ export function WedgeSlider() {
   const face = built.warnings.find((w) => w.code === 'wedgeFaceUnder8');
   const pct = (v: number) => ((v - min) / (max - min)) * 100;
 
+  // Drafts only while a finger / the mouse drags the thumb. Radix fires
+  // onValueCommit BEFORE onValueChange for keys, so a key draft would outlive
+  // its commit; a drag that ends where it began commits nothing; a cancelled
+  // touch commits nothing. The pointer's end clears any draft left over.
+  const sliding = useRef(false);
   const draft = (v: number) => {
+    if (!sliding.current) return;
     const r = setWedge(store.getState().config, v);
     if (!r.rejected) store.getState().setDraft(r.config);
+    else store.getState().cancelDraft();
+  };
+  const startSlide = () => {
+    sliding.current = true;
+    const end = () => {
+      window.removeEventListener('pointerup', end);
+      window.removeEventListener('pointercancel', end);
+      sliding.current = false;
+      // After Radix's own pointerup (which commits a changed value): drop what's left.
+      window.setTimeout(() => store.getState().cancelDraft(), 0);
+    };
+    window.addEventListener('pointerup', end);
+    window.addEventListener('pointercancel', end);
   };
   const commitAt = (v: number) => {
     const s = store.getState();
@@ -59,7 +78,7 @@ export function WedgeSlider() {
           max={max}
           step={1}
           value={[C]}
-         
+          onPointerDown={startSlide}
           onValueChange={([v]) => v !== undefined && draft(v)}
           onValueCommit={([v]) => v !== undefined && commitAt(v)}
           aria-label="Wedge size C"

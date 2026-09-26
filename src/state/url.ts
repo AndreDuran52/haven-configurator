@@ -6,7 +6,12 @@ export const HASH_KEY = 'c';
 /** The code in a `#c=…` hash, or null. */
 export function codeFromHash(hash: string): string | null {
   const m = /^#?c=(.+)$/.exec(hash);
-  return m ? decodeURIComponent(m[1]!) : null;
+  if (!m) return null;
+  try {
+    return decodeURIComponent(m[1]!);
+  } catch {
+    return m[1]!; // a malformed %-escape: decode() then reports it as damaged
+  }
 }
 
 export const hashFor = (c: Config): string => `#${HASH_KEY}=${encode(c)}`;

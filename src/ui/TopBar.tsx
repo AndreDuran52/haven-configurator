@@ -49,7 +49,7 @@ export function TopBar() {
       <Button tone="quiet" aria-label="Redo" onClick={() => store.getState().redo()} disabled={!canRedo}>
         Redo
       </Button>
-      <span className="ml-auto rounded-full bg-accent px-3 py-1.5 text-sm font-semibold text-on-accent tabular-nums" data-testid="seats">
+      <span className="ml-auto rounded-full bg-accent px-3 py-1.5 text-sm font-semibold whitespace-nowrap text-on-accent tabular-nums" data-testid="seats">
         {seats}
       </span>
       <Suspense fallback={null}>

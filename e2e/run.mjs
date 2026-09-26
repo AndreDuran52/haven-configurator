@@ -2,8 +2,10 @@
 // (in-process) and runs the browser checks against it. Run `npm run build` first.
 import { preview } from 'vite'
 import { launchBrowser } from './browser.mjs'
+import { fixes } from './fixes.mjs'
 import { h2 } from './h2.mjs'
 import { reporter } from './lib.mjs'
+import { ortho } from './ortho.mjs'
 import { smoke } from './smoke.mjs'
 
 const PORT = 4179
@@ -15,6 +17,8 @@ const browser = await launchBrowser()
 try {
   await smoke(browser, BASE, check)
   await h2(browser, BASE, check)
+  await ortho(browser, BASE, check)
+  await fixes(browser, BASE, check)
 } finally {
   await browser.close()
   await server.close()

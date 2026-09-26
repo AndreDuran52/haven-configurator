@@ -31,7 +31,12 @@ export function MeasureField({
   const store = useHavenStore();
   const [text, setText] = useState(show(value));
   const [editing, setEditing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  // Synchronous twin of `editing`: Escape finishes, then blurs; the blur must not commit.
+  const active = useRef(false);
+  // An error belongs to the value it was shown for: any other change to the field clears it.
+  const [errorState, setErrorState] = useState<{ text: string | null; at: number } | null>(null);
+  const setError = (text: string | null) => setErrorState(text ? { text, at: store.getState().config[name] } : null);
+  const error = errorState && errorState.at === value ? errorState.text : null;
   const timer = useRef(0);
 
   useEffect(() => () => window.clearTimeout(timer.current), []);
@@ -42,10 +47,14 @@ export function MeasureField({
     return apply(store.getState().config, v);
   };
 
+  // The minimum may belong to another measurement (D 44 needs W 158): name it then.
   const message = (r: EditResult) => {
     const min = r.rejected?.min;
-    const m = min && Object.values(min)[0];
-    return m !== undefined ? `min ${show(m)}″` : (r.rejected?.message ?? null);
+    if (!min) return r.rejected?.message ?? null;
+    const own = min[name as keyof typeof min];
+    if (own !== undefined) return `min ${show(own)}″`;
+    const [k, v] = Object.entries(min)[0] ?? [];
+    return k !== undefined && v !== undefined ? `Needs ${k === 'C' ? 'wedge' : k} ≥ ${show(v)}″` : (r.rejected?.message ?? null);
   };
 
   const onChange = (raw: string) => {
@@ -62,6 +71,7 @@ export function MeasureField({
 
   const finish = (commit: boolean) => {
     window.clearTimeout(timer.current);
+    active.current = false;
     setEditing(false);
     const s = store.getState();
     if (!commit) {
@@ -111,11 +121,13 @@ export function MeasureField({
             aria-invalid={!!err}
             onFocus={(e) => {
               setText(show(value));
+              active.current = true;
               setEditing(true);
+              setError(null);
               e.currentTarget.select();
             }}
             onChange={(e) => onChange(e.target.value)}
-            onBlur={() => editing && finish(true)}
+            onBlur={() => active.current && finish(true)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') e.currentTarget.blur();
               if (e.key === 'Escape') {
