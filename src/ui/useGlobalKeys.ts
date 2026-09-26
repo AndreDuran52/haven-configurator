@@ -19,7 +19,7 @@ export function useGlobalKeys(store: HavenStore) {
         if (s.ui.selectedId && !typing(e.target)) return s.setUi({ selectedId: null });
         return;
       }
-      if (typing(e.target)) return;
+      if (typing(e.target) || s.ui.readOnly) return;
       const k = e.key.toLowerCase();
       if (mod && k === 'z') {
         e.preventDefault();
