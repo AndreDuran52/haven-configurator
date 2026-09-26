@@ -35,7 +35,7 @@ export async function fixes(browser, base, check) {
   // 2. The wedge slider never leaves a draft behind (Undo stays usable).
   {
     const { context, page } = await openApp(browser, base)
-    const thumb = page.getByRole('slider')
+    const thumb = page.getByRole('slider', { name: /^Wedge/ })
     await thumb.focus()
     await thumb.press('ArrowRight')
     await thumb.press('ArrowRight')

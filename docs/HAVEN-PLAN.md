@@ -1073,6 +1073,15 @@ Two profiles:
   - A coffee table added in the plan appears in 3D Top at parity and inside the frame in every preset.
 - **Verify:** vitest for `tableSnap`/`hitTest`/history; the CDP touch script (seam, table, cancel, tap, keyboard); Andre on the iPad: every gesture with a finger and, if available, the Pencil.
 - **Not in H4:** 3D editing, Sketch, exports, saved layouts.
+- **As built (2026-09-26):**
+  - **Table style** (Andre, 2026-09-26): `Config.tableStyle` = `standard` (the Haven table: a 2″ wood top on a fabric base, `TABLE_TOP_THICKNESS` in `profiles.ts`, base 1–21, top 21–23) or `allWood` (1–23 solid). One style for every table, like `tableFinish`. Chosen in the sidebar ("Tables") and in a table's tap menu. The plan view is unchanged (a wood top from above).
+  - **Share links v2:** header field `Y` (table style, append-only `TABLE_STYLE_CODES`). A link is written at the lowest version that can express it, so every layout v1 could share keeps its exact v1 link (all v1 goldens still encode byte for byte); v1 links decode to `standard`; a v1 link carrying `Y` is damaged. Golden v2 links added.
+  - Tray drags use `placementTargets` (every seam / split where `addPiece` succeeds, anchor = the new piece's centre), the nearest within 60″ with the 6″ hysteresis; a table dropped more than 60″ from every anchor, or outside the plan, snaps back. The tray becomes the trash during a table drag.
+  - Touch reorder needs a still 350 ms long-press; a quicker touch move on a seat does nothing (no accidental reorders). Mouse and pen reorder after 6 px.
+  - Coffee-table clearance dimensions show while it is selected or any loose piece is dragged (editor only, never on the sheets), amber under 14″.
+  - The tray is hidden on phones (< 600 px wide): it cost the plan a third of its height there. Phones still edit through the tap menu, seams and drags (Q27).
+  - `window.__plan` (test API) exposes plan <-> client coordinates, table anchors and the share code for `e2e/h4.mjs`.
+  - Entry chunk 100.7 kB gzip of 102: the editing ops of the engine are now reachable from the entry. H5/H6 must lazy-load what they add.
 
 ### H5: Look (`h5-look`)
 - **Prerequisite:** Andre delivers the pillow `.glb` files, textures, the fabric list and the Sketch reference image (Q16).
@@ -1243,7 +1252,7 @@ Answer in a word. **Q1 is answered (camera, spring-back orbit), and Q9, Q10, Q12
 | Q12 | Back and back cushion stop at each table and at the arm? *yes / no* | **Default accepted 2026-09-25:** yes |
 | Q13 | One seat cushion and one back cushion per piece? *yes / or give max cushion width* | **Default accepted 2026-09-25:** yes |
 | Q14 | Legs 1.5″ round, 3″ in from each corner? *yes / or give spec* | **Default accepted 2026-09-25:** yes |
-| Q15 | Pillows: 2 square + 1 ball per wedge, 1 square per arm? *yes / or give counts* | yes |
+| Q15 | Pillows: 2 square + 1 ball per wedge, 1 square per arm? *yes / or give counts* | yes. **2026-09-26:** Andre wants pillows like the showroom photo, which shows 2 square (one taupe, one light) + 1 ball at each corner **and** each arm end; confirm the arm-end count at H5 |
 | Q16 | Before H5: the pillow `.glb`s, fabric/wood textures, the sketch reference image, and which fabrics besides white bouclé (names + texture maps)? *yes / date* | needed before H5; H5 waits |
 | Q17 | Share links go to clients (no names, no prices)? *yes / no* | yes |
 | Q18 | *(Rewritten.)* Before H7: which option for saves across devices and hand-off to the production tracker? *(a) stay local + share links/PDFs / (b) own small backend / (c) PDF uploaded by hand* | (a), with (c) whenever a sheet should live on a tracker item; H7 not started unless Andre asks |

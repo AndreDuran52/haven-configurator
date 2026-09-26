@@ -33,7 +33,7 @@ export async function setField(page, name, value) {
 
 /** Press a key on the wedge slider thumb `times` times (each press commits). */
 export async function slide(page, key, times) {
-  const thumb = page.getByRole('slider')
+  const thumb = page.getByRole('slider', { name: /^Wedge/ })
   await thumb.focus()
   for (let i = 0; i < times; i++) await thumb.press(key)
   await page.waitForTimeout(60)

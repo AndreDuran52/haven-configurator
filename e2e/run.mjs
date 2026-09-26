@@ -4,6 +4,7 @@ import { preview } from 'vite'
 import { launchBrowser } from './browser.mjs'
 import { fixes } from './fixes.mjs'
 import { h2 } from './h2.mjs'
+import { h4 } from './h4.mjs'
 import { reporter } from './lib.mjs'
 import { ortho } from './ortho.mjs'
 import { smoke } from './smoke.mjs'
@@ -19,6 +20,7 @@ try {
   await h2(browser, BASE, check)
   await ortho(browser, BASE, check)
   await fixes(browser, BASE, check)
+  await h4(browser, BASE, check)
 } finally {
   await browser.close()
   await server.close()

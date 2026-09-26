@@ -5,7 +5,7 @@ import { reshapeRuns } from './absorb';
 import { clampWedge, wedgeC } from './layout';
 import { edit, refuse, type Outcome } from './edit';
 import { minMessage, shortfall, wedgeFits } from './limits';
-import type { Config, EditResult } from './types';
+import type { Config, EditResult, TableStyle } from './types';
 
 export const D_MIN = 30;
 export const D_MAX = 48;
@@ -90,6 +90,15 @@ export function setSeatWidth(config: Config, width: number): EditResult {
     if (!(w > 0)) return refuse('notAllowed', 'Seat width must be positive');
     if (w === d.seatWidth) return null;
     d.seatWidth = w;
+    return true;
+  });
+}
+
+/** Table style for every table insert: standard (wood top on a fabric base) or all wood. */
+export function setTableStyle(config: Config, style: TableStyle): EditResult {
+  return edit(config, (d) => {
+    if (d.tableStyle === style) return null;
+    d.tableStyle = style;
     return true;
   });
 }

@@ -2,11 +2,16 @@
 // lock, seat width, warnings.
 import { useState } from 'react';
 import { buildInfo } from '@/buildInfo';
-import { DEPTH_PRESETS, setLock, setMeasurements, setSeatWidth, setShape, type Shape } from '@/engine';
+import { DEPTH_PRESETS, setLock, setMeasurements, setSeatWidth, setShape, setTableStyle, type Shape, type TableStyle } from '@/engine';
 import { useHavenStore, useLive } from '@/state/store';
 import { Button, Section, Segmented, Switch } from './controls';
 import { MeasureField } from './MeasureField';
 import { WarningsList } from './WarningsList';
+
+const TABLE_STYLES: { value: TableStyle; label: string }[] = [
+  { value: 'standard', label: 'Wood top' },
+  { value: 'allWood', label: 'All wood' },
+];
 
 const SHAPES: { value: Shape; label: string }[] = [
   { value: 'U', label: 'U' },
@@ -29,6 +34,7 @@ export function Sidebar() {
     !locked && atUnlock && atUnlock[k] !== live[k] ? `from pieces · was ${atUnlock[k]}″` : !locked ? 'from pieces' : undefined;
   const hasLeft = live.shape !== 'L-right';
   const hasRight = live.shape !== 'L-left';
+  const hasTable = Object.values(live.runs).some((ps) => ps?.some((p) => p.kind === 'table'));
 
   return (
     <div className="flex min-w-0 flex-col gap-5">
@@ -80,6 +86,19 @@ export function Sidebar() {
           </button>
         </div>
       </Section>
+      {hasTable && (
+        <Section title="Tables">
+          <Segmented
+            label="Table style"
+            value={live.tableStyle}
+            options={TABLE_STYLES}
+            onChange={(v) => commit(setTableStyle(store.getState().config, v))}
+          />
+          <p className="text-xs text-ink-muted">
+            {live.tableStyle === 'standard' ? '2″ wood top on a fabric base' : 'Solid wood, top to floor'}
+          </p>
+        </Section>
+      )}
       <Section title="Warnings">
         <WarningsList />
       </Section>

@@ -3,26 +3,32 @@
 // Narrow screens (iPad portrait, phones): plan on top, controls below it.
 import { lazy, Suspense, useEffect } from 'react';
 import { PlanView } from '@/plan/PlanView';
-import { useHaven } from '@/state/store';
+import { useHaven, useHavenStore } from '@/state/store';
+import { PieceTray } from './PieceTray';
 import { Sidebar } from './Sidebar';
 import { Toast } from './Toast';
 import { TopBar } from './TopBar';
 import { UpdateChip } from './UpdateChip';
 import { ViewBar } from './ViewBar';
 import { loadThreeView, warm3d } from './warm3d';
+import { useGlobalKeys } from './useGlobalKeys';
 import { WedgeSlider } from './WedgeSlider';
 
 // The whole 3D stack loads only through here (CLAUDE.md rule 4).
 const ThreeView = lazy(loadThreeView);
+// The tap menu (Radix Popover) loads on the first tap.
+const TapMenu = lazy(() => import('./TapMenu'));
 
 export function HavenLayout() {
   const view = useHaven((s) => s.ui.view);
+  const selected = useHaven((s) => s.ui.selectedId !== null);
   useEffect(() => warm3d(window), []);
+  useGlobalKeys(useHavenStore());
   return (
     <div className="haven-layout grid h-dvh bg-canvas text-ink">
       <TopBar />
       <main className="haven-main min-h-0">
-        <section className="haven-plan flex min-h-0 flex-col">
+        <section className="haven-plan flex min-h-0 min-w-0 flex-col">
           <div className="relative min-h-0 flex-1">
             {/* Plan and 3D share one box under the view bar: same size = parity hand-off. */}
             <div className="absolute inset-x-0 top-15 bottom-0">
@@ -36,7 +42,9 @@ export function HavenLayout() {
             </div>
             <ViewBar />
           </div>
-          <div className="safe-x border-t border-line bg-panel px-3 py-2">
+          <div className="safe-x flex min-w-0 flex-col gap-2 border-t border-line bg-panel px-3 py-2">
+            {/* In both views: the plan and 3D boxes must stay the same size (parity hand-off). */}
+            <PieceTray />
             <WedgeSlider />
           </div>
         </section>
@@ -44,6 +52,7 @@ export function HavenLayout() {
           <Sidebar />
         </aside>
       </main>
+      <Suspense fallback={null}>{selected && view === 'plan' && <TapMenu />}</Suspense>
       <Toast />
       <UpdateChip />
     </div>

@@ -2,7 +2,7 @@
 // (x, y) plus heights; prism.ts turns them into geometry. Run-local coordinates
 // (s along the run, t depth from the back edge) map to plan as:
 //   back (s, t) · left leg (t, s) · right leg (W − t, s), each from the run origin.
-import { profiles, type BuildResult, type BuiltPiece, type Pt, type Rect, type RunId } from '@/engine';
+import { profiles, type BuildResult, type BuiltPiece, type Pt, type Rect, type RunId, type TableStyle } from '@/engine';
 import { fmtIn } from '@/plan/format';
 
 export type MatId = 'body' | 'cushion' | 'wood' | 'leg';
@@ -97,7 +97,7 @@ function cornerLegs(key: string, poly: Pt[], h: number, loose?: boolean): LegPar
   });
 }
 
-export function buildParts(built: BuildResult): Parts {
+export function buildParts(built: BuildResult, tableStyle: TableStyle = 'standard'): Parts {
   const out: Parts = { prisms: [], crowns: [], legs: [], decals: [] };
   const d = built.heights;
   const p = profiles(d);
@@ -138,7 +138,13 @@ export function buildParts(built: BuildResult): Parts {
     }
     if (piece.kind === 'table') {
       // 3D-01: a full-depth table; backs and cushions stop at it (Q12).
-      add(piece, 'top', rectST(f, s0, s1, 0, D), p.table.z0, p.table.z1, 0.5, 'wood');
+      const foot = rectST(f, s0, s1, 0, D);
+      if (tableStyle === 'allWood') add(piece, 'top', foot, p.table.z0, p.table.z1, 0.5, 'wood');
+      else {
+        // The standard Haven table: a 2″ wood top on a fabric base.
+        add(piece, 'base', foot, p.tableBase.z0, p.tableBase.z1, 1, 'body');
+        add(piece, 'top', foot, p.tableTop.z0, p.tableTop.z1, 0.5, 'wood');
+      }
       continue;
     }
     let a0 = s0;
