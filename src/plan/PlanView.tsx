@@ -20,6 +20,7 @@ export function PlanView() {
   const selectedId = useHaven((s) => s.ui.selectedId);
   const placing = useHaven((s) => s.ui.placing);
   const dragging = useHaven((s) => s.ui.dragging);
+  const readOnly = useHaven((s) => s.ui.readOnly);
   const theme = useHaven((s) => (s.ui.look === 'sketch' ? SKETCH : LIGHT));
   const built = builtOf(live);
   const wrap = useRef<HTMLDivElement>(null);
@@ -74,7 +75,7 @@ export function PlanView() {
           className="plan-svg block"
           role="application"
           aria-label={`Plan: ${built.shape}, ${built.W} by ${Math.max(built.L, built.R)} inches, ${built.seats.label}`}
-          {...g.handlers}
+          {...(readOnly ? {} : g.handlers)}
         >
           <rect x={-1e4} y={-1e4} width={2e4} height={2e4} fill={theme.paper} />
           <PlanDrawing built={built} dims={dims} k={fit.k} theme={theme} showWarnings selectedId={selectedId} />
@@ -82,7 +83,7 @@ export function PlanView() {
             <ClearanceLayer key={p.id} built={built} id={p.id} k={fit.k} />
           ))}
           {placing && <PlacementPins kind={placing} k={fit.k} />}
-          {!placing && <GripsLayer grips={grips} built={built} k={fit.k} />}
+          {!placing && !readOnly && <GripsLayer grips={grips} built={built} k={fit.k} />}
         </svg>
       )}
       {g.readout && (

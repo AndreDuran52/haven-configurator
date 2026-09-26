@@ -37,7 +37,7 @@ Layout: `src/{engine, ortho, state, plan, three, ui, export}` (plan §4). The sh
 
 Each milestone: `git fetch`, branch from `origin/main` (`h0b-scaffold`, `h1-engine`, `h2-plan-view`, `h3-ortho`, `h4-editing`, `h5-look`, `h6-exports`), build only that §10 block, meet its done-when list, open a PR, **stop**. Andre previews (localhost or the Vercel preview; from H2 on, installed on the iPad) and it merges on Andre's word. Tick the box below in the same PR.
 
-**Current status: H5 look** (plan, editing, the 3D view with procedural pillows, fabric / wood-finish swatches, the Sketch plan style; the fabric list and pillow assets from Andre (Q16) can replace the defaults).
+**Current status: H6 sheets** (plan, editing, 3D with pillows, the look, and outputs: a one-page PDF/PNG sheet with the plan to scale plus the ticked 3D views, share links, `?view` read-only, Saved layouts per device). H7/H8 only when Andre asks.
 
 - [x] H0 Docs hand-off (plan, spec, prototypes, evidence in `docs/`)
 - [x] H0b Scaffold (Vite, strict TS, oxlint guards, vitest, bundle budget, manifest, Vercel)
@@ -46,7 +46,7 @@ Each milestone: `git fetch`, branch from `origin/main` (`h0b-scaffold`, `h1-engi
 - [x] H3 Read-only orthographic 3D viewer (Q1 = camera with spring-back orbit, plan §7.1; Q9, Q10, Q12–Q14 defaults accepted)
 - [x] H4 Editing (seams, tables, tray, tap menu, loose pieces; table style added 2026-09-26)
 - [x] H5 Look (procedural pillows per Andre's photo, swatches, Sketch; Q16 fabric list still to come)
-- [ ] H6 Sheets (PDF/PNG), share links + `?view`, local Saved layouts
+- [x] H6 Sheets (PDF/PNG), share links + `?view`, local Saved layouts (one simple sheet per Andre, 2026-09-26)
 - [ ] H7 Cloud saves + tracker hand-off (optional; do not start unless Andre asks)
 - [ ] H8 Blender round-trip (later; do not start unless Andre asks)
 

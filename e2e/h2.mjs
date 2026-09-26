@@ -105,11 +105,12 @@ export async function h2(browser, base, check) {
     await context.close()
   }
   {
+    // ?view is read-only since H6: a commit there comes from a pasted link (hashchange).
     const { context, page } = await openApp(browser, base, '?view')
-    await setField(page, 'D', 40)
-    await page.waitForTimeout(400)
+    await page.evaluate(() => (location.hash = '#c=1UW188L132R132D36_bt32s52_la80_ra80.pg'))
+    await page.waitForTimeout(500)
     const u = new URL(page.url())
-    check(u.search === '?view' && u.hash.includes('D40'), `?view survives a commit (${u.search}${u.hash.slice(0, 24)}…)`)
+    check(u.search === '?view' && u.hash.includes('D36') && (await config(page)).D === 36, `?view survives a commit (${u.search}${u.hash.slice(0, 24)}…)`)
     await context.close()
   }
   {

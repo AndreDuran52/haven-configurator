@@ -1120,6 +1120,16 @@ Two profiles:
   - Every §12 fixture survives a link round trip, and a saved-layout round trip.
 - **Verify:** vitest codec golden links + `savedLayouts` tests; the Playwright `?view` check; jspdf absent from entry JS (`check:bundle` marker); Andre shares a PDF from the installed app on the iPad (navigator.share) and prints one at 100% to check the scale bar with a ruler.
 - **Not in H6:** cloud saves, anything involving another app.
+- **As built (2026-09-26, Andre: "simple, only the sofa with the measurements as seen; the top CAD view and a 3/4 / Iso view; choose the views with a checkbox"):**
+  - **One sheet**, not the client + shop pair: Letter landscape, a header (shape, sizes, optional client/project typed at export, date), the **plan with its dimensions at the largest architectural scale that fits** (Standard U alone 3/8″, beside views 1/4″; `export/fit.ts`), and the ticked 3D views (3/4, Iso, Front, Side) as JPEG renders labelled "illustration, not to scale". Footer: the scale label + graphic scale bar, Seats / seat depth / fabric / tables, and the view-only link (clickable in the PDF). Choices remembered per device.
+  - Renders come from `three/export.ts`: its own R3F root on a detached canvas (frameloop 'never'), the live parts/pillows/materials, so the sheet works from the Plan view on a fresh load and offline.
+  - Share & PDF dialog (lazy): Make PDF, then **Share / download PDF** (iPad share sheet via `navigator.share({files})`, else a download) or **Image (PNG)** at 200 dpi; plus the view-only and editable links (share sheet or clipboard). Disabled while `exportBlocked`.
+  - Not built (Andre asked for simple): the shop sheet and its piece list, the vector elevations (`plan/elevation.ts`), the QR code. Easy to add if wanted.
+  - `?view`: no tray, wedge slider, fields, grips or gestures; a "This sofa" summary; "View only" + "Edit a copy" in the top bar.
+  - Saved layouts: `state/savedLayouts.ts` (+ tests) and Save in the top bar, listed in Start with Open / Rename / Duplicate / Share link / Delete (asks first). Storage throwing: "Can't save on this device".
+  - Phones: Reset and Save are hidden in the top bar (Start and Share remain), so it fits 390 px.
+  - The wedge slider (Radix Slider) now loads right after the first paint into a 112 px placeholder: entry 93.4 kB gzip (was 101.3).
+  - Measured (pdf.js on the downloaded PDF): the 188″ width spans 423.00 pt at 3/8″; the two wedge 60″ labels are 288.00 pt apart; the 4′ scale bar is 108.00 pt.
 
 ### H7: Cloud saves + tracker hand-off (optional, later; Andre decides, do not start until told)
 The configurator is complete without H7. Options, in order of cost:
