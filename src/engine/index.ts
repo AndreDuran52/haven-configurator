@@ -21,3 +21,5 @@ export * from './pieceOps';
 export * from './tableOps';
 export * from './looseOps';
 export * from './codec';
+export * from './pillows';
+export * from './fabrics';

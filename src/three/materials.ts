@@ -2,11 +2,11 @@
 // no asset files (real bouclé / wood maps arrive in H5). ExtrudeGeometry UVs are
 // in shape units = inches, so repeat = 1 / tileInches gives true-scale texture.
 import { CanvasTexture, Color, MeshBasicMaterial, MeshStandardMaterial, RepeatWrapping, SRGBColorSpace, type Material } from 'three';
-import type { TableFinish } from '@/engine';
+import { fabricOf, finishOf, type PillowTone, type TableFinish } from '@/engine';
 import type { MatId } from './parts';
 
-/** Fabric colours by FABRICS key (H5 adds real swatches). */
-const FABRIC_COLOR: Record<string, string> = { 'boucle-white': '#efebe3' };
+/** Pillow fabrics from the showroom photo: a taupe velvet and a cream bouclé. */
+const PILLOW_COLOR: Record<PillowTone, string> = { taupe: '#a08f82', cream: '#ece6dc' };
 
 function canvasTex(size: number, draw: (g: CanvasRenderingContext2D, s: number) => void, tileInches: number, srgb: boolean) {
   const c = document.createElement('canvas');
@@ -46,16 +46,18 @@ function boucleBump() {
   );
 }
 
-function walnutMap() {
+function woodMap(base: string, grain: string) {
   return canvasTex(
     512,
     (g, s) => {
       const r = rng(11);
-      g.fillStyle = '#7b5538';
+      g.fillStyle = base;
       g.fillRect(0, 0, s, s);
       for (let i = 0; i < 140; i++) {
         const y = r() * s;
-        g.strokeStyle = r() < 0.5 ? 'rgba(52,32,18,0.35)' : 'rgba(150,108,72,0.25)';
+        const dark = r() < 0.5;
+        g.strokeStyle = dark ? grain : 'rgba(255,235,210,0.12)';
+        g.globalAlpha = dark ? 0.35 : 1;
         g.lineWidth = 0.5 + r() * 2.5;
         g.beginPath();
         g.moveTo(0, y);
@@ -130,6 +132,7 @@ export function decalMaterial(label: string, w: number, h: number): Material {
 
 export interface MaterialSet {
   byId: Record<MatId, Material>;
+  pillow: Record<PillowTone, Material>;
   floor: Material;
   silhouette: Material;
   dispose: () => void;
@@ -138,24 +141,29 @@ export interface MaterialSet {
 export const FLOOR_MARGIN = 60;
 
 export function makeMaterials(fabric: string, finish: TableFinish): MaterialSet {
-  const color = FABRIC_COLOR[fabric] ?? FABRIC_COLOR['boucle-white']!;
+  const f = fabricOf(fabric);
   const bump = boucleBump();
-  const body = new MeshStandardMaterial({ color: new Color(color).multiplyScalar(0.96), roughness: 0.95, bumpMap: bump, bumpScale: 0.35 });
-  const cushion = new MeshStandardMaterial({ color: new Color(color), roughness: 0.95, bumpMap: bump, bumpScale: 0.35 });
-  const woodMap = walnutMap();
-  const wood = new MeshStandardMaterial({ map: woodMap, color: finish === 'darkWood' ? '#6e6e6e' : '#ffffff', roughness: 0.5 });
+  const weave = f.weave === 'boucle' ? { bumpMap: bump, bumpScale: 0.35 } : {};
+  const body = new MeshStandardMaterial({ color: new Color(f.color).multiplyScalar(0.96), roughness: 0.95, ...weave });
+  const cushion = new MeshStandardMaterial({ color: new Color(f.color), roughness: 0.95, ...weave });
+  const fin = finishOf(finish);
+  const wMap = woodMap(fin.color, fin.grain);
+  const wood = new MeshStandardMaterial({ map: wMap, roughness: 0.5 });
+  const taupe = new MeshStandardMaterial({ color: PILLOW_COLOR.taupe, roughness: 0.8 });
+  const cream = new MeshStandardMaterial({ color: PILLOW_COLOR.cream, roughness: 0.95, bumpMap: bump, bumpScale: 0.35 });
   const leg = new MeshStandardMaterial({ color: '#2a221c', roughness: 0.6 });
   const fm = floorMap();
   const floor = new MeshStandardMaterial({ map: fm, roughness: 0.85 });
   const silhouette = new MeshBasicMaterial({ color: '#000000' });
-  const all = [body, cushion, wood, leg, floor, silhouette];
+  const all = [body, cushion, wood, leg, floor, silhouette, taupe, cream];
   return {
     byId: { body, cushion, wood, leg },
+    pillow: { taupe, cream },
     floor,
     silhouette,
     dispose: () => {
       for (const m of all) m.dispose();
-      for (const t of [bump, woodMap, fm]) t.dispose();
+      for (const t of [bump, wMap, fm]) t.dispose();
     },
   };
 }

@@ -1093,6 +1093,13 @@ Two profiles:
 - **Done when:** pillows sit on the wedges and arm ends at the Q15 counts and stay inside the frame in every preset; every fabric in `FABRICS` renders in 3D and round-trips through the link; Sketch toggles the plan; the 3D chunk stays ≤ 300 kB gzip plus the assets (≤ 1.5 MB total assets, no Draco); pillows render offline after one online load.
 - **Verify:** a runtime check that no request goes to `gstatic.com` or `githack.com`; screenshots; iPad check.
 - **Not in H5:** exports, saved layouts.
+- **As built (2026-09-26, Andre: "start H5" without the Q16 assets):**
+  - **Pillows are procedural**, no `.glb` and no network: `engine/pillows.ts` places them (pure data), `three/pillowGeometry.ts` builds a knife-edge square (two puffed grids, pinched rim, bowed edges, pointed corners; UVs in inches) and a ball. Per Andre's showroom photo: at each corner wedge and each arm end, a taupe square behind, a cream square in front, both leaning 16° on the back cushion, and a ball in front (cream at arms, taupe at wedges). None at table or open ends; short seats get fewer. Squares 20 × 20 × 6″, balls 10″. Their boxes join the ortho fit (`fitPoints(…, { pillows })`). "Pillows in 3D" switch (UI only).
+  - Phone elevations (3 px/in) now re-centre vertically in the padded box, so the taller pillow line stays inside.
+  - **Fabrics / finishes:** `engine/fabrics.ts` (`FABRICS`, `FINISHES`, append-only like their link codes), `setFabric` / `setTableFinish`, swatches in the sidebar's "Look" section (lazy-loaded). Only White bouclé until Andre sends the list; Walnut and Dark wood.
+  - **Sketch:** `SKETCH` theme (white fill, black lines, black grain, a seam round each seat cushion), CAD | Sketch in "Look" (UI only).
+  - No `public/models/` (nothing to precache); the 3D chunk stays under 300 kB gzip with no assets.
+  - Entry chunk 101.3 kB gzip of 102: H6 must lazy-load its UI (save, share, sheets).
 
 ### H6: Sheets, share links, saved layouts (`h6-exports`)
 - **Scope:**
@@ -1253,7 +1260,7 @@ Answer in a word. **Q1 is answered (camera, spring-back orbit), and Q9, Q10, Q12
 | Q13 | One seat cushion and one back cushion per piece? *yes / or give max cushion width* | **Default accepted 2026-09-25:** yes |
 | Q14 | Legs 1.5″ round, 3″ in from each corner? *yes / or give spec* | **Default accepted 2026-09-25:** yes |
 | Q15 | Pillows: 2 square + 1 ball per wedge, 1 square per arm? *yes / or give counts* | yes. **2026-09-26:** Andre wants pillows like the showroom photo, which shows 2 square (one taupe, one light) + 1 ball at each corner **and** each arm end; confirm the arm-end count at H5 |
-| Q16 | Before H5: the pillow `.glb`s, fabric/wood textures, the sketch reference image, and which fabrics besides white bouclé (names + texture maps)? *yes / date* | needed before H5; H5 waits |
+| Q16 | Before H5: the pillow `.glb`s, fabric/wood textures, the sketch reference image, and which fabrics besides white bouclé (names + texture maps)? *yes / date* | **2026-09-26:** Andre said start H5 without them. Built with defaults: procedural pillows from the showroom photo, procedural bouclé/wood at true scale, Sketch per the §10 description. Still wanted: the fabric list (names + colours), and the sketch reference if the style should change |
 | Q17 | Share links go to clients (no names, no prices)? *yes / no* | yes |
 | Q18 | *(Rewritten.)* Before H7: which option for saves across devices and hand-off to the production tracker? *(a) stay local + share links/PDFs / (b) own small backend / (c) PDF uploaded by hand* | (a), with (c) whenever a sheet should live on a tracker item; H7 not started unless Andre asks |
 | Q19 | Attach the shop sheet to a tracker item automatically? | **Not applicable** (folded into Q18 option c: by hand) |

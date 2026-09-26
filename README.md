@@ -4,7 +4,7 @@ A sectional-sofa configurator for the Haven sofa, built to use live with clients
 
 It is a standalone web app (Vite + React + TypeScript, installable on the iPad home screen). There is no login and no backend: each layout lives in its link and on the device.
 
-**Status: H4, editing.** Pick a shape, type the room, see the to-scale plan with dimensions, seat count and warnings, and switch to an orthographic 3D view (Top, Front, Side, 3/4, Iso; orbit and it springs back). Edit in the plan by touch: drag seams, drag tables (drop on the tray to remove), long-press to reorder, tap a piece for its menu, add pieces from the tray, move an ottoman or coffee table with live clearances. Tables come standard (2″ wood top on a fabric base) or all wood. Undo, reset, share by link, works offline once installed. The look with pillows (H5) and PDF sheets (H6) come next.
+**Status: H5, the look.** Pick a shape, type the room, see the to-scale plan with dimensions, seat count and warnings, and switch to an orthographic 3D view (Top, Front, Side, 3/4, Iso; orbit and it springs back). Edit in the plan by touch: drag seams, drag tables (drop on the tray to remove), long-press to reorder, tap a piece for its menu, add pieces from the tray, move an ottoman or coffee table with live clearances. Tables come standard (2″ wood top on a fabric base) or all wood. 3D shows pillows like the showroom (two squares and a ball at each corner and arm end); pick the fabric and wood finish, and a Sketch style for the plan. Undo, reset, share by link, works offline once installed. PDF sheets, share and saved layouts (H6) come next.
 
 ```
 npm install

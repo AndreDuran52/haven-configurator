@@ -28,6 +28,8 @@ export interface UiState {
   /** Show loose pieces in Front / Side (hidden there by default, plan §7.4). */
   showLoose: boolean;
   look: 'cad' | 'sketch';
+  /** Show the pillows in 3D (plan §10 H5); UI only, not in links. */
+  pillows: boolean;
   selectedId: string | null;
   /** Tap-to-place (plan §8): a tray piece waiting for a "+" pin. */
   placing: TrayKind | null;
@@ -72,6 +74,7 @@ export function createHavenStore(initial: Config, ui: Partial<UiState> = {}): Ha
         planFit: null,
         showLoose: false,
         look: 'cad',
+        pillows: true,
         selectedId: null,
         placing: null,
         dragging: null,

@@ -5,13 +5,14 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperti
 import { Box3, NeutralToneMapping, Vector3, type DirectionalLight, type Texture } from 'three';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { ContactShadows } from '@react-three/drei';
-import { planCentre, type BuildResult } from '@/engine';
+import { pillowAnchors, planCentre, type BuildResult } from '@/engine';
 import { fitPoints, FLOOR_THICKNESS, FLOOR_TOP } from '@/ortho/fitPoints';
 import { isElevation } from '@/ortho/presets';
 import { builtOf, useHaven, useHavenStore, useLive } from '@/state/store';
 import { aimKeyLight } from './keyLight';
 import { FLOOR_MARGIN, makeMaterials } from './materials';
 import { Overlay } from './Overlay';
+import { Pillows } from './Pillows';
 import { buildParts } from './parts';
 import { CAMERA_DISTANCE, Rig } from './Rig';
 import { SofaModel } from './SofaModel';
@@ -43,7 +44,9 @@ export default function ThreeView() {
   // Loose pieces are hidden in the elevations by default (a centred coffee table hides the back run).
   const showLoose = showLooseUi || !isElevation(preset);
   const parts = useMemo(() => buildParts(built, live.tableStyle), [built, live.tableStyle]);
-  const points = useMemo(() => fitPoints(built, { loose: showLoose }), [built, showLoose]);
+  const showPillows = useHaven((s) => s.ui.pillows);
+  const pillows = useMemo(() => (showPillows ? pillowAnchors(built) : []), [built, showPillows]);
+  const points = useMemo(() => fitPoints(built, { loose: showLoose, pillows: showPillows }), [built, showLoose, showPillows]);
   const world = useMemo(() => worldBounds(built), [built]);
   const mats = useMemo(() => makeMaterials(live.fabric, live.tableFinish), [live.fabric, live.tableFinish]);
   useEffect(() => () => mats.dispose(), [mats]);
@@ -100,6 +103,7 @@ export default function ThreeView() {
         <directionalLight position={[1200, 500, 300]} intensity={0.3} />
         <group position={[world.offset[0], 0, world.offset[1]]}>
           <SofaModel parts={parts} mats={mats} showLoose={showLoose} />
+          <Pillows anchors={pillows} mats={mats.pillow} />
         </group>
         <mesh name="floor" position={[0, FLOOR_TOP - FLOOR_THICKNESS / 2, 0]} material={mats.floor}>
           <boxGeometry args={[floorW, FLOOR_THICKNESS, floorD]} />

@@ -77,12 +77,18 @@ export function fitPreset(points: readonly Vec3[], preset: PresetDef, viewW: num
   const elevation = preset.elevationDeg === 0;
   if (!elevation || viewW > PHONE_MAX_WIDTH || fit.zoom >= PHONE_ELEVATION_ZOOM) return fit;
   const zoom = PHONE_ELEVATION_ZOOM;
-  const { right } = screenBasis(presetDirection(preset), preset.azimuthDeg);
+  const { right, up } = screenBasis(presetDirection(preset), preset.azimuthDeg);
   const u0 = Math.min(...points.map((p) => dot(p, right)));
   // shift the target so the left end sits at the left padding
   const uTarget = u0 + (viewW / 2 - pad.left) / zoom;
   const shift = uTarget - dot(fit.target, right);
-  return { ...fit, zoom, target: add(fit.target, right, shift) };
+  // and re-centre vertically in the padded box at this zoom (the insets are uneven)
+  const vs = points.map((p) => dot(p, up));
+  const mid = (Math.min(...vs) + Math.max(...vs)) / 2;
+  const boxMid = (pad.top + viewH - pad.bottom) / 2;
+  const vTarget = mid - (viewH / 2 - boxMid) / zoom;
+  const target = add(fit.target, right, shift);
+  return { ...fit, zoom, target: add(target, up, vTarget - dot(target, up)) };
 }
 
 /** Shortest-path azimuth: an angle equivalent to `to` within ±π of `from`. */

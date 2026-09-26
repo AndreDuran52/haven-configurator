@@ -12,7 +12,7 @@ import { PLAN_PAD_PX, planFit } from './planFit';
 import { PlacementPins } from './PlacementPins';
 import { PlanDrawing } from './PlanDrawing';
 import { installPlanTestApi, registerPlanSvg } from './planScreen';
-import { LIGHT } from './theme';
+import { LIGHT, SKETCH } from './theme';
 import { usePlanGestures } from './usePlanGestures';
 
 export function PlanView() {
@@ -20,6 +20,7 @@ export function PlanView() {
   const selectedId = useHaven((s) => s.ui.selectedId);
   const placing = useHaven((s) => s.ui.placing);
   const dragging = useHaven((s) => s.ui.dragging);
+  const theme = useHaven((s) => (s.ui.look === 'sketch' ? SKETCH : LIGHT));
   const built = builtOf(live);
   const wrap = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -66,6 +67,7 @@ export function PlanView() {
           ref={svgRef}
           data-plan-svg=""
           data-k={fit.k}
+          data-look={theme === SKETCH ? 'sketch' : 'cad'}
           width={size.w}
           height={size.h}
           viewBox={`${fit.viewBox.x} ${fit.viewBox.y} ${fit.viewBox.w} ${fit.viewBox.h}`}
@@ -74,8 +76,8 @@ export function PlanView() {
           aria-label={`Plan: ${built.shape}, ${built.W} by ${Math.max(built.L, built.R)} inches, ${built.seats.label}`}
           {...g.handlers}
         >
-          <rect x={-1e4} y={-1e4} width={2e4} height={2e4} fill={LIGHT.paper} />
-          <PlanDrawing built={built} dims={dims} k={fit.k} theme={LIGHT} showWarnings selectedId={selectedId} />
+          <rect x={-1e4} y={-1e4} width={2e4} height={2e4} fill={theme.paper} />
+          <PlanDrawing built={built} dims={dims} k={fit.k} theme={theme} showWarnings selectedId={selectedId} />
           {coffee.map((p) => (
             <ClearanceLayer key={p.id} built={built} id={p.id} k={fit.k} />
           ))}

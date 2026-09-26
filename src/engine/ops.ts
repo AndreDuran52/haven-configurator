@@ -5,7 +5,8 @@ import { reshapeRuns } from './absorb';
 import { clampWedge, wedgeC } from './layout';
 import { edit, refuse, type Outcome } from './edit';
 import { minMessage, shortfall, wedgeFits } from './limits';
-import type { Config, EditResult, TableStyle } from './types';
+import { FABRICS, FINISHES } from './fabrics';
+import type { Config, EditResult, TableFinish, TableStyle } from './types';
 
 export const D_MIN = 30;
 export const D_MAX = 48;
@@ -99,6 +100,26 @@ export function setTableStyle(config: Config, style: TableStyle): EditResult {
   return edit(config, (d) => {
     if (d.tableStyle === style) return null;
     d.tableStyle = style;
+    return true;
+  });
+}
+
+/** Fabric (a FABRICS key) for every upholstered part. */
+export function setFabric(config: Config, key: string): EditResult {
+  return edit(config, (d) => {
+    if (!FABRICS.some((f) => f.key === key)) return refuse('notAllowed', 'Unknown fabric');
+    if (d.fabric === key) return null;
+    d.fabric = key;
+    return true;
+  });
+}
+
+/** Wood finish for every table (and the coffee table). */
+export function setTableFinish(config: Config, finish: TableFinish): EditResult {
+  return edit(config, (d) => {
+    if (!FINISHES.some((f) => f.key === finish)) return refuse('notAllowed', 'Unknown finish');
+    if (d.tableFinish === finish) return null;
+    d.tableFinish = finish;
     return true;
   });
 }
