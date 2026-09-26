@@ -18,8 +18,11 @@ export function MeasureField({
   apply,
   hint,
   step = 1,
+  read = (c) => c[name as 'W'],
+  labelClass = 'w-6',
 }: {
-  name: 'W' | 'L' | 'R' | 'D';
+  /** W / L / R / D, or any other field name (then pass `read`). */
+  name: string;
   label: string;
   /** The live value (draft ?? config). */
   value: number;
@@ -27,6 +30,9 @@ export function MeasureField({
   apply: (c: Config, v: number) => EditResult;
   hint?: string;
   step?: number;
+  /** The committed value (default: config[name]). */
+  read?: (c: Config) => number;
+  labelClass?: string;
 }) {
   const store = useHavenStore();
   const [text, setText] = useState(show(value));
@@ -35,7 +41,7 @@ export function MeasureField({
   const active = useRef(false);
   // An error belongs to the value it was shown for: any other change to the field clears it.
   const [errorState, setErrorState] = useState<{ text: string | null; at: number } | null>(null);
-  const setError = (text: string | null) => setErrorState(text ? { text, at: store.getState().config[name] } : null);
+  const setError = (text: string | null) => setErrorState(text ? { text, at: read(store.getState().config) } : null);
   const error = errorState && errorState.at === value ? errorState.text : null;
   const timer = useRef(0);
 
@@ -76,7 +82,7 @@ export function MeasureField({
     const s = store.getState();
     if (!commit) {
       s.cancelDraft();
-      setText(show(s.config[name]));
+      setText(show(read(s.config)));
       return;
     }
     const r = tryValue(text);
@@ -86,13 +92,13 @@ export function MeasureField({
       return;
     }
     s.cancelDraft();
-    setText(show(s.config[name]));
+    setText(show(read(s.config)));
     setError(r ? message(r) : 'Not a size');
   };
 
   const nudge = (d: number) => {
     const s = store.getState();
-    const r = apply(s.config, s.config[name] + d);
+    const r = apply(s.config, read(s.config) + d);
     if (r.rejected) setError(message(r));
     else {
       setError(null);
@@ -104,7 +110,7 @@ export function MeasureField({
   return (
     <div className="flex flex-col gap-1" data-field={name}>
       <div className="flex items-center gap-2">
-        <label htmlFor={`m-${name}`} className="w-6 text-sm font-semibold">
+        <label htmlFor={`m-${name}`} className={`${labelClass} text-sm font-semibold`}>
           {label}
         </label>
         <button type="button" aria-label={`${label} minus ${step}`} className="stepper" onClick={() => nudge(-step)}>

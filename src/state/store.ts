@@ -6,6 +6,7 @@ import { useStore } from 'zustand';
 import { createStore, type StoreApi } from 'zustand/vanilla';
 import { buildHaven, type BuildResult, type Config } from '@/engine';
 import { DEFAULT_PRESET, type PresetName } from '@/ortho/presets';
+import type { TrayKind } from '@/plan/placementTargets';
 import * as H from './history';
 import { DEFAULT_START, type StartChoice } from './start';
 
@@ -28,6 +29,10 @@ export interface UiState {
   showLoose: boolean;
   look: 'cad' | 'sketch';
   selectedId: string | null;
+  /** Tap-to-place (plan §8): a tray piece waiting for a "+" pin. */
+  placing: TrayKind | null;
+  /** The running plan gesture, if any (the tray turns into the trash during a table drag). */
+  dragging: 'seam' | 'table' | 'reorder' | 'loose' | 'tray' | null;
   /** The last Start-menu choice; Reset returns to its preset. */
   lastStart: StartChoice;
   /** `?view`: read-only client view (H6 presents it; H2 only preserves it). */
@@ -68,6 +73,8 @@ export function createHavenStore(initial: Config, ui: Partial<UiState> = {}): Ha
         showLoose: false,
         look: 'cad',
         selectedId: null,
+        placing: null,
+        dragging: null,
         lastStart: DEFAULT_START,
         readOnly: false,
         toast: null,
