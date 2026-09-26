@@ -689,7 +689,7 @@ Dimetric 45/30 was evaluated and **not shipped**: it looks almost identical to I
 | Ottoman | rounded prism w × d on 1″ legs, top at `ottomanHeight` 18, fabric |
 | Coffee table | slab w × d, top at `coffeeTableHeight` 16, `tableFinish` |
 | Gap (Blank) | flat hatched floor decal, 0.1″ thick, same hatch as the plan, with its "unfilled 68″" label drawn into the decal texture (H3; an HTML label was the alternative); included in bounds and fit |
-| Pillows (H5, H5b, H5c) | down-feather "karate chop" squares and ball pillows at the wedge and arm-end anchors (engine `pillowAnchors`): Andre's Blender `.glb` when it is in `src/three/models/` (`three/models.ts` refits it into the anchor's box), else procedural |
+| Pillows (H5, H5b, H5c) | down-feather "karate chop" squares (20 × 20 × 9″, Andre's Blender model `src/three/models/pillow-square.glb`, refitted into the anchor's box by `three/models.ts`) and procedural ball pillows at the wedge and arm-end anchors (engine `pillowAnchors`) |
 
 Loose pieces are hidden in the Front/Side presets and in the vector elevation by default (a centred coffee table would hide the back run), with a "show loose pieces" toggle.
 
@@ -1156,7 +1156,8 @@ Two profiles:
   - Back cushions: a broader, deeper dome on the panels (bulge 1.5″), a crowned top with rolled ends, bowed end walls, pinched corners; still inside the 8″ box, peak 31″.
   - `src/three/models/README.md` holds Andre's export checklist.
 - **Measured:** with a test model the h5 e2e sees it in use, online and offline, and the sheet exports; 3D chunks 275 kB gzip (GLTFLoader ~14 kB).
-- **Waiting on:** `pillow-square.glb` from Andre. A Blender back cushion would need width stretching (a 3D 9-slice), later if wanted.
+- **Andre's pillow (received 2026-09-27):** `src/three/models/pillow-square.glb`, 259 kB, 6k vertices, no textures. It was left turned and scaled in the Blender scene; the loader bakes that and turns it square (`squareUp`: the thinner horizontal side becomes the depth). As modelled it is about 20 × 20 × 12½″ (plump), so the pillow box is now **20 × 20 × 9″** and a square may press 1.5″ into the soft back cushion it leans on (`PILLOW_PRESS`), never into another pillow. The Standard U keeps its 12 pillows and each L its 9; 36″-deep seats get fewer.
+- A Blender back cushion would need width stretching (a 3D 9-slice), later if wanted.
 
 ### H7: Cloud saves + tracker hand-off (optional, later; Andre decides, do not start until told)
 The configurator is complete without H7. Options, in order of cost:

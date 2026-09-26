@@ -20,13 +20,19 @@ export interface PillowAnchor extends OrientedBox {
   tone: PillowTone;
 }
 
-/** 20″ down pillows, leaning back on the back cushions. */
-export const SQUARE_PILLOW = { w: 20, h: 20, t: 7, lean: 10 };
+/**
+ * 20″ down pillows, leaning back on the back cushions. 9″ deep: Andre's Blender
+ * pillow (2026-09-27) is plump (about 12″ as modelled), and 9″ keeps its look
+ * while the Standard U and L keep every pillow.
+ */
+export const SQUARE_PILLOW = { w: 20, h: 20, t: 9, lean: 10 };
 export const BALL_PILLOW = 11;
 /** How far a pillow sinks into the seat under it. */
 const SINK = 1;
 /** The space kept between soft things that touch, inches. */
 const PAD = 0.25;
+/** How far a down pillow presses into the soft back cushion it leans on, inches. */
+export const PILLOW_PRESS = 1.5;
 /** Arm ends: both squares turn toward the middle of the seat (their backs to the corner), fanned. */
 const YAW = 15;
 const YAW2 = 10;
@@ -34,6 +40,8 @@ const YAW2 = 10;
 const STEP = 14;
 /** Wedges: each square turns this far toward the room. */
 const WEDGE_YAW = 10;
+/** Wedges: how far the leg's square may slide along its back to clear the other one. */
+const WEDGE_SLIDE = 12;
 
 /** The 8 corners of a pillow's box (for the ortho fit). */
 export const pillowCorners = boxCorners;
@@ -69,7 +77,8 @@ export function pillowAnchors(b: BuildResult): PillowAnchor[] {
   const zPivot = d.seatHeight - SINK;
   // Everything starts 2″ inside the back cushions, then slides forward.
   const tStart = F + BACK_CUSHION.depth - 2;
-  const squareBlocked = (q: OrientedBox) => [...cushions, ...squares].some((c) => boxesClash(q, c, PAD));
+  const onCushions = (q: OrientedBox) => cushions.some((c) => boxesClash(q, c, -PILLOW_PRESS));
+  const squareBlocked = (q: OrientedBox) => onCushions(q) || squares.some((c) => boxesClash(q, c, PAD));
   const ballBlocked = (q: OrientedBox) => [...cushions, ...squares].some((c) => boxDistance(c, [q.x, q.y, q.z]) < r + PAD);
   const ballAt = ([x, y]: Pt): OrientedBox => ({ x, y, z: d.seatHeight - SINK / 2 + r, facing: [0, 1], lean: 0, w: BALL_PILLOW, h: BALL_PILLOW, t: BALL_PILLOW });
   const keep = (key: string, kind: PillowKind, tone: PillowTone, q: OrientedBox) => {
@@ -129,9 +138,9 @@ export function pillowAnchors(b: BuildResult): PillowAnchor[] {
     const onSeat = (q: OrientedBox) => boxCorners(q).every(([x, y]) => insideConvex(seat, m([x, y]), 0.5));
     const along = Math.min(F + BACK_CUSHION.depth + sq.w / 2 + 11, C - sq.w / 2 - 1.5);
     const place = (key: string, tone: PillowTone, f: RunFrame, s: number, facing: Pt) => {
-      let q = clearAlong(leaningBox(f, s, tStart, zPivot, sq, facing), runInward(f.run), (x) => cushions.some((c) => boxesClash(x, c, PAD)), b.D);
+      let q = clearAlong(leaningBox(f, s, tStart, zPivot, sq, facing), runInward(f.run), onCushions, b.D);
       // Along the back, away from the corner: the back run's square goes first, so only the leg's one moves.
-      if (q && f.run !== 'back') q = clearAlong(q, [0, 1], squareBlocked, C);
+      if (q && f.run !== 'back') q = clearAlong(q, [0, 1], squareBlocked, WEDGE_SLIDE);
       if (q && !squareBlocked(q) && onSeat(q)) keep(key, 'square', tone, q);
     };
     place(`${w.id}:sq1`, 'taupe', { run: 'back', origin: [0, 0], W: b.W }, right ? b.W - along : along, turn([0, 1], right ? WEDGE_YAW : -WEDGE_YAW));

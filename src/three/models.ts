@@ -17,8 +17,8 @@ export interface SoftModels {
 
 /** File name -> the box it is fitted into (w, h, t; front = +z, up = +y). */
 const SLOTS = {
-  square: { file: 'pillow-square.glb', box: [SQUARE_PILLOW.w, SQUARE_PILLOW.h, SQUARE_PILLOW.t] },
-  ball: { file: 'pillow-ball.glb', box: [BALL_PILLOW, BALL_PILLOW, BALL_PILLOW] },
+  square: { file: 'pillow-square.glb', box: [SQUARE_PILLOW.w, SQUARE_PILLOW.h, SQUARE_PILLOW.t], flip: false },
+  ball: { file: 'pillow-ball.glb', box: [BALL_PILLOW, BALL_PILLOW, BALL_PILLOW], flip: false },
 } as const;
 
 const urls = import.meta.glob<string>('./models/*.glb', { query: '?url', import: 'default', eager: true });
@@ -79,6 +79,20 @@ export function mergeScene(root: Object3D): BufferGeometry | null {
   return merged;
 }
 
+/**
+ * Stand a baked model square to the box: up stays +y (Blender's Z), and it is
+ * turned about the vertical so its thinner horizontal extent is the depth (z).
+ * A pillow left turned in the Blender scene still faces the room; `flip`
+ * turns it round when its front is on the far side.
+ */
+export function squareUp(g: BufferGeometry, flip = false): BufferGeometry {
+  g.computeBoundingBox();
+  const b = g.boundingBox!;
+  if (b.max.x - b.min.x < b.max.z - b.min.z) g.rotateY(Math.PI / 2);
+  if (flip) g.rotateY(Math.PI);
+  return g;
+}
+
 async function load(slot: keyof typeof SLOTS): Promise<BufferGeometry | null> {
   const { file, box } = SLOTS[slot];
   const url = urlOf(file);
@@ -86,7 +100,7 @@ async function load(slot: keyof typeof SLOTS): Promise<BufferGeometry | null> {
   try {
     const gltf = await new GLTFLoader().loadAsync(url);
     const g = mergeScene(gltf.scene);
-    return g && fitToBox(g, box[0], box[1], box[2]);
+    return g && fitToBox(squareUp(g, SLOTS[slot].flip), box[0], box[1], box[2]);
   } catch {
     return null; // a broken file falls back to the procedural shape
   }

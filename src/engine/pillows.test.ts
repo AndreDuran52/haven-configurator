@@ -4,7 +4,7 @@ import { decode, encode, FABRIC_CODES, FINISH_CODES } from './codec';
 import { standardL, standardU } from './defaults';
 import { FABRICS, FINISHES } from './fabrics';
 import { backCushions } from './cushions';
-import { BALL_PILLOW, pillowAnchors, pillowCorners } from './pillows';
+import { BALL_PILLOW, PILLOW_PRESS, pillowAnchors, pillowCorners } from './pillows';
 import { boxDistance, boxesClash } from './softBox';
 import { setFabric, setTableFinish } from './ops';
 import { moveTable } from './tableOps';
@@ -60,7 +60,7 @@ describe('pillows (Q15, Andre 2026-09-26/27: like the showroom photos)', () => {
     }
   });
 
-  it('nothing passes through anything: squares clear the back cushions and each other, balls clear both (D 30–48)', () => {
+  it('nothing passes through anything: squares only press into the back cushions, never each other; balls clear both (D 30–48)', () => {
     for (const D of [30, 34, 36, 40, 44, 48]) {
       for (const c of [standardU({ D }), standardL('left', { D }), standardL('right', { D }), standardU({ W: 240, D })]) {
         const b = buildHaven(c);
@@ -69,7 +69,11 @@ describe('pillows (Q15, Andre 2026-09-26/27: like the showroom photos)', () => {
         const squares = all.filter((p) => p.kind === 'square');
         for (const p of all) {
           const others = [...cushions, ...squares.filter((q) => q !== p)];
-          if (p.kind === 'square') for (const o of others) expect(boxesClash(p, o), `D${D} ${p.key} × ${'key' in o ? o.key : ''}`).toBe(false);
+          if (p.kind === 'square') {
+            // A down pillow presses into the soft back cushion it leans on (PILLOW_PRESS), no further; pillows never overlap.
+            for (const o of cushions) expect(boxesClash(p, o, -PILLOW_PRESS - 1e-6), `D${D} ${p.key} × ${o.key}`).toBe(false);
+            for (const o of squares) if (o !== p) expect(boxesClash(p, o), `D${D} ${p.key} × ${o.key}`).toBe(false);
+          }
           else for (const o of others) expect(boxDistance(o, [p.x, p.y, p.z]), `D${D} ${p.key}`).toBeGreaterThanOrEqual(BALL_PILLOW / 2);
         }
       }

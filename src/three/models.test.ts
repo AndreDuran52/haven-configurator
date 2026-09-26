@@ -1,6 +1,6 @@
 import { BoxGeometry, Group, Mesh, SphereGeometry } from 'three';
 import { describe, expect, it } from 'vitest';
-import { fitToBox, loadSoftModels, mergeScene } from './models';
+import { fitToBox, loadSoftModels, mergeScene, squareUp } from './models';
 
 describe('Blender models (H5c): refitted into the engine’s boxes', () => {
   it('fitToBox maps any bounds exactly onto ±w/2, ±h/2, ±t/2, with unit normals and UVs in inches', () => {
@@ -41,7 +41,16 @@ describe('Blender models (H5c): refitted into the engine’s boxes', () => {
     expect(mergeScene(new Group())).toBeNull();
   });
 
-  it('with no model files the procedural pillows stay (nothing is fetched)', async () => {
+  it('squareUp turns a model left sideways in the Blender scene so its thin side is the depth', () => {
+    const g = squareUp(new BoxGeometry(0.3, 0.5, 0.5)); // thin along x, as Andre's pillow bakes
+    g.computeBoundingBox();
+    const b = g.boundingBox!;
+    expect(b.max.x - b.min.x).toBeCloseTo(0.5, 6);
+    expect(b.max.z - b.min.z).toBeCloseTo(0.3, 6);
+    expect(b.max.y - b.min.y).toBeCloseTo(0.5, 6);
+  });
+
+  it('with no ball model file the procedural pillows stay (nothing is fetched)', async () => {
     const m = await loadSoftModels();
     expect(m.ball).toBeNull();
   });
