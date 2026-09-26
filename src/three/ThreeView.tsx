@@ -5,7 +5,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperti
 import { Box3, NeutralToneMapping, Vector3, type DirectionalLight, type Texture } from 'three';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { ContactShadows } from '@react-three/drei';
-import { pillowAnchors, planCentre, type BuildResult } from '@/engine';
+import { BACK_CUSHION, pillowAnchors, planCentre, type BuildResult } from '@/engine';
 import { fitPoints, FLOOR_THICKNESS, FLOOR_TOP } from '@/ortho/fitPoints';
 import { isElevation } from '@/ortho/presets';
 import { builtOf, useHaven, useHavenStore, useLive } from '@/state/store';
@@ -30,7 +30,7 @@ function CameraKeyLight() {
 function worldBounds(built: BuildResult): { box: Box3; offset: [number, number]; size: [number, number] } {
   const c = planCentre(built.bounds);
   const b = built.bounds;
-  const box = new Box3(new Vector3(b.minX - c.cx, 0, b.minY - c.cy), new Vector3(b.maxX - c.cx, built.heights.backHeight, b.maxY - c.cy));
+  const box = new Box3(new Vector3(b.minX - c.cx, 0, b.minY - c.cy), new Vector3(b.maxX - c.cx, built.heights.backHeight + BACK_CUSHION.rise, b.maxY - c.cy));
   return { box, offset: [-c.cx, -c.cy], size: [b.maxX - b.minX, b.maxY - b.minY] };
 }
 

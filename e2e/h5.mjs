@@ -128,10 +128,20 @@ export async function h5(browser, base, check) {
   }
 
   // 4. The 3D chunk stays <= 300 kB gzip (no pillow or texture assets: all procedural).
+  // Since H6 three.js sits in a chunk ThreeView shares with the export scene, so
+  // count ThreeView with everything it statically imports that the page did not
+  // already load from index.html.
   {
     const dir = 'dist/assets'
-    const three = readdirSync(dir).filter((f) => /^ThreeView-.*\.js$/.test(f))
-    const gz = three.reduce((s, f) => s + gzipSync(readFileSync(`${dir}/${f}`)).length, 0) / 1024
+    const initial = new Set([...readFileSync('dist/index.html', 'utf8').matchAll(/assets\/([^"']+\.js)/g)].map((m) => m[1]))
+    const three = new Set()
+    const walk = (f) => {
+      if (three.has(f) || initial.has(f)) return
+      three.add(f)
+      for (const m of readFileSync(`${dir}/${f}`, 'utf8').matchAll(/(?:from|import)\s*"\.\/([^"]+\.js)"/g)) walk(m[1])
+    }
+    for (const f of readdirSync(dir).filter((f) => /^ThreeView-.*\.js$/.test(f))) walk(f)
+    const gz = [...three].reduce((s, f) => s + gzipSync(readFileSync(`${dir}/${f}`)).length, 0) / 1024
     const models = (() => {
       try {
         return readdirSync('dist/models').reduce((s, f) => s + statSync(`dist/models/${f}`).size, 0)
@@ -139,7 +149,7 @@ export async function h5(browser, base, check) {
         return 0
       }
     })()
-    check(gz <= 300 && models <= 1.5 * 1024 * 1024, `3D chunk ${gz.toFixed(1)} kB gzip (≤ 300), assets ${(models / 1024).toFixed(0)} kB (≤ 1.5 MB)`)
+    check(gz <= 300 && models <= 1.5 * 1024 * 1024, `3D chunks (${[...three].map((f) => f.replace(/-[^-]+\.js$/, '')).join(' + ')}) ${gz.toFixed(1)} kB gzip (≤ 300), assets ${(models / 1024).toFixed(0)} kB (≤ 1.5 MB)`)
   }
 
   // 5. Pillows render offline after one online load.

@@ -5,8 +5,8 @@ import { CanvasTexture, Color, MeshBasicMaterial, MeshStandardMaterial, RepeatWr
 import { fabricOf, finishOf, type PillowTone, type TableFinish } from '@/engine';
 import type { MatId } from './parts';
 
-/** Pillow fabrics from the showroom photo: a taupe velvet and a cream bouclé. */
-const PILLOW_COLOR: Record<PillowTone, string> = { taupe: '#a08f82', cream: '#ece6dc' };
+/** Pillow fabrics from the showroom photos: taupe and oatmeal linen squares, cream bouclé and mocha velvet balls. */
+const PILLOW_COLOR: Record<PillowTone, string> = { taupe: '#9a897c', oatmeal: '#e2dbcf', cream: '#eee8de', mocha: '#7c675b' };
 
 function canvasTex(size: number, draw: (g: CanvasRenderingContext2D, s: number) => void, tileInches: number, srgb: boolean) {
   const c = document.createElement('canvas');
@@ -42,6 +42,30 @@ function boucleBump() {
       }
     },
     6,
+    false,
+  );
+}
+
+/** Linen: a fine cross weave with slubs, as a bump map (2″ tiles). */
+function linenBump() {
+  return canvasTex(
+    128,
+    (g, s) => {
+      g.fillStyle = '#808080';
+      g.fillRect(0, 0, s, s);
+      const r = rng(5);
+      for (let i = 0; i < s; i += 2) {
+        g.fillStyle = `rgba(255,255,255,${0.08 + r() * 0.12})`;
+        g.fillRect(0, i, s, 1);
+        g.fillStyle = `rgba(0,0,0,${0.06 + r() * 0.1})`;
+        g.fillRect(i, 0, 1, s);
+      }
+      for (let i = 0; i < 40; i++) {
+        g.fillStyle = 'rgba(255,255,255,0.25)';
+        g.fillRect(r() * s, r() * s, 3 + r() * 8, 1);
+      }
+    },
+    2,
     false,
   );
 }
@@ -149,21 +173,24 @@ export function makeMaterials(fabric: string, finish: TableFinish): MaterialSet 
   const fin = finishOf(finish);
   const wMap = woodMap(fin.color, fin.grain);
   const wood = new MeshStandardMaterial({ map: wMap, roughness: 0.5 });
-  const taupe = new MeshStandardMaterial({ color: PILLOW_COLOR.taupe, roughness: 0.8 });
+  const weaveMap = linenBump();
+  const taupe = new MeshStandardMaterial({ color: PILLOW_COLOR.taupe, roughness: 0.85, bumpMap: weaveMap, bumpScale: 0.25 });
+  const oatmeal = new MeshStandardMaterial({ color: PILLOW_COLOR.oatmeal, roughness: 0.9, bumpMap: weaveMap, bumpScale: 0.3 });
   const cream = new MeshStandardMaterial({ color: PILLOW_COLOR.cream, roughness: 0.95, bumpMap: bump, bumpScale: 0.35 });
+  const mocha = new MeshStandardMaterial({ color: PILLOW_COLOR.mocha, roughness: 0.6 });
   const leg = new MeshStandardMaterial({ color: '#2a221c', roughness: 0.6 });
   const fm = floorMap();
   const floor = new MeshStandardMaterial({ map: fm, roughness: 0.85 });
   const silhouette = new MeshBasicMaterial({ color: '#000000' });
-  const all = [body, cushion, wood, leg, floor, silhouette, taupe, cream];
+  const all = [body, cushion, wood, leg, floor, silhouette, taupe, oatmeal, cream, mocha];
   return {
     byId: { body, cushion, wood, leg },
-    pillow: { taupe, cream },
+    pillow: { taupe, oatmeal, cream, mocha },
     floor,
     silhouette,
     dispose: () => {
       for (const m of all) m.dispose();
-      for (const t of [bump, wMap, fm]) t.dispose();
+      for (const t of [bump, weaveMap, wMap, fm]) t.dispose();
     },
   };
 }

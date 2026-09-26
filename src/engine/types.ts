@@ -53,18 +53,19 @@ export interface LoosePiece {
 export interface HavenDims {
   /** Arm width (runs the full depth). */
   A: number;
-  /** Back = frame + back cushion. Seat depth = D - B. */
+  /** Back = the back frame's depth. Seat depth = D - B - BACK_CUSHION.depth (to the loose back cushions). */
   B: number;
-  /** Depth of the back frame (the rest of B is the back cushion). */
+  /** Depth of the back frame (= B since 2026-09-27; the back cushions sit on the seat). */
   backFrame: number;
   legHeight: number;
-  /** Top of the body / bottom of the seat cushion. */
+  /** The seam round the tight seat: top of its base, bottom of its flat band. */
   deckHeight: number;
   seatHeight: number;
-  /** Seat cushion thickness mid-span (crown) and at its ends (edge). */
+  /** The old crowned cushion's thickness mid-span and at its ends: unused since the tight seat (H5b), kept so links decode. */
   cushionCrown: number;
   cushionEdge: number;
   armHeight: number;
+  /** Top of the back frame (the loose back cushions rise BACK_CUSHION.rise above it). */
   backHeight: number;
   tableHeight: number;
   ottomanHeight: number;
@@ -215,7 +216,7 @@ export type WarningCode =
   | 'tableOutOfRange'
   | 'wedgeFaceUnder8'
   | 'openingUnder60'
-  | 'seatDepthUnder24'
+  | 'seatDepthShort'
   | 'coffeeClearanceUnder14'
   | 'coffeeOverlap';
 

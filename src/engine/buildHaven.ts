@@ -4,7 +4,8 @@ import { available, corners, endCapState, openEnd, runEnds, runIds, wedgeC } fro
 import { MAX_PIECE, cushionOf, half, isSeat } from './pieces';
 import { coffeeClearances, rectPoly } from './clearance';
 import { ruleViolation } from './rules';
-import { collectWarnings, opening, seatCount, wedgeFace, wedgeReadout } from './seating';
+import { BACK_CUSHION } from './profiles';
+import { collectWarnings, opening, seatCount, seatDepth, wedgeFace, wedgeReadout } from './seating';
 import type {
   Bounds,
   BuildResult,
@@ -36,6 +37,9 @@ interface Frame {
   outside: number;
   inward: 1 | -1;
 }
+
+/** A seat or wedge's true top: the loose back cushions, 4″ above the 27″ frame (31″). */
+const pieceTop = (c: Config): number => c.dims.backHeight + BACK_CUSHION.rise;
 
 function frameOf(c: Config, run: RunId, C: number): Frame {
   if (run === 'back') return { axis: 'x', start: c.shape === 'L-right' ? 0 : C, outside: 0, inward: 1 };
@@ -84,7 +88,7 @@ function wedgePiece(c: Config, corner: CornerId, C: number): BuiltPiece {
     arm: null,
     backs,
     cushionRect: null,
-    height: c.dims.backHeight,
+    height: pieceTop(c),
     splitGroup: null,
   };
 }
@@ -149,7 +153,7 @@ export function buildHaven(config: Config): BuildResult {
           arm,
           backs: seatPiece ? [frameRect(f, cushionSpan[0], cushionSpan[1], 0, B)] : [],
           cushionRect: seatPiece ? frameRect(f, cushionSpan[0], cushionSpan[1], B, D) : null,
-          height: p.kind === 'table' ? c.dims.tableHeight : c.dims.backHeight,
+          height: p.kind === 'table' ? c.dims.tableHeight : pieceTop(c),
           splitGroup: p.splitGroup ?? null,
         });
       }
@@ -206,7 +210,7 @@ export function buildHaven(config: Config): BuildResult {
     L: c.L,
     R: c.R,
     D,
-    seatDepth: D - B,
+    seatDepth: seatDepth(c),
     wedge: { C, auto: c.wedgeC === null, face: wedgeFace(C, D), readout: wedgeReadout(C, D) },
     runs,
     pieces,

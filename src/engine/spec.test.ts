@@ -16,7 +16,7 @@ describe('§12 spec tests', () => {
     expect(desc(c, 'right')).toEqual(['oneArm 72=58+14@end']);
     expect(piece(b, idAt(c, 'left', 0)).arm!.facing).toBe('LAF');
     expect(piece(b, idAt(c, 'right', 0)).arm!.facing).toBe('RAF');
-    expect(b.seatDepth).toBe(34);
+    expect(b.seatDepth).toBe(26); // to the loose back cushions: 44 − 10 − 8 (Andre, 2026-09-27)
     expect(b.opening).toEqual({ width: 100, depth: 88 });
     expect(b.seats.label).toBe('Seats 7');
     expect(b.warnings).toEqual([]);
@@ -42,17 +42,17 @@ describe('§12 spec tests', () => {
     expect(b.runs.map((r) => [r.id, r.endCap])).toEqual([['back', null], ['left', 'arm'], ['right', 'arm']]);
     expect(b.wedge.readout).toBe('Wedge 60 × 60 · angled face 22.6"');
     expect(b.bounds).toEqual({ minX: 0, minY: 0, maxX: 188, maxY: 132 }); // G4
-    expect(b.heights).toMatchObject({ legHeight: 1, seatHeight: 18, armHeight: 23, backHeight: 27, tableHeight: 23 });
+    expect(b.heights).toMatchObject({ legHeight: 1, seatHeight: 18, armHeight: 23, backHeight: 27, tableHeight: 18 });
   });
 
-  it('T2 D = 36: C 52 (auto); back [32][52]; legs 80 (66 + 14); seat depth 26; opening 116 × 96; Seats 7–8', () => {
+  it('T2 D = 36: C 52 (auto); back [32][52]; legs 80 (66 + 14); seat depth 18; opening 116 × 96; Seats 7–8', () => {
     for (const c of [op.setMeasurements(U(), { D: 36 }), standardU({ D: 36 })]) {
       const b = valid(c);
       expect(b.wedge).toMatchObject({ C: 52, auto: true });
       expect(desc(c, 'back')).toEqual(['table 32', 'armless 52']);
       expect(desc(c, 'left')).toEqual(['oneArm 80=66+14@end']);
       expect(desc(c, 'right')).toEqual(['oneArm 80=66+14@end']);
-      expect(b.seatDepth).toBe(26);
+      expect(b.seatDepth).toBe(18);
       expect([b.W, b.L, b.R]).toEqual([188, 132, 132]);
       expect(b.opening).toEqual({ width: 116, depth: 96 });
       expect(b.seats.label).toBe('Seats 7–8');

@@ -1,5 +1,6 @@
 // §8 derived numbers: seat count, opening, coffee-table clearances, warnings.
 import { CLEARANCE_MIN, OPENING_MIN, SEAT_DEPTH_MIN, WEDGE_FACE_MIN } from './defaults';
+import { BACK_CUSHION } from './profiles';
 import { corners, runIds } from './layout';
 import { MAX_PIECE, MIN_SEAT, TABLE_MAX, TABLE_MIN, cushionOf, isSeat } from './pieces';
 import type { Clearance, Config, SeatCount, Warning } from './types';
@@ -91,9 +92,9 @@ export function collectWarnings(c: Config, C: number, clearances: Clearance[]): 
     const parts = [o.width < OPENING_MIN ? `${fmt(o.width)}″ wide` : '', o.depth < OPENING_MIN ? `${fmt(o.depth)}″ deep` : ''];
     w.push({ code: 'openingUnder60', message: `Opening ${parts.filter(Boolean).join(', ')} (under ${OPENING_MIN})` });
   }
-  const seatDepth = c.D - c.dims.B;
-  if (seatDepth < SEAT_DEPTH_MIN) {
-    w.push({ code: 'seatDepthUnder24', message: `Seat depth ${fmt(seatDepth)}″ (under ${SEAT_DEPTH_MIN})` });
+  const depth = seatDepth(c);
+  if (depth < SEAT_DEPTH_MIN) {
+    w.push({ code: 'seatDepthShort', message: `Seat depth ${fmt(depth)}″ (under ${SEAT_DEPTH_MIN})` });
   }
   for (const cl of clearances) {
     if (cl.overlap) {
@@ -107,4 +108,9 @@ export function collectWarnings(c: Config, C: number, clearances: Clearance[]): 
     }
   }
   return w;
+}
+
+/** Seat depth, front edge to the loose back cushions (Andre, 2026-09-27): D − back frame − 8″. */
+export function seatDepth(c: Pick<Config, 'D' | 'dims'>): number {
+  return c.D - c.dims.B - BACK_CUSHION.depth;
 }

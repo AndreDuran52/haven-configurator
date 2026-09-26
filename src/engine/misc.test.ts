@@ -18,7 +18,11 @@ describe('seat count and warnings', () => {
 
   it('warning messages (amber, never blocking)', () => {
     const shallow = standardU({ D: 30 });
-    expect(valid(shallow).warnings.find((w) => w.code === 'seatDepthUnder24')!.message).toBe('Seat depth 20″ (under 24)');
+    // Seat depth to the loose back cushions (Andre, 2026-09-27): 30 − 10 − 8 = 12, under 16.
+    expect(valid(shallow).warnings.find((w) => w.code === 'seatDepthShort')!.message).toBe('Seat depth 12″ (under 16)');
+    // The same sofas warn as before (the old rule: D − 10 under 24, i.e. D < 34).
+    expect(valid(standardU({ D: 33 })).warnings.some((w) => w.code === 'seatDepthShort')).toBe(true);
+    expect(valid(standardU({ D: 34 })).warnings.some((w) => w.code === 'seatDepthShort')).toBe(false);
     const narrow = op.setMeasurements(U(), { L: 100 });
     expect(valid(narrow).warnings.find((w) => w.code === 'openingUnder60')!.message).toBe('Opening 56″ deep (under 60)');
     expect(valid(narrow).exportBlocked).toBe(false);
@@ -102,14 +106,14 @@ describe('purity, undo and refusals (G6)', () => {
 });
 
 describe('profiles and world', () => {
-  it('profiles.ts: legs 0–1, body 1–10, cushion 10 → 16 edge / 18 crown, arm 23, back 27, table 23', () => {
+  it('profiles.ts (the real Haven, 2026-09-27): legs 0–1, tight seat 1–10–18, 10″ back frame 1–27, loose back cushions 17–31, arm 23, table 18', () => {
     const p = profiles(U().dims);
     expect(p.leg).toEqual({ z0: 0, z1: 1 });
-    expect(p.body).toEqual({ z0: 1, z1: 10 });
-    expect(p.seatCushion).toEqual({ t0: 10, z0: 10, edge: 16, crown: 18 });
-    expect(p.backFrame).toEqual({ t0: 0, t1: 4, z0: 1, z1: 27 });
-    expect(p.backCushion).toEqual({ t0: 4, t1: 10, z0: 10, z1: 26 });
-    expect([p.arm.z1, p.table.z1, p.ottoman.z1, p.coffeeTable.z1]).toEqual([23, 23, 18, 16]);
+    expect(p.seatBase).toEqual({ z0: 1, z1: 10 });
+    expect(p.seat).toEqual({ z0: 10, z1: 18 });
+    expect(p.backFrame).toEqual({ t0: 0, t1: 10, z0: 1, z1: 27 });
+    expect(p.looseBack).toEqual({ t0: 10, t1: 18, z0: 17, z1: 31, sink: 1 });
+    expect([p.arm.z1, p.table.z1, p.tableTop.z0, p.ottoman.z1, p.coffeeTable.z1]).toEqual([23, 18, 16, 18, 16]);
   });
 
   it('E20a worldHandedness: planToWorld(x, y, h) = (x − cx, h, y − cy); the wedge diagonal is +X, +Z of its corner', () => {

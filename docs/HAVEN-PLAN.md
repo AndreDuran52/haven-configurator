@@ -255,10 +255,10 @@ export interface RunPiece {
 export interface LoosePiece { id: string; kind: 'ottoman' | 'coffeeTable'; x: number; y: number; w: number; d: number }  // coffeeTable: w === d (§4 "free square")
 
 export interface HavenDims {           // §3, kept as data so §14 answers are data changes
-  A: number; B: number; backFrame: number;        // 14, 10, 4
+  A: number; B: number; backFrame: number;        // 14, 10, 10 (H5b: the real 10″ back, Andre 2026-09-27)
   legHeight: number; deckHeight: number; seatHeight: number;   // 1, 10, 18
-  cushionCrown: number; cushionEdge: number;      // 8, 6
-  armHeight: number; backHeight: number; tableHeight: number;  // 23, 27, 23
+  cushionCrown: number; cushionEdge: number;      // 8, 8 (H5b: the tight seat is flat; kept so old links decode)
+  armHeight: number; backHeight: number; tableHeight: number;  // 23, 27, 18 (H5b: table top flush with the seat)
   ottomanHeight: number; coffeeTableHeight: number;            // 18, 16 (Q29)
 }
 export interface Config {
@@ -485,7 +485,7 @@ Refused on wedge-only runs and on unfilled ends.
 - Tables move with `moveTable`. Wedges are fixed.
 
 **Derived numbers (§8).**
-- **Seat depth** = D − B. Warn below 24.
+- **Seat depth** = D − B − 8, measured to the loose back cushions (8″ deep; Andre, 2026-09-27): 26 at D 44. Warn below 16, which warns for the same sofas as the old rule (D − B under 24): D under 34.
 - **Seat count:**
   - Each wedge counts 1.
   - A stretch is a run of seat cushion broken by wedges, tables, arms, gaps and run ends. Piece seams and split seams do *not* break a stretch.
@@ -507,7 +507,7 @@ Refused on wedge-only runs and on unfilled ends.
 | `tableOutOfRange` | A table is outside 16–40 |
 | `wedgeFaceUnder8` | The angled face is over 0 and under 8 |
 | `openingUnder60` | Either opening dimension is under 60 |
-| `seatDepthUnder24` | Seat depth is under 24 |
+| `seatDepthShort` | Seat depth (to the back cushions) is under 16: "Seat depth 12″ (under 16)" at D 30 (H5b; was `seatDepthUnder24`) |
 | `coffeeClearanceUnder14` / `coffeeOverlap` | Coffee table too close / overlapping |
 
 **Loose pieces** never touch runs, the lock, W/L/R or the seat count. `resizeLoose` keeps w = d for the coffee table (§4 "free square", one "size" field in its menu); the ottoman is a free rectangle.
@@ -568,13 +568,13 @@ These are deduplicated from the spec audit (ENG-, 3D-, EXP-, PLAT-, ORTHO- ids) 
 | NEW-3 | §7 | The two prototypes chose different split rules | G9 (one rule, one test) | Q6 |
 | NEW-4 | §10 | Codec stability across engine versions | Stored lengths make links stable; golden links per codec version kept forever | no |
 | NEW-5 | §2/§9 | Blank gaps in 3D | Hatched floor decal + "unfilled 68″" label (§7.4) | no |
-| 3D-01 | §3/§9 | Table at 23 breaks the 27 back | Back and back cushion stop at each table (full-depth table) | **Q12** |
-| 3D-02 | §9/§14 | Back geometry | Frame 4 deep, 1–27; cushion 6 deep, 10–26, no rake; one back cushion per seat cushion; wedge gets 2, mitred | **Q10, Q13** |
-| 3D-03 | §9 | Cushion division | One seat cushion per piece cushion span; wedge seat (B,B)(C,B)(C,D)(D,C)(B,C) | **Q13** |
-| 3D-04 | §9 | Back vs arm meeting | Back stops at the arm; arm is a rounded prism 14 × D, 1–23 | Q12 |
-| 3D-05 | §3 | Leg diameter and placement | 1.5″ dia × 1″, 3″ inset at footprint vertices; centre pair on pieces > 72″ | **Q14** |
-| 3D-06 | §3 | Seat height reference | `profiles.ts`: legs 0–1, body 1–10, cushion 10–18 crown / 16 edge, arm 23, back 27, table 23 | no |
-| 3D-07 | §9 | Pillow placement; assets | 2 square + 1 ball per wedge, 1 square per arm end, none at Table/Open ends; `.glb` without Draco | **Q15, Q16** |
+| 3D-01 | §3/§9 | A table breaks the 27 back | Back and back cushions stop at each table (full-depth table); its top is flush with the 18″ seat (Q9, 2026-09-27) | **Q9, Q12** |
+| 3D-02 | §9/§14 | Back geometry | Frame 10 deep, 1–27; loose back cushions 8 deep standing on the seat (17–31, leaning back about 4°), one per ~36″ of seat split evenly; wedge gets 2, one on each outside edge (Andre, 2026-09-27) | **Q10, Q13** |
+| 3D-03 | §9 | Seat division | A **tight seat**: one upholstered block per piece cushion span (base 1–10, flat band 10–18, the seam where they meet); wedge seat (B,B)(C,B)(C,D)(D,C)(B,C) | **Q13** |
+| 3D-04 | §9 | Back vs arm meeting | Back stops at the arm; arm is a rounded prism 14 × D, 1–23, so the 27″ frame steps 4″ above it | Q12 |
+| 3D-05 | §3 | Leg diameter and placement | 1.5″ dia × 1″, 5″ in from every outside edge (barely visible, Andre 2026-09-27); centre pair on pieces > 72″ | **Q14** |
+| 3D-06 | §3 | Seat height reference | `profiles.ts`: legs 0–1, seat base 1–10, tight seat 10–18 (flat), arm 23, back frame 27, loose back cushions to 31, table 18 | no |
+| 3D-07 | §9 | Pillow placement; assets | 2 squares + 1 ball per wedge and per arm end (down-feather "karate chop" squares, H5b), none at Table/Open ends; procedural, no `.glb` | **Q15, Q16** |
 | 3D-08 | §9 | Sketch reference image missing | Andre supplies it before H5 | **Q16** |
 | EXP-01 | §10 | Contents of the client vs shop sheet | §9 of this plan | **Q20, Q30** |
 | EXP-02 | §10 | jsPDF can't draw SVG | svg2pdf.js, vector | no |
@@ -682,14 +682,14 @@ Dimetric 45/30 was evaluated and **not shipped**: it looks almost identical to I
 
 | Piece | Parts (footprint · height range in inches) |
 |---|---|
-| Armless / one-arm | body t 4..D · 1–10 · back frame t 0..4 · 1–27 · back cushion t 4..10 · 10–26 · seat cushion t 10..D (0.25″ seam gaps) · 10–16 at the edges, crowned to 18 (`cushionEdge` / `cushionCrown`) · arm (one-arm, last 14″) t 0..D · 1–23 |
-| Table | full footprint · 1–23, walnut or dark wood; back and cushions stop at the table (3D-01) |
-| Wedge | §8 polygon (mirrored for back-right). Body = polygon inset 4″ on both outside edges · 1–10. Two frames + two back cushions along the outside edges. Seat (B,B)(C,B)(C,D)(D,C)(B,C) · 10–18 |
-| Legs | 1.5″ dia × 1″ at footprint vertices, inset 3″, instanced |
+| Armless / one-arm | back frame t 0..10 · 1–27 · tight seat t 10..D: base 1–10 and a flat band 10–18 (0.25″ seam gaps between pieces; the two bevels meet in the seam at the 10″ deck) · loose back cushions on the seat (engine `backCushions`, soft geometry, below) · arm (one-arm, last 14″) t 0..D · 1–23 |
+| Table | full footprint; top flush with the seat at 18 (Q9, 2026-09-27): **standard** = fabric base 1–10 + band 10–16 (the seat's seam) + 2″ wood top 16–18, or **all wood** 1–18; walnut or dark wood; back and cushions stop at the table (3D-01) |
+| Wedge | §8 polygon (mirrored for back-right). Two 10″ frames along the outside edges · 1–27. Tight seat (B,B)(C,B)(C,D)(D,C)(B,C): base 1–10 + band 10–18. One loose back cushion along each outside edge |
+| Legs | 1.5″ dia × 1″, 5″ in from every outside edge of the piece (barely visible, Andre 2026-09-27), instanced |
 | Ottoman | rounded prism w × d on 1″ legs, top at `ottomanHeight` 18, fabric |
 | Coffee table | slab w × d, top at `coffeeTableHeight` 16, `tableFinish` |
 | Gap (Blank) | flat hatched floor decal, 0.1″ thick, same hatch as the plan, with its "unfilled 68″" label drawn into the decal texture (H3; an HTML label was the alternative); included in bounds and fit |
-| Pillows (H5) | `.glb` at wedge and arm-end anchor points from the same data |
+| Pillows (H5, H5b) | procedural down-feather "karate chop" squares and ball pillows at the wedge and arm-end anchors (engine `pillowAnchors`) |
 
 Loose pieces are hidden in the Front/Side presets and in the vector elevation by default (a centred coffee table would hide the back run), with a "show loose pieces" toggle.
 
@@ -698,7 +698,13 @@ Loose pieces are hidden in the Front/Side presets and in the vector elevation by
 - Then `rotateX(+π/2)`, translate, and `toCreasedNormals(π/5)`.
 - The side walls sit exactly on the polygon, so the Top silhouette equals the SVG plan.
 - **No two parts may share a face.** Coplanar body and frame faces z-fought as a visible band in the elevations.
-- **Crowned seat cushion (required, H3):** a subdivided custom top cap rising from `cushionEdge` (16″) at the ends to `cushionCrown` (18″) mid-span. A flat 18″ top would make the Front preset and the client-sheet render disagree with the shop sheet's vector elevation, which draws the crown.
+- **Tight seat (H5b, Andre 2026-09-27; replaces the H3 crowned cushion):** the real Haven's seat is one upholstered block with a seam, not a separate cushion: a base prism to the 10″ deck and a flat band to 18″, whose bevels meet in a groove that reads as the seam. `cushionCrown` / `cushionEdge` stay in `HavenDims` only so old links decode.
+
+**Soft parts (H5b, `engine/softBox.ts`, `engine/cushions.ts`, `engine/pillows.ts`, `three/softGeometry.ts`).**
+- The engine places loose back cushions and pillows as **oriented boxes** (centre, facing, lean, w × h × t): pure data, also used by the ortho fit.
+- Loose back cushions: 8″ deep at the bottom, sunk 1″ into the seat, the bottom-back edge on the frame's face, leaning back 4° ± 1° (a deterministic jitter keyed by run and position, so a shared link looks the same). The box height is solved so the soft top peaks at `backHeight + 4` = 31″.
+- `looseCushion` fills its box: bulged front and back panels, a half-round boxing, a piping line, a taper toward the top, and a top that sags between its ends. `chopPillow` is a down pillow with the karate chop (a V in the top centre, ears up). `ballPillow` has six gores. Every soft geometry stays inside its box (vitest).
+- **No clipping:** each pillow starts inside what it leans on and slides forward until it just clears (separating-axis test with a 0.25″ gap, bisection). Squares clear the back cushions and each other; balls clear both. A pillow that would leave the seat is dropped, so shallow seats get fewer.
 
 **Performance.**
 - Memoise geometry per piece, keyed by its dimensions, so a seam drag rebuilds two pieces. Dispose geometry on change.
@@ -1012,7 +1018,7 @@ Two profiles:
   - The slider at 55 shows legs 77 and back 46 (test 6).
   - W = 300 shows `74 | 74` (test 5).
   - W = 140 shows "min 158″" and reverts.
-  - Warnings: D = 30 shows "Seat depth 20″ (under 24)"; slider at 49 shows the amber "angled face 7.1″"; L = 100 shows "Opening 56″ deep (under 60)". None blocks editing.
+  - Warnings: D = 30 shows "Seat depth 12″ (under 16)" (H5b; it read "Seat depth 20″ (under 24)" before the seat depth moved to the back cushions); slider at 49 shows the amber "angled face 7.1″"; L = 100 shows "Opening 56″ deep (under 60)". None blocks editing.
   - After D = 36 and W = 300, Reset restores the Standard U; one Undo brings the edited layout back.
   - Blank U shows hatched "unfilled 68/72/72".
   - Reload restores the layout from the hash; `?view` survives a commit; with localStorage throwing, the app still loads and edits.
@@ -1131,6 +1137,18 @@ Two profiles:
   - The wedge slider (Radix Slider) now loads right after the first paint into a 112 px placeholder: entry 93.4 kB gzip (was 101.3).
   - Measured (pdf.js on the downloaded PDF): the 188″ width spans 423.00 pt at 3/8″; the two wedge 60″ labels are 288.00 pt apart; the 4′ scale bar is 108.00 pt.
 
+### H5b: Look pass, the real Haven (after H6; Andre, 2026-09-27)
+- **Asked:** "needs to look more like a Haven": the seat top too round (it is a **tight seat** with a seam in the middle); the back cushions must look **loose**, sit **on the seat in front of the back**; the back is **10″** thick; the table top **flush with the seat**; the 1″ legs **inset**, barely visible; throw pillows like the real ones, **down-feather "karate chop"**. Visual only.
+- **Answers:** frame 27″, back cushions to 31″, arms 23″, seat 18″; back cushions 8″ deep; seat depth shown to the back cushions (26″ at 44″ D), warning only where it fired before (under 16).
+- **As built:**
+  - Engine data only, **no codec change**: `DEFAULT_DIMS` backFrame 10, tableHeight 18, cushionEdge 8; `BACK_CUSHION` {depth 8, rise 4} and the cushion shape are constants, not `HavenDims`, so `DIM_KEYS` and every golden link are untouched. `seatDepth` = D − B − 8; `seatDepthShort` under 16 (§5.4).
+  - Parts (§7.4): 10″ frame 1–27, tight seat (base 1–10 + flat band 10–18, seam at the deck), arms 1–23, standard table 1–10 / 10–16 / 2″ wood 16–18 or all wood 1–18, legs 5″ in.
+  - Soft parts (§7.4): loose back cushions from `engine/cushions.ts` (one per ~36″ of seat, two per wedge), karate-chop squares and balls from `engine/pillows.ts`, placed without clipping.
+  - 3D ticks: 1 / 18 / 23 / 27 / 31, a tick dropped when it would sit under 12 px from the previous one (phones).
+  - The 3D budget check now follows ThreeView's static imports (three.js sits in a chunk shared with the export scene since H6): 261 kB gzip of 300.
+- **Measured (Playwright, iPad landscape Front, ±1 px):** frame 27.08″, arm 23.06″, seat 17.97″ at its end and mid-span, back cushion top 30.83″; ticks within 0.7 px of the edges; Top parity IoU unchanged.
+- **Noticed, not built:** the U photo's back-right corner is square while the back-left is a wedge (the engine has one wedge size for both corners); the L photo's chaise end pad. Ask Andre.
+
 ### H7: Cloud saves + tracker hand-off (optional, later; Andre decides, do not start until told)
 The configurator is complete without H7. Options, in order of cost:
 - **(a) Stay local (default).** Layouts live on each device; share links and PDFs move them between devices and people. Nothing to build.
@@ -1161,8 +1179,8 @@ No cross-repo code coupling in any option: no shared packages, no shared databas
 
 | Test | Assertions |
 |---|---|
-| T1 | Back [wedge 60][table 32][armless 36][wedge 60] = 188; legs one-arm 72 (58 + 14), LAF/RAF; seat depth 34; opening 100 × 88; "Seats 7"; no warnings; exact wedge polygons (0,0)(60,0)(60,44)(44,60)(0,60) and mirror |
-| T2 | D = 36: C 52 (auto); back [32][52]; legs 80 (66 + 14); seat depth 26; W/L/R 188/132/132; opening 116 × 96; "Seats 7–8" |
+| T1 | Back [wedge 60][table 32][armless 36][wedge 60] = 188; legs one-arm 72 (58 + 14), LAF/RAF; seat depth 26 (to the back cushions, H5b; 34 before); opening 100 × 88; "Seats 7"; no warnings; exact wedge polygons (0,0)(60,0)(60,44)(44,60)(0,60) and mirror |
+| T2 | D = 36: C 52 (auto); back [32][52]; legs 80 (66 + 14); seat depth 18 (26 before H5b); W/L/R 188/132/132; opening 116 × 96; "Seats 7–8" |
 | T3a | `moveTable(→ left, replaceArm)`: left [armless 40][table 32], end cap `table`; back [armless 68]; "Seats 7" |
 | T3b | `moveTable(→ left, split)`: left [armless 13][table 32][one-arm 27 = 13 + 14]; back [68]; `seatUnder20` on both 13″ cushions; "Seats 6"; export not blocked |
 | T4 | `standardL('right', {W120, R100})` with D 44: back one-arm 60 (46 + 14) arm at start, LAF; leg one-arm 40 (26 + 14); opening null; "Seats 2–3" |
@@ -1263,13 +1281,13 @@ Answer in a word. **Q1 is answered (camera, spring-back orbit), and Q9, Q10, Q12
 | Q6 | When a long run splits, equal frames or equal seat cushions? *frames / cushions* | frames (§7 literal) |
 | Q7 | Arm side named as you face the piece (LAF/RAF)? *yes / no* | yes |
 | Q8 | "Opening under 60″" warns if either width or depth is under 60? *yes / no* | yes |
-| Q9 | Table top flush with the arm at 23″ (§14)? *yes / or give height* | **Default accepted 2026-09-25:** yes |
-| Q10 | Back = 4″ frame + 6″ cushion (§14)? *yes / or give split* | **Default accepted 2026-09-25:** yes |
+| Q9 | Table top flush with the arm at 23″ (§14)? *yes / or give height* | **Default accepted 2026-09-25:** yes. **Changed 2026-09-27 (Andre, H5b):** flush with the **seat** at 18″ |
+| Q10 | Back = 4″ frame + 6″ cushion (§14)? *yes / or give split* | **Default accepted 2026-09-25:** yes. **Changed 2026-09-27 (Andre, H5b):** a **10″ frame** 27″ tall, and **loose 8″ back cushions** standing on the seat in front of it, tops at 31″; seat depth measured to the cushions (D − 18), warning under 16 |
 | Q11 | Ottoman: free size (starts 36 × 36) and listed on the shop sheet? *yes / no* | yes |
 | Q12 | Back and back cushion stop at each table and at the arm? *yes / no* | **Default accepted 2026-09-25:** yes |
-| Q13 | One seat cushion and one back cushion per piece? *yes / or give max cushion width* | **Default accepted 2026-09-25:** yes |
-| Q14 | Legs 1.5″ round, 3″ in from each corner? *yes / or give spec* | **Default accepted 2026-09-25:** yes |
-| Q15 | Pillows: 2 square + 1 ball per wedge, 1 square per arm? *yes / or give counts* | yes. **2026-09-26:** Andre wants pillows like the showroom photo, which shows 2 square (one taupe, one light) + 1 ball at each corner **and** each arm end; confirm the arm-end count at H5 |
+| Q13 | One seat cushion and one back cushion per piece? *yes / or give max cushion width* | **Default accepted 2026-09-25:** yes. **Changed 2026-09-27 (Andre, H5b):** the seat is **tight** (one upholstered block per piece, a seam in the middle, no separate cushion); loose back cushions one per ~36″ of seat, split evenly, two per wedge |
+| Q14 | Legs 1.5″ round, 3″ in from each corner? *yes / or give spec* | **Default accepted 2026-09-25:** yes. **Changed 2026-09-27 (Andre, H5b):** inset more, barely visible: 5″ in from every outside edge |
+| Q15 | Pillows: 2 square + 1 ball per wedge, 1 square per arm? *yes / or give counts* | yes. **2026-09-26:** Andre wants pillows like the showroom photo, which shows 2 square (one taupe, one light) + 1 ball at each corner **and** each arm end (built that way in H5). **2026-09-27 (H5b):** down-feather "karate chop" squares (taupe + oatmeal linen), balls cream at the arms and mocha at the corners |
 | Q16 | Before H5: the pillow `.glb`s, fabric/wood textures, the sketch reference image, and which fabrics besides white bouclé (names + texture maps)? *yes / date* | **2026-09-26:** Andre said start H5 without them. Built with defaults: procedural pillows from the showroom photo, procedural bouclé/wood at true scale, Sketch per the §10 description. Still wanted: the fabric list (names + colours), and the sketch reference if the style should change |
 | Q17 | Share links go to clients (no names, no prices)? *yes / no* | yes |
 | Q18 | *(Rewritten.)* Before H7: which option for saves across devices and hand-off to the production tracker? *(a) stay local + share links/PDFs / (b) own small backend / (c) PDF uploaded by hand* | (a), with (c) whenever a sheet should live on a tracker item; H7 not started unless Andre asks |
@@ -1323,14 +1341,14 @@ Later milestones (H4–H6, and H7/H8 only when Andre asks) follow the same shape
 
 1. **§1:** "The neighbouring seat pieces absorb" becomes "the nearest seat piece absorbs (tables, wedges and arms never do); if it reaches a 6″ cushion it cascades to the next; if nothing can absorb, the edit is refused with a reason." Typed measurements, D and the wedge slider always hold W/L/R.
 2. **§2:** Standard U is a stored preset (table next to the left wedge) and always loads first; the last draft is offered as "Resume last layout". Standard L = default fill, no table, 132 × 132, following test 4 rather than the literal "minus one leg" (Q5). Blank mode places wedges automatically and no arms. Both sheets are blocked while anything is unfilled; share and save are allowed.
-3. **§3:** Add `backFrame 4`, deck 10, snug seat width 24, D range 30–48 in whole inches, ottoman 18″ and coffee table 16″ high (Q29). Heights move into a shared profile used by 3D, elevations and Blender. Stitch-line edge at 16″, crown 18″, in both the 3D cushion and the vector elevation.
+3. **§3:** Add `backFrame 4`, deck 10, snug seat width 24, D range 30–48 in whole inches, ottoman 18″ and coffee table 16″ high (Q29). Heights move into a shared profile used by 3D, elevations and Blender. Stitch-line edge at 16″, crown 18″, in both the 3D cushion and the vector elevation. *(H5b, Andre 2026-09-27: superseded by the real Haven: `backFrame` 10, a tight flat seat at 18″ with its seam at the 10″ deck, loose 8″ back cushions to 31″, the table at 18″.)*
 4. **§4:** The one-arm piece's length includes its arm. Ranges are warnings; a 6″ cushion is the hard floor. Arms only face an open end (or a table at the open end). Table outside the arm = end cap state "arm + table". The coffee table stays square.
 5. **§5:** One global C for every wedge. A manual C clamps into [D, D+30] when D changes. The face warning fires only when 0 < face < 8. The slider stops at the last value that fits.
 6. **§6:** Snap targets = seams + seat midpoints (split, centred on the cushion span, arm excluded) + in place of the arm + outside the arm. The split halves re-merge whenever the table leaves them, including a move within the same run and after a share-link round trip.
 7. **§7 Views:** 3D uses an **orthographic camera**. Presets: Top (matches the plan), Front, Side, 3/4 (trimetric 30/30, mirrored for L-right), Iso (to scale). Orbit stays above the floor; pinch changes zoom (px/in). 3D is view-only.
 8. **§7:** The lock governs piece edits only. Lock off: arms keep the cushion and runs grow. Auto-split = the fewest equal pieces (arm included) with half-inch remainders away from the arm (pending Q6). Undo = one step per gesture.
 9. **§8:** Seat stretches are not broken by piece seams. Opening is U only; warn if either side is under 60. Clearance is measured to the seat fronts including the wedge faces. Add a coffee-table overlap warning.
-10. **§9:** Depth cues for orthographic (key light, outlines, contact shadow at the world origin, floor slab). No HDRI. The back stops at tables and arms. Cushions keep the true 16/18″ crown. Loose pieces and Blank gaps appear in 3D. Cushion, leg and pillow rules per Q12–Q15. Assets without Draco.
+10. **§9:** Depth cues for orthographic (key light, outlines, contact shadow at the world origin, floor slab). No HDRI. The back stops at tables and arms. The seat is tight and flat at 18″ with a seam (H5b; the H3 crown is gone). Loose back cushions sit on the seat in front of a 10″ frame. Loose pieces and Blank gaps appear in 3D. Cushion, leg and pillow rules per Q12–Q15. Assets without Draco.
 11. **§10:** Sheets are vector PDFs at an architectural scale with a scale bar. The client sheet adds a to-scale orthographic front elevation and, per Q30, a "not to scale" 3/4. The shop sheet adds a vector elevation with heights and the piece-list columns in §9. Live D callout. Share link = versioned text codec in the URL fragment encoding the whole config (incl. split tags, snug width, all dims), no personal data. Blender gets orthographic and perspective cameras (Q31).
 12. **§11:** A standalone Vite + React 19 + TypeScript app in its own repo and Vercel project, `src/` split into engine / ortho / state / plan / three / ui / export. No login and no backend; layouts live in the URL hash and localStorage. three.js and jsPDF are lazy chunks under an entry-chunk budget. Add camera-controls, svg2pdf.js, vitest, a precache service worker. One entry: a share link is the app URL with `#c=` (`?view` for read-only).
 13. **§12:** Explicit fixtures and the added assertions and edge tests in plan §11.

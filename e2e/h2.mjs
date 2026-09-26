@@ -54,7 +54,7 @@ export async function h2(browser, base, check) {
   {
     const { context, page } = await openApp(browser, base)
     await setField(page, 'D', 30)
-    check((await warnings(page)).includes('Seat depth 20″ (under 24)'), 'D = 30: "Seat depth 20″ (under 24)"')
+    check((await warnings(page)).includes('Seat depth 12″ (under 16)'), 'D = 30: "Seat depth 12″ (under 16)" (to the back cushions, Andre 2026-09-27)')
     await setField(page, 'D', 44)
     await slide(page, 'ArrowLeft', 11) // 60 -> 49
     const chip = await page.textContent('[data-testid=wedge]')
