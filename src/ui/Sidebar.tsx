@@ -1,12 +1,15 @@
 // Measurements and settings (plan §8): shape picker, W/L/R/D with D chips, the
 // lock, seat width, warnings.
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { buildInfo } from '@/buildInfo';
 import { DEPTH_PRESETS, setLock, setMeasurements, setSeatWidth, setShape, setTableStyle, type Shape, type TableStyle } from '@/engine';
 import { useHavenStore, useLive } from '@/state/store';
 import { Button, Section, Segmented, Switch } from './controls';
 import { MeasureField } from './MeasureField';
 import { WarningsList } from './WarningsList';
+
+// Look (swatches, pillows, plan style) loads after the first paint: it keeps the entry chunk in budget.
+const LookSection = lazy(() => import('./LookSection').then((m) => ({ default: m.LookSection })));
 
 const TABLE_STYLES: { value: TableStyle; label: string }[] = [
   { value: 'standard', label: 'Wood top' },
@@ -99,6 +102,9 @@ export function Sidebar() {
           </p>
         </Section>
       )}
+      <Suspense fallback={null}>
+        <LookSection />
+      </Suspense>
       <Section title="Warnings">
         <WarningsList />
       </Section>

@@ -32,6 +32,7 @@ import type { Config, HavenDims, LoosePiece, RunId, RunPiece, Runs, Shape, Table
 export const LINK_VERSION = 2;
 
 /** Append-only: a fabric's index is its link code. */
+/** Append-only: a fabric's index is its link code (every FABRICS key must be here). */
 export const FABRIC_CODES: readonly string[] = [DEFAULT_FABRIC];
 /** Append-only: a finish's index is its link code. */
 export const FINISH_CODES: readonly TableFinish[] = [DEFAULT_FINISH, 'darkWood'];

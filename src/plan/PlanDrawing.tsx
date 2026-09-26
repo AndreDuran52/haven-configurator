@@ -61,6 +61,9 @@ export function PlanDrawing({ built, dims, k, theme, showWarnings, selectedId, s
           <Box key={`b${i}`} box={b} fill={theme.seatDetail} stroke={theme.ink} strokeWidth={lw(0.5)} />
         ))}
         {p.arm && <Box box={p.arm.rect} fill={theme.seatDetail} stroke={theme.ink} strokeWidth={lw(0.5)} />}
+        {theme.cushionSeams && p.cushionRect && (
+          <Box data-seam="" box={inset(p.cushionRect, 0.75)} fill="none" stroke={theme.ink} strokeWidth={lw(0.5)} rx={1.5} />
+        )}
         {isTable && (
           <g stroke={theme.tableGrain} strokeWidth={lw(0.3)} fill="none" opacity={0.55}>
             {woodGrain(p.id, inset(p.bbox, 0.8)).map((d, i) => (

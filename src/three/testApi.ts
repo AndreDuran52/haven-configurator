@@ -37,6 +37,8 @@ export interface Haven3dApi {
   points: () => [number, number, number][];
   /** PNG data URL of the live view; `silhouette` = black parts on white; `only` = mesh names containing it */
   capture: (opts?: { silhouette?: boolean; only?: string }) => string;
+  /** names of the visible meshes that start with `prefix` */
+  meshNames: (prefix: string) => string[];
 }
 
 declare global {
@@ -78,6 +80,13 @@ export function installTestApi(ctx: TestApiContext): () => void {
     },
     offset: ctx.offset,
     points: ctx.points,
+    meshNames: (prefix) => {
+      const out: string[] = [];
+      scene.traverseVisible((o) => {
+        if ((o as { isMesh?: boolean }).isMesh && o.name.startsWith(prefix)) out.push(o.name);
+      });
+      return out;
+    },
     capture: (opts = {}) => {
       const restore: (() => void)[] = [];
       if (opts.silhouette) {
