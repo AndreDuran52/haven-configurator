@@ -1,18 +1,33 @@
-import { buildInfo } from './buildInfo.ts'
+// App root (plan §4): the store is created once from the URL (hash, then the
+// Standard U; ?view = read-only), then the layout, URL sync and draft hooks.
+import { useState } from 'react';
+import { HavenStoreProvider, createHavenStore } from '@/state/store';
+import { initialConfig, isViewMode } from '@/state/url';
+import { useDraft } from '@/state/useDraft';
+import { useUrlSync } from '@/state/useUrlSync';
+import { HavenLayout } from '@/ui/HavenLayout';
 
-// H0b placeholder. Replaced by HavenStoreProvider + HavenLayout from H2.
+function makeStore() {
+  const { config, message } = initialConfig(window.location.hash);
+  const store = createHavenStore(config, { readOnly: isViewMode(window.location.search) });
+  if (message) store.getState().toast(message);
+  // For the e2e checks (judged against the committed config, never mutated there).
+  (window as unknown as { __haven?: unknown }).__haven = store;
+  return store;
+}
+
+function Effects() {
+  useUrlSync();
+  useDraft();
+  return null;
+}
+
 export default function App() {
+  const [store] = useState(makeStore);
   return (
-    <main className="safe-area flex min-h-full items-center justify-center">
-      <div className="flex flex-col items-center gap-3 px-6 text-center">
-        <h1 className="text-4xl font-semibold tracking-tight">
-          Haven <span className="text-accent">Configurator</span>
-        </h1>
-        <p className="text-ink-muted">Planned — nothing built yet</p>
-        <p className="font-mono text-xs text-ink-muted" data-testid="commit">
-          {buildInfo.commit}
-        </p>
-      </div>
-    </main>
-  )
+    <HavenStoreProvider store={store}>
+      <Effects />
+      <HavenLayout />
+    </HavenStoreProvider>
+  );
 }

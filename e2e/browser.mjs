@@ -18,8 +18,9 @@ export function launchBrowser() {
 }
 
 /** Opens `url` in a fresh touch-enabled context and records console errors. */
-export async function openPage(browser, url, viewport = VIEWPORTS.ipadLandscape) {
+export async function openPage(browser, url, viewport = VIEWPORTS.ipadLandscape, init) {
   const context = await browser.newContext({ viewport, hasTouch: true })
+  if (init) await context.addInitScript(init)
   const page = await context.newPage()
   const errors = []
   page.on('console', (m) => {
