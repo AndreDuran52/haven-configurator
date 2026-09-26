@@ -630,7 +630,7 @@ These are deduplicated from the spec audit (ENG-, 3D-, EXP-, PLAT-, ORTHO- ids) 
 
 **Auto-fit.** Presets, rotation and resize re-fit until the user touches the camera (`controlstart`). After that, a resize keeps the user's zoom. *Measured* both ways: rotation refit 4.764 → 3.155 px/in; a user zoom of 4.58 was kept across rotation.
 
-**Spring-back orbit (Q1, Andre 2026-09-25).** "You can move around, but when you let go of the left mouse button it snaps back to the normal spot / angle (like looking at it from a top right view)." On release (`controlend`: mouse up, last finger lifted), the camera tweens back to the active preset (angle, target and fit zoom) with the same `rotateTo` / `moveTo` / `zoomTo` sequence as applying a preset; the default preset is the 3/4 (top-right). Orbiting is a way to look around, not a way to leave the camera somewhere. **To confirm on the iPad in H3:** whether a pinch-zoom also springs back (default: yes, everything returns to the preset), and whether the spring-back applies in every preset or only in 3/4 (default: every preset). With spring-back on, the auto-fit rule above always applies, because the camera always comes back to a preset.
+**Spring-back orbit (Q1, Andre 2026-09-25).** "You can move around, but when you let go of the left mouse button it snaps back to the normal spot / angle (like looking at it from a top right view)." On release (`controlend`: mouse up, last finger lifted), the camera tweens back to the active preset (angle, target and fit zoom) with the same `rotateTo` / `moveTo` / `zoomTo` sequence as applying a preset; the default preset is the 3/4 (top-right). Orbiting is a way to look around, not a way to leave the camera somewhere. **To confirm on the iPad in H3:** whether a pinch-zoom also springs back (default: yes, everything returns to the preset), and whether the spring-back applies in every preset or only in 3/4 (default: every preset). With spring-back on, the auto-fit rule above always applies, because the camera always comes back to a preset. **As built (H3):** spring-back fires on camera-controls' `controlend` (a released drag, pan or pinch); a mouse-wheel zoom has no release, so it stays until the next drag or preset. On phones (≤ 480 px) in Front and Side only the angle springs back, so a horizontal pan along the elevation is kept.
 
 ### 7.2 Presets
 
@@ -650,7 +650,7 @@ Dimetric 45/30 was evaluated and **not shipped**: it looks almost identical to I
 
 **Fit rule (`ortho/orthoFit.ts`, pure):**
 - Project the silhouette points onto the preset's screen basis. The points are every part-polygon corner at its bottom and top heights (run pieces, loose pieces, gap decals, and from H5 the pillow anchor boxes from the `.glb` bounds), plus the floor slab, all taken from engine data (never `Box3.setFromObject`).
-- Padding p = 6% of the short side, clamped to 20–64 CSS px.
+- Padding p = 6% of the short side, clamped to 20–64 CSS px. **As built (H3):** plus room for the HTML overlay, so it never covers the sofa: 44 px at the bottom wherever the scale bar shows, and 64 px on the left of Front / Side for the height ticks.
 - zoom = min((W − 2p) / spanU, (H − 2p) / spanV).
 
 **Scale overlay** (HTML, driven by `camera.zoom`, so it is exact): a scale bar in Top, Front, Side and Iso (× 0.8165 in Iso, labelled "along length / depth / height only"), hidden in 3/4. In Front and Side, stacked height ticks at 1 / 18 / 23 / 27″ from `BuildResult.heights`. This is what makes the orthographic view readable in a client meeting.
@@ -688,7 +688,7 @@ Dimetric 45/30 was evaluated and **not shipped**: it looks almost identical to I
 | Legs | 1.5″ dia × 1″ at footprint vertices, inset 3″, instanced |
 | Ottoman | rounded prism w × d on 1″ legs, top at `ottomanHeight` 18, fabric |
 | Coffee table | slab w × d, top at `coffeeTableHeight` 16, `tableFinish` |
-| Gap (Blank) | flat hatched floor decal, 0.1″ thick, same hatch as the plan, plus an HTML label "unfilled 68″"; included in bounds and fit |
+| Gap (Blank) | flat hatched floor decal, 0.1″ thick, same hatch as the plan, with its "unfilled 68″" label drawn into the decal texture (H3; an HTML label was the alternative); included in bounds and fit |
 | Pillows (H5) | `.glb` at wedge and arm-end anchor points from the same data |
 
 Loose pieces are hidden in the Front/Side presets and in the vector elevation by default (a centred coffee table would hide the back run), with a "show loose pieces" toggle.

@@ -37,13 +37,13 @@ Layout: `src/{engine, ortho, state, plan, three, ui, export}` (plan §4). The sh
 
 Each milestone: `git fetch`, branch from `origin/main` (`h0b-scaffold`, `h1-engine`, `h2-plan-view`, `h3-ortho`, `h4-editing`, `h5-look`, `h6-exports`), build only that §10 block, meet its done-when list, open a PR, **stop**. Andre previews (localhost or the Vercel preview; from H2 on, installed on the iPad) and it merges on Andre's word. Tick the box below in the same PR.
 
-**Current status: H2 plan view** (plan view, inputs, URL/draft state and the service worker; no editing gestures or 3D yet).
+**Current status: H3 orthographic 3D** (plan view + inputs, and a read-only 3D view with presets and the spring-back orbit; no editing gestures yet).
 
 - [x] H0 Docs hand-off (plan, spec, prototypes, evidence in `docs/`)
 - [x] H0b Scaffold (Vite, strict TS, oxlint guards, vitest, bundle budget, manifest, Vercel)
 - [x] H1 Engine + tests (nine §12 tests first, then G1–G11, E-tests, property test)
 - [x] H2 Plan view + inputs, URL/draft state, service worker
-- [ ] H3 Read-only orthographic 3D viewer (Q1 = camera with spring-back orbit, plan §7.1; Q9, Q10, Q12–Q14 defaults accepted)
+- [x] H3 Read-only orthographic 3D viewer (Q1 = camera with spring-back orbit, plan §7.1; Q9, Q10, Q12–Q14 defaults accepted)
 - [ ] H4 Editing (seams, tables, tray, tap menu, loose pieces)
 - [ ] H5 Look (pillows, textures, Sketch; needs Q16 assets)
 - [ ] H6 Sheets (PDF/PNG), share links + `?view`, local Saved layouts
