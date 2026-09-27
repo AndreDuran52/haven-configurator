@@ -49,7 +49,7 @@ export async function h5(browser, base, check) {
     const names = await page.evaluate(() => window.__haven3d.meshNames('pillow:'))
     const squares = names.filter((n) => n.includes(':sq')).length
     const balls = names.filter((n) => /:ball\d*$/.test(n)).length
-    if (vName === 'ipadLandscape') check(squares === 8 && balls === 4, `Standard U: 8 square + 4 ball pillows (2 squares at each wedge and arm end, 2 balls on each wedge) (${squares} + ${balls})`)
+    if (vName === 'ipadLandscape') check(squares === 8 && balls === 2, `Standard U: 8 square + 2 ball pillows (a pair of squares at each wedge and arm end, a ball on each wedge) (${squares} + ${balls})`)
     if (vName === 'ipadLandscape') {
       const want = expectModels()
       await page.waitForFunction((w) => JSON.stringify(window.__haven3d.models()) === JSON.stringify(w), want, { timeout: 10000 }).catch(() => {})
@@ -81,7 +81,7 @@ export async function h5(browser, base, check) {
       await page.waitForTimeout(300)
       const n1 = await page.evaluate(() => window.__haven3d.points().length)
       const left = await page.evaluate(() => window.__haven3d.meshNames('pillow:').length)
-      check(left === 0 && n1 === n0 - 12 * 8, `Pillows off: none drawn, 96 fit points fewer (${n0} → ${n1})`)
+      check(left === 0 && n1 === n0 - 10 * 8, `Pillows off: none drawn, 80 fit points fewer (10 pillows × 8 box corners) (${n0} → ${n1})`)
     }
     check(cdn.length === 0, `${vName}: no requests to gstatic.com or githack.com (${cdn.length})`)
     check(errors.length === 0, `${vName}: no console errors (${errors.join(' | ')})`)
