@@ -21,25 +21,25 @@ const inPoly = (pt: Pt, poly: Pt[]) => {
 };
 
 describe('pillows (Q15, Andre 2026-09-26/27: like the showroom photos)', () => {
-  it('Standard U: 2 squares + 1 ball at each wedge and each arm end', () => {
+  it('Standard U (Andre, 2026-09-27): 2 squares at each wedge and arm end (8), and 2 balls on each wedge', () => {
     const b = buildHaven(standardU());
     const a = pillowAnchors(b);
     expect(a).toHaveLength(12);
     const groups = new Map<string, string[]>();
     for (const p of a) groups.set(p.key.split(':').slice(0, -1).join(':'), [...(groups.get(p.key.split(':').slice(0, -1).join(':')) ?? []), p.kind]);
     expect(groups.size).toBe(4);
-    for (const kinds of groups.values()) expect(kinds.sort()).toEqual(['ball', 'square', 'square']);
+    for (const [g, kinds] of groups) expect(kinds.sort()).toEqual(g.startsWith('wedge') ? ['ball', 'ball', 'square', 'square'] : ['square', 'square']);
   });
 
   it('none at table or open ends: 3a (table in place of the left arm) loses that arm group', () => {
     const u = standardU();
     const id = u.runs.back!.find((p) => p.kind === 'table')!.id;
     const a = pillowAnchors(buildHaven(moveTable(u, id, { run: 'left', at: 'replaceArm' }).config));
-    expect(a).toHaveLength(9);
+    expect(a).toHaveLength(10);
   });
 
   it('L shapes: one wedge and two arm ends', () => {
-    for (const side of ['left', 'right'] as const) expect(pillowAnchors(buildHaven(standardL(side)))).toHaveLength(9);
+    for (const side of ['left', 'right'] as const) expect(pillowAnchors(buildHaven(standardL(side)))).toHaveLength(8);
   });
 
   it('every pillow sits over the sofa (footprint), never over an arm or a table; all sit on the 18″ seat', () => {
@@ -49,7 +49,9 @@ describe('pillows (Q15, Andre 2026-09-26/27: like the showroom photos)', () => {
       const blocked = b.pieces.flatMap((p) => (p.arm ? [p.arm.rect] : p.kind === 'table' ? [p.bbox] : []));
       for (const p of pillowAnchors(b)) {
         const corners = pillowCorners(p);
-        for (const [x, y] of corners) {
+        // A ball is checked as the sphere it is (its box corners stick out past a wedge's angled face).
+        const rim = Array.from({ length: 16 }, (_, i): Pt => [p.x + (p.w / 2) * Math.cos((i * Math.PI) / 8), p.y + (p.w / 2) * Math.sin((i * Math.PI) / 8)]);
+        for (const [x, y] of p.kind === 'ball' ? rim : corners) {
           expect(polys.some((poly) => inPoly([x, y], poly)), `${p.key} (${x.toFixed(1)}, ${y.toFixed(1)})`).toBe(true);
           expect(blocked.some((r) => x > r.x + 0.01 && x < r.x + r.w - 0.01 && y > r.y + 0.01 && y < r.y + r.h - 0.01), `${p.key} over an arm or table`).toBe(false);
         }

@@ -18,28 +18,28 @@ export const BACK_CUSHION_LEAN = 4;
 /** Visual gap between neighbouring cushions (and at a piece's ends). */
 const GAP = 0.5;
 /**
- * The soft shape three/softGeometry builds inside each box (inches): the front
- * and back panels dome out `bulge` at the middle; round the edges the boxing
- * is a half-round of `radius` (t/2 − bulge, so it stays in the box); the depth
- * tapers to `taper` at the top; the top is crowned `crown` higher in the middle
- * than at its rolled ends; the corners pull in by `pinch` of their depth (down
- * fill). The crown and the bulge only reach the box's faces, never past them,
- * so the peak below depends on the radius and taper alone. Andre (2026-09-27):
- * "a little bit more puffy".
+ * The soft shape three/softGeometry builds inside each box (inches), like the
+ * showroom photos (Andre, 2026-09-27: "more square, straight at the top"):
+ * front and back panels dome out `bulge` at the middle; a flat boxing band
+ * with edges rounded to `radius`; the depth tapers to `taper` at the top; the
+ * top crowns `crown` (0 = straight); the ends bow in by `bow` at the corners and
+ * the corners pull in by `pinch`. Nothing grows past the box, so the peak below
+ * depends on the radius, taper and boxing alone.
  */
-export const BACK_CUSHION_SHAPE = { bulge: 1.5, radius: 2.5, taper: 0.875, crown: 1.2, pinch: 0.4 } as const;
+export const BACK_CUSHION_SHAPE = { bulge: 1, radius: 1.75, taper: 0.9, crown: 0, bow: 0, pinch: 0.12 } as const;
 
 /**
- * The box height whose soft top, leaning back, peaks at `top` from `bottom`.
- * The top is a half-round (radius r, depth scaled by the taper) whose centre
- * sits r below the box top; leaning back by θ its highest point rises
- * r·√(cos²θ + taper²·sin²θ) above that centre.
+ * The box height whose soft top, leaning back by θ, peaks at `top` from
+ * `bottom`. The top-front edge is a quarter-round of radius r whose centre sits
+ * r below the box top and zc (the tapered boxing) in front of the middle; its
+ * highest point rises r·√(cos²θ + taper²·sin²θ) above that centre.
  */
 function heightFor(top: number, bottom: number, t: number, lean: number): number {
   const a = (lean * Math.PI) / 180;
-  const { radius: r, taper } = BACK_CUSHION_SHAPE;
+  const { radius: r, taper, bulge } = BACK_CUSHION_SHAPE;
+  const zc = taper * Math.max(0, t / 2 - bulge - r);
   const k = Math.hypot(Math.cos(a), taper * Math.sin(a));
-  return (top - bottom - (t / 2) * Math.sin(a) + r * Math.cos(a) - k * r) / Math.cos(a);
+  return (top - bottom - (t / 2) * Math.sin(a) - zc * Math.sin(a) + r * Math.cos(a) - k * r) / Math.cos(a);
 }
 
 export function backCushions(b: BuildResult): BackCushion[] {

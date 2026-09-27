@@ -48,8 +48,8 @@ export async function h5(browser, base, check) {
     await settle(page)
     const names = await page.evaluate(() => window.__haven3d.meshNames('pillow:'))
     const squares = names.filter((n) => n.includes(':sq')).length
-    const balls = names.filter((n) => n.endsWith(':ball')).length
-    if (vName === 'ipadLandscape') check(squares === 8 && balls === 4, `Standard U: 8 square + 4 ball pillows (2 + 1 at each wedge and arm end) (${squares} + ${balls})`)
+    const balls = names.filter((n) => /:ball\d*$/.test(n)).length
+    if (vName === 'ipadLandscape') check(squares === 8 && balls === 4, `Standard U: 8 square + 4 ball pillows (2 squares at each wedge and arm end, 2 balls on each wedge) (${squares} + ${balls})`)
     if (vName === 'ipadLandscape') {
       const want = expectModels()
       await page.waitForFunction((w) => JSON.stringify(window.__haven3d.models()) === JSON.stringify(w), want, { timeout: 10000 }).catch(() => {})

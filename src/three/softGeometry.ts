@@ -34,14 +34,13 @@ const smooth = (e0: number, e1: number, x: number) => {
 
 /**
  * A loose back cushion (engine BACK_CUSHION_SHAPE): front and back panels that
- * dome out, a half-round boxing all round (its radius is what is left of the
- * depth after the bulge, so the shape fills its box and never leaves it),
- * tapered toward the top, the top crowned between rolled ends, the corners
- * pulled in like a down-filled cushion, and a soft piping line where the
- * panels meet the boxing.
+ * dome out, a boxing band with rounded edges (the shape fills its box and never
+ * leaves it), tapered toward the top, a straight top, the corners pulled in a
+ * little like a down-filled cushion, and a piping line where the panels meet
+ * the boxing.
  */
 export function looseCushion(w: number, h: number, t: number): BufferGeometry {
-  const { bulge, radius, taper, crown, pinch } = BACK_CUSHION_SHAPE;
+  const { bulge, radius, taper, crown, bow, pinch } = BACK_CUSHION_SHAPE;
   // The core box, before the bulge (depth) and the crown (height) grow it back
   // to w × h × t: it sits crown/2 low, so its bottom stays on the box bottom.
   const half = new Vector3(w / 2, h / 2 - crown / 2, t / 2 - bulge);
@@ -87,7 +86,7 @@ export function looseCushion(w: number, h: number, t: number): BufferGeometry {
         p.z *= 1 - (1 - taper) * (ny * 0.5 + 0.5);
         p.y += crown * (1 - nx * nx) * Math.max(0, ny) ** 3;
         // Bowed ends: the end walls draw in toward the top and bottom corners.
-        p.x *= 1 - 0.05 * ny ** 4;
+        p.x *= 1 - bow * ny ** 4;
         p.y -= crown / 2;
         pos.push(p.x, p.y, p.z);
         uv.push(p.x + p.z, p.y);
