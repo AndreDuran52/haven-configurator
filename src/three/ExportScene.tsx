@@ -6,6 +6,7 @@ import { useThree } from '@react-three/fiber';
 import type { PillowAnchor } from '@/engine';
 import { aimKeyLight } from './keyLight';
 import type { MaterialSet } from './materials';
+import type { SoftModels } from './models';
 import type { Parts } from './parts';
 import { Pillows } from './Pillows';
 import { SofaModel } from './SofaModel';
@@ -19,7 +20,7 @@ function KeyLight() {
   return <directionalLight ref={ref} intensity={1.7} />;
 }
 
-export function ExportScene({ parts, pillows, mats, offset }: { parts: Parts; pillows: PillowAnchor[]; mats: MaterialSet; offset: [number, number] }) {
+export function ExportScene({ parts, pillows, mats, models, offset }: { parts: Parts; pillows: PillowAnchor[]; mats: MaterialSet; models: SoftModels | null; offset: [number, number] }) {
   return (
     <>
       <hemisphereLight args={['#ffffff', '#b9ab97', 1.2]} />
@@ -27,7 +28,7 @@ export function ExportScene({ parts, pillows, mats, offset }: { parts: Parts; pi
       <directionalLight position={[1200, 500, 300]} intensity={0.3} />
       <group position={[offset[0], 0, offset[1]]}>
         <SofaModel parts={parts} mats={mats} showLoose />
-        <Pillows anchors={pillows} mats={mats.pillow} />
+        <Pillows anchors={pillows} mats={mats.pillow} models={models} />
       </group>
     </>
   );

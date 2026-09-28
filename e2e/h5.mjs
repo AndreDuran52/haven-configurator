@@ -7,6 +7,9 @@ import { VIEWPORTS } from './browser.mjs'
 import { config, openApp } from './lib.mjs'
 
 const SHOTS = 'test-results'
+// Andre's Blender models (H5c): whichever .glb files the build carries must be in use.
+const glbs = () => readdirSync('dist/assets').filter((f) => f.endsWith('.glb'))
+const expectModels = () => ({ square: glbs().some((f) => f.startsWith('pillow-square-')), ball: glbs().some((f) => f.startsWith('pillow-ball-')) })
 
 async function settle(page) {
   await page.waitForTimeout(200)
@@ -45,8 +48,14 @@ export async function h5(browser, base, check) {
     await settle(page)
     const names = await page.evaluate(() => window.__haven3d.meshNames('pillow:'))
     const squares = names.filter((n) => n.includes(':sq')).length
-    const balls = names.filter((n) => n.endsWith(':ball')).length
-    if (vName === 'ipadLandscape') check(squares === 8 && balls === 4, `Standard U: 8 square + 4 ball pillows (2 + 1 at each wedge and arm end) (${squares} + ${balls})`)
+    const balls = names.filter((n) => /:ball\d*$/.test(n)).length
+    if (vName === 'ipadLandscape') check(squares === 8 && balls === 2, `Standard U: 8 square + 2 ball pillows (a pair of squares at each wedge and arm end, a ball on each wedge) (${squares} + ${balls})`)
+    if (vName === 'ipadLandscape') {
+      const want = expectModels()
+      await page.waitForFunction((w) => JSON.stringify(window.__haven3d.models()) === JSON.stringify(w), want, { timeout: 10000 }).catch(() => {})
+      const got = await page.evaluate(() => window.__haven3d.models())
+      check(got.square === want.square && got.ball === want.ball, `Blender models in use as shipped: square ${got.square} (file ${want.square}), ball ${got.ball} (file ${want.ball})`)
+    }
     for (const name of ['top', 'front', 'side', 'threeQuarter', 'iso']) {
       await page.locator(`[data-preset=${name}]`).click()
       await settle(page)
@@ -72,7 +81,7 @@ export async function h5(browser, base, check) {
       await page.waitForTimeout(300)
       const n1 = await page.evaluate(() => window.__haven3d.points().length)
       const left = await page.evaluate(() => window.__haven3d.meshNames('pillow:').length)
-      check(left === 0 && n1 === n0 - 12 * 8, `Pillows off: none drawn, 96 fit points fewer (${n0} → ${n1})`)
+      check(left === 0 && n1 === n0 - 10 * 8, `Pillows off: none drawn, 80 fit points fewer (10 pillows × 8 box corners) (${n0} → ${n1})`)
     }
     check(cdn.length === 0, `${vName}: no requests to gstatic.com or githack.com (${cdn.length})`)
     check(errors.length === 0, `${vName}: no console errors (${errors.join(' | ')})`)
@@ -128,18 +137,22 @@ export async function h5(browser, base, check) {
   }
 
   // 4. The 3D chunk stays <= 300 kB gzip (no pillow or texture assets: all procedural).
+  // Since H6 three.js sits in a chunk ThreeView shares with the export scene, so
+  // count ThreeView with everything it statically imports that the page did not
+  // already load from index.html.
   {
     const dir = 'dist/assets'
-    const three = readdirSync(dir).filter((f) => /^ThreeView-.*\.js$/.test(f))
-    const gz = three.reduce((s, f) => s + gzipSync(readFileSync(`${dir}/${f}`)).length, 0) / 1024
-    const models = (() => {
-      try {
-        return readdirSync('dist/models').reduce((s, f) => s + statSync(`dist/models/${f}`).size, 0)
-      } catch {
-        return 0
-      }
-    })()
-    check(gz <= 300 && models <= 1.5 * 1024 * 1024, `3D chunk ${gz.toFixed(1)} kB gzip (≤ 300), assets ${(models / 1024).toFixed(0)} kB (≤ 1.5 MB)`)
+    const initial = new Set([...readFileSync('dist/index.html', 'utf8').matchAll(/assets\/([^"']+\.js)/g)].map((m) => m[1]))
+    const three = new Set()
+    const walk = (f) => {
+      if (three.has(f) || initial.has(f)) return
+      three.add(f)
+      for (const m of readFileSync(`${dir}/${f}`, 'utf8').matchAll(/(?:from|import)\s*"\.\/([^"]+\.js)"/g)) walk(m[1])
+    }
+    for (const f of readdirSync(dir).filter((f) => /^ThreeView-.*\.js$/.test(f))) walk(f)
+    const gz = [...three].reduce((s, f) => s + gzipSync(readFileSync(`${dir}/${f}`)).length, 0) / 1024
+    const models = glbs().reduce((s, f) => s + statSync(`${dir}/${f}`).size, 0)
+    check(gz <= 300 && models <= 1.5 * 1024 * 1024, `3D chunks (${[...three].map((f) => f.split('-')[0]).join(' + ')}) ${gz.toFixed(1)} kB gzip (≤ 300), assets ${(models / 1024).toFixed(0)} kB (≤ 1.5 MB)`)
   }
 
   // 5. Pillows render offline after one online load.
@@ -155,7 +168,10 @@ export async function h5(browser, base, check) {
     await page.getByRole('radio', { name: '3D' }).click()
     await page.waitForFunction(() => !!window.__haven3d, null, { timeout: 30000 })
     await settle(page)
-    check((await inked(page, 'pillow:')) > 200, 'offline after one online load: pillows render')
+    const want = expectModels()
+    await page.waitForFunction((w) => window.__haven3d.models().square === w.square, want, { timeout: 10000 }).catch(() => {})
+    const got = await page.evaluate(() => window.__haven3d.models())
+    check((await inked(page, 'pillow:')) > 200 && got.square === want.square, `offline after one online load: pillows render (Blender square pillow ${got.square}, shipped ${want.square})`)
     await context.close()
   }
 }

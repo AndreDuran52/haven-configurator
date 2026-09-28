@@ -14,6 +14,7 @@ import { presetFor, type PresetName } from '@/ortho/presets';
 import { presetDirection, screenBasis } from '@/ortho/screenBasis';
 import { ExportScene } from './ExportScene';
 import { makeMaterials } from './materials';
+import { loadSoftModels } from './models';
 import { buildParts } from './parts';
 
 export interface ViewRender {
@@ -48,6 +49,8 @@ export async function exportView(config: Config, preset: PresetName, pxW: number
   const canvas = document.createElement('canvas');
   canvas.width = pxW;
   canvas.height = pxH;
+  // Andre's pillow models, loaded (or already cached) before the one-shot render.
+  const models = opts.pillows ? await loadSoftModels() : null;
   const root = createRoot(canvas);
   const mats = makeMaterials(config.fabric, config.tableFinish);
   try {
@@ -69,6 +72,7 @@ export async function exportView(config: Config, preset: PresetName, pxW: number
         parts: buildParts(built, config.tableStyle),
         pillows: opts.pillows ? pillowAnchors(built) : [],
         mats,
+        models,
         offset: [-c.cx, -c.cy] as [number, number],
       }),
     );

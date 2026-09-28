@@ -21,5 +21,7 @@ export * from './pieceOps';
 export * from './tableOps';
 export * from './looseOps';
 export * from './codec';
+export * from './softBox';
 export * from './pillows';
+export * from './cushions';
 export * from './fabrics';

@@ -169,17 +169,22 @@ export async function ortho(browser, base, check) {
       const [ox, oz] = api.offset
       const s = api.state()
       const at = (x) => api.project([[x + ox, 0, 22 + oz]])[0][0]
-      return { zoom: s.zoom, floorY: api.project([[s.target[0], 0, s.target[2]]])[0][1], cols: { back: at(110), arm: at(22), seatEnd: at(92.75), seatMid: at(110) } }
+      // p2 (the back run's armless 36) spans x 92..128: its seat band is inset 0.125 and bevelled 1.5, so 95 is on the flat.
+      const cushion = Array.from({ length: 35 }, (_, i) => at(93 + i))
+      return { zoom: s.zoom, floorY: api.project([[s.target[0], 0, s.target[2]]])[0][1], cols: { back: at(110), arm: at(22), seatEnd: at(95), seatMid: at(110), cushion } }
     })
     const frame = await silhouetteStats(page, { only: ':frame' }, [geo.cols.back])
     const arm = await silhouetteStats(page, { only: ':arm' }, [geo.cols.arm])
     const seat = await silhouetteStats(page, { only: 'p2:seat' }, [geo.cols.seatEnd, geo.cols.seatMid])
+    // The loose back cushion's soft top peaks toward its ends (the middle sags): its highest pixel.
+    const cushion = await silhouetteStats(page, { only: 'p2:back0' }, geo.cols.cushion)
+    const cushionTop = Math.min(...cushion.tops.filter((y) => y !== null))
     const hPx = (top) => geo.floorY - top
     const near = (px, inches) => Math.abs(px - inches * geo.zoom) <= 1
-    const seatEndIn = 16 + 2 * (1 - (((2 * 0.5) / 35.5 - 1) ** 2))
-    check(near(hPx(frame.tops[0]), 27), `Front: back top ${(hPx(frame.tops[0]) / geo.zoom).toFixed(2)}″ = 27 × zoom ± 1 px`)
+    check(near(hPx(frame.tops[0]), 27), `Front: back frame top ${(hPx(frame.tops[0]) / geo.zoom).toFixed(2)}″ = 27 × zoom ± 1 px`)
     check(near(hPx(arm.tops[0]), 23), `Front: arm ${(hPx(arm.tops[0]) / geo.zoom).toFixed(2)}″ = 23 × zoom ± 1 px`)
-    check(near(hPx(seat.tops[0]), seatEndIn) && near(hPx(seat.tops[1]), 18), `Front: seat cushion ${(hPx(seat.tops[0]) / geo.zoom).toFixed(2)}″ at its end (16 + crown) and ${(hPx(seat.tops[1]) / geo.zoom).toFixed(2)}″ mid-span (18)`)
+    check(near(hPx(seat.tops[0]), 18) && near(hPx(seat.tops[1]), 18), `Front: tight seat flat, ${(hPx(seat.tops[0]) / geo.zoom).toFixed(2)}″ near its end and ${(hPx(seat.tops[1]) / geo.zoom).toFixed(2)}″ mid-span (18)`)
+    check(near(hPx(cushionTop), 31), `Front: loose back cushion top ${(hPx(cushionTop) / geo.zoom).toFixed(2)}″ = 31 × zoom ± 1 px`)
     const ticks = await page.$$eval('[data-testid=height-ticks] [data-h]', (els) => {
       const host = document.querySelector('[data-testid=three-view]').getBoundingClientRect()
       return els.map((e) => {
@@ -187,9 +192,9 @@ export async function ortho(browser, base, check) {
         return { h: Number(e.dataset.h), y: (e.dataset.h === '0' ? r.top : r.top + r.height / 2) - host.top }
       })
     })
-    const t27 = ticks.find((t) => t.h === 27)
-    const t23 = ticks.find((t) => t.h === 23)
-    check(!!t27 && Math.abs(t27.y - frame.tops[0]) <= 1 && !!t23 && Math.abs(t23.y - arm.tops[0]) <= 1, `height ticks: 27″ at ${t27?.y.toFixed(1)} vs edge ${frame.tops[0]}, 23″ at ${t23?.y.toFixed(1)} vs edge ${arm.tops[0]}`)
+    const edges = { 31: cushionTop, 27: frame.tops[0], 23: arm.tops[0], 18: seat.tops[1] }
+    const tickOff = Object.entries(edges).map(([h, y]) => [h, ticks.find((t) => t.h === Number(h)), y])
+    check(tickOff.every(([, t, y]) => !!t && Math.abs(t.y - y) <= 1), `height ticks within 1 px of the edges: ${tickOff.map(([h, t, y]) => `${h}″ ${t ? (t.y - y).toFixed(1) : 'missing'}`).join(', ')}`)
     const bar = await page.$eval('[data-testid=scale-bar]', (e) => ({ px: Number(e.dataset.px), inches: Number(e.dataset.inches) }))
     check(Math.abs(bar.px - bar.inches * geo.zoom) < 1e-6, `scale bar ${bar.inches}″ = ${bar.px.toFixed(1)} px at ${geo.zoom.toFixed(3)} px/in`)
 

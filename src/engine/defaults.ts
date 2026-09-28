@@ -4,19 +4,24 @@ import { available, clampWedge, defaultFill, makeAlloc, openEnd, runIds, seat } 
 import { finalize } from './normalize';
 import type { Config, HavenDims, Shape, TableFinish, TableStyle } from './types';
 
-/** §3 heights and depths. Q9, Q10, Q12–Q14, Q29 defaults accepted by Andre (2026-09-25). */
+/**
+ * §3 heights and depths. Q12, Q29 defaults accepted by Andre (2026-09-25);
+ * Q9, Q10, Q13, Q14 answered from the real Haven (2026-09-27): a tight seat
+ * (flat, 18″, seam at the 10″ deck), a 10″-thick back frame 27″ tall, loose
+ * back cushions standing on the seat (profiles.ts BACK_CUSHION), the table flush with the seat.
+ */
 export const DEFAULT_DIMS: HavenDims = {
   A: 14,
-  B: 10, // Q10: 4" frame + 6" back cushion
-  backFrame: 4,
+  B: 10, // the 10″ back frame (the loose back cushions sit on the seat, in front of it)
+  backFrame: 10,
   legHeight: 1,
-  deckHeight: 10,
+  deckHeight: 10, // the seam round the tight seat
   seatHeight: 18,
   cushionCrown: 8,
-  cushionEdge: 6,
+  cushionEdge: 8, // tight seat: flat (10 + 8 = 18)
   armHeight: 23,
-  backHeight: 27,
-  tableHeight: 23, // Q9: flush with the arm
+  backHeight: 27, // top of the back frame
+  tableHeight: 18, // Q9 (2026-09-27): flush with the seat
   ottomanHeight: 18, // Q29
   coffeeTableHeight: 16, // Q29
 };
@@ -32,7 +37,8 @@ export const SEAT_WIDTH_DEFAULT = 28;
 export const SNUG_SEAT_WIDTH = 24;
 export const CLEARANCE_MIN = 14;
 export const OPENING_MIN = 60;
-export const SEAT_DEPTH_MIN = 24;
+/** Seat depth is measured to the back cushions (D − B − 8): under 16 warns (the old 24 to the frame). */
+export const SEAT_DEPTH_MIN = 16;
 export const WEDGE_FACE_MIN = 8;
 
 export interface PresetOptions {

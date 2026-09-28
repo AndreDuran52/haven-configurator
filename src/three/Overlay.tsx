@@ -1,9 +1,10 @@
 // HTML scale overlay (plan §7.2): a scale bar in Top, Front, Side and Iso
 // (× 0.8165 in Iso, "along length / depth / height only"), hidden in 3/4; in
-// Front and Side, height ticks at 1 / 18 / 23 / 27″ from BuildResult.heights.
-// Driven by camera.zoom, so it is exact.
+// Front and Side, height ticks at 1 / 18 / 23 / 27 / 31″ (leg, seat, arm, back
+// frame, back cushions) from BuildResult.heights; a tick closer than 12 px to
+// the one below it is left out. Driven by camera.zoom, so it is exact.
 import { useSyncExternalStore } from 'react';
-import type { HavenDims } from '@/engine';
+import { BACK_CUSHION, type HavenDims } from '@/engine';
 import { isElevation, type PresetName } from '@/ortho/presets';
 import { ISO_AXIS_SCALE, scaleBar } from '@/ortho/scale';
 import type { ViewStore } from './viewStore';
@@ -13,14 +14,20 @@ export function Overlay({ view, preset, heights }: { view: ViewStore; preset: Pr
   if (!s || preset === 'threeQuarter') return null;
   const iso = preset === 'iso';
   const bar = scaleBar(s.zoom, iso ? ISO_AXIS_SCALE : 1);
-  const ticks = isElevation(preset)
+  const all = isElevation(preset)
     ? [
         { h: heights.legHeight, label: 'leg' },
         { h: heights.seatHeight, label: 'seat' },
         { h: heights.armHeight, label: 'arm' },
         { h: heights.backHeight, label: 'back' },
+        { h: heights.backHeight + BACK_CUSHION.rise, label: 'cushions' },
       ]
     : [];
+  const ticks: typeof all = [];
+  for (const t of all) {
+    const last = ticks[ticks.length - 1];
+    if (!last || Math.abs(s.heightY(last.h) - s.heightY(t.h)) >= 12) ticks.push(t);
+  }
   const x = Math.max(4, s.leftX - 60);
   return (
     <div className="pointer-events-none absolute inset-0 text-[11px] font-semibold text-[#3d3a35]" data-testid="scale-overlay">
