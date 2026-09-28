@@ -84,11 +84,47 @@ describe('pillows (Q15, Andre 2026-09-26/27: like the showroom photos)', () => {
     }
   });
 
-  it('shallow seats get fewer, never more: 36″ deep keeps the corner taupe square at each arm end', () => {
-    const a = pillowAnchors(buildHaven(standardU({ D: 36 })));
-    expect(a.length).toBeLessThan(10);
-    expect(a.filter((p) => p.key.endsWith(':sq1') && !p.key.startsWith('wedge'))).toHaveLength(2);
+  it('shallow seats get fewer, never more: 36″ deep still takes all 10, 34″ fewer', () => {
+    expect(pillowAnchors(buildHaven(standardU({ D: 36 })))).toHaveLength(10);
+    expect(pillowAnchors(buildHaven(standardU({ D: 34 }))).length).toBeLessThan(10);
     expect(pillowAnchors(buildHaven(standardU({ D: 48 })))).toHaveLength(10);
+  });
+
+  it('they touch (Andre, 2026-09-28): each square presses into a back cushion, each pair into each other, each ball against its square', () => {
+    for (const c of [standardU(), standardL('left'), standardL('right'), standardU({ D: 36 })]) {
+      const b = buildHaven(c);
+      const cushions = backCushions(b);
+      const all = pillowAnchors(b);
+      for (const p of all.filter((q) => q.kind === 'square')) {
+        expect(cushions.some((o) => boxesClash(p, o, -PILLOW_PRESS + 0.5)), `${p.key} rests on a cushion`).toBe(true);
+        const mate = all.find((q) => q.kind === 'square' && q !== p && q.key.split(':').slice(0, -1).join(':') === p.key.split(':').slice(0, -1).join(':'));
+        if (mate) expect(boxesClash(p, mate, -PAIR_PRESS + 0.5), `${p.key} touches ${mate.key}`).toBe(true);
+      }
+      for (const ball of all.filter((q) => q.kind === 'ball')) {
+        const light = all.find((q) => q.key === ball.key.replace(':ball', ':sq1'))!;
+        expect(boxDistance(light, [ball.x, ball.y, ball.z]) - BALL_PILLOW / 2, `${ball.key} against its square`).toBeLessThan(0.6);
+      }
+    }
+  });
+
+  it('like Andre’s top view: at a wedge the light square in the corner on the back run, the taupe on the leg facing the room diagonal, the ball beside the light one', () => {
+    const a = pillowAnchors(buildHaven(standardU()));
+    const at = (k: string) => a.find((p) => p.key === k)!;
+    const light = at('wedge:backLeft:sq1');
+    const taupe = at('wedge:backLeft:sq2');
+    const ball = at('wedge:backLeft:ball');
+    expect([light.tone, taupe.tone, ball.tone]).toEqual(['oatmeal', 'taupe', 'cream']);
+    expect(light.x).toBeGreaterThan(22);
+    expect(light.x).toBeLessThan(32);
+    expect(light.y).toBeLessThan(30);
+    const turn = (Math.atan2(taupe.facing[1], taupe.facing[0]) * 180) / Math.PI; // from the leg's inward (+x) toward +y
+    expect(turn).toBeGreaterThan(25);
+    expect(turn).toBeLessThan(45);
+    expect(ball.x).toBeGreaterThan(36);
+    expect(ball.x).toBeLessThan(48);
+    // Arm ends: the taupe at the arm, the light one beyond it.
+    expect(at('p3:sq1').tone).toBe('taupe');
+    expect(at('p3:sq1').y).toBeGreaterThan(at('p3:sq2').y);
   });
 
   it('the same arrangement after the layout travels through a share link', () => {
