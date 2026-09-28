@@ -103,11 +103,23 @@ export function requests(b: BuildResult, p: DimProfile): Group[] {
     const bb = pc.bbox
     const weight = pc.kind === 'table' ? 600 : 400
     const lab = fmtIn(pc.length)
-    if (pc.corner === 'backLeft' || pc.corner === 'backRight' || pc.run === 'back') {
-      spans.top.push({ a: bb.x, b: bb.x + bb.w, label: lab, weight, dashed: false })
+    // A one-arm seat reads as its seat and its arm (Andre, 2026-09-28): "58 | 14", not "72".
+    const split = (a0: number, a1: number, r0: number, r1: number): Span[] => {
+      if (!pc.arm) return [{ a: a0, b: a1, label: lab, weight, dashed: false }]
+      const armFirst = Math.abs(r0 - a0) < 1e-6
+      const seat = armFirst ? { a: r1, b: a1 } : { a: a0, b: r0 }
+      return [
+        { ...seat, label: fmtIn(seat.b - seat.a), weight, dashed: false },
+        { a: r0, b: r1, label: fmtIn(r1 - r0), weight, dashed: false },
+      ]
     }
-    if (pc.corner === 'backLeft' || pc.run === 'left') spans.left.push({ a: bb.y, b: bb.y + bb.h, label: lab, weight, dashed: false })
-    if (pc.corner === 'backRight' || pc.run === 'right') spans.right.push({ a: bb.y, b: bb.y + bb.h, label: lab, weight, dashed: false })
+    const ar = pc.arm?.rect
+    if (pc.corner === 'backLeft' || pc.corner === 'backRight' || pc.run === 'back') {
+      spans.top.push(...split(bb.x, bb.x + bb.w, ar ? ar.x : 0, ar ? ar.x + ar.w : 0))
+    }
+    const vertical = split(bb.y, bb.y + bb.h, ar ? ar.y : 0, ar ? ar.y + ar.h : 0)
+    if (pc.corner === 'backLeft' || pc.run === 'left') spans.left.push(...vertical)
+    if (pc.corner === 'backRight' || pc.run === 'right') spans.right.push(...vertical)
   }
   for (const g of b.gaps) {
     const r = g.rect

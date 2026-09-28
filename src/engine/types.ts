@@ -212,7 +212,7 @@ export interface BuiltRun {
 
 export type WarningCode =
   | 'pieceOver108'
-  | 'seatUnder20'
+  | 'seatNarrow'
   | 'tableOutOfRange'
   | 'wedgeFaceUnder8'
   | 'openingUnder60'

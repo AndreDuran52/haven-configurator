@@ -186,14 +186,19 @@ export function MenuBody({ sel }: { sel: Selection }) {
   const convertWhy = tryOp(convertPiece(config, sel.id));
   return (
     <div className="flex flex-col gap-3">
+      {/* A one-arm seat is sized by its seat; the title shows the piece and its arm (Andre, 2026-09-28). */}
       <MeasureField
         name={`${sel.id}-len`}
-        label="Length"
+        label={piece.kind === 'oneArm' ? 'Seat' : 'Length'}
         labelClass="w-14"
-        value={piece.length}
-        read={(c) => c.runs[sel.run]?.find((q) => q.id === sel.id)?.length ?? 0}
-        apply={(c, v) => resizePiece(c, sel.id, v)}
+        value={piece.kind === 'oneArm' ? piece.length - config.dims.A : piece.length}
+        read={(c) => {
+          const q = c.runs[sel.run]?.find((x) => x.id === sel.id);
+          return q ? (q.kind === 'oneArm' ? q.length - c.dims.A : q.length) : 0;
+        }}
+        apply={(c, v) => resizePiece(c, sel.id, piece.kind === 'oneArm' ? v + c.dims.A : v)}
       />
+
       <Button disabled={!!convertWhy} title={convertWhy ?? undefined} onClick={() => apply(convertPiece(s().config, sel.id))}>
         {piece.kind === 'oneArm' ? 'Make armless' : 'Add an arm'}
       </Button>

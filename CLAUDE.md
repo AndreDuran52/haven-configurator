@@ -37,7 +37,7 @@ Layout: `src/{engine, ortho, state, plan, three, ui, export}` (plan §4). The sh
 
 Each milestone: `git fetch`, branch from `origin/main` (`h0b-scaffold`, `h1-engine`, `h2-plan-view`, `h3-ortho`, `h4-editing`, `h5-look`, `h6-exports`), build only that §10 block, meet its done-when list, open a PR, **stop**. Andre previews (localhost or the Vercel preview; from H2 on, installed on the iPad) and it merges on Andre's word. Tick the box below in the same PR.
 
-**Current status: H5b look pass** (after H6: the 3D model now matches the real Haven: tight seat with a seam, 10″ back frame, loose back cushions on the seat to 31″, table flush with the seat, legs inset, karate-chop pillows; seat depth measured to the back cushions). H7/H8 only when Andre asks.
+**Current status: H5d** (after H5b/H5c, the real-Haven look with Andre's Blender pillow: the arm width is editable 6–14″, one-arm pieces read seat | arm in the plan, seats warn under 23″). H7/H8 only when Andre asks.
 
 - [x] H0 Docs hand-off (plan, spec, prototypes, evidence in `docs/`)
 - [x] H0b Scaffold (Vite, strict TS, oxlint guards, vitest, bundle budget, manifest, Vercel)
@@ -49,6 +49,7 @@ Each milestone: `git fetch`, branch from `origin/main` (`h0b-scaffold`, `h1-engi
 - [x] H6 Sheets (PDF/PNG), share links + `?view`, local Saved layouts (one simple sheet per Andre, 2026-09-26)
 - [x] H5b Look pass: the real Haven (tight seat, 10″ frame, loose back cushions, table at 18″, inset legs, karate-chop pillows; Andre, 2026-09-27)
 - [x] H5c Andre's Blender pillow (`src/three/models/pillow-square.glb`) + puffier back cushions (2026-09-27)
+- [x] H5d Arm width editable (6–14″), arm shown in the plan (seat | arm), seat warning under 23″ (2026-09-28)
 - [ ] H7 Cloud saves + tracker hand-off (optional; do not start unless Andre asks)
 - [ ] H8 Blender round-trip (later; do not start unless Andre asks)
 

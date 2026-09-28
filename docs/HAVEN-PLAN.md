@@ -255,7 +255,7 @@ export interface RunPiece {
 export interface LoosePiece { id: string; kind: 'ottoman' | 'coffeeTable'; x: number; y: number; w: number; d: number }  // coffeeTable: w === d (§4 "free square")
 
 export interface HavenDims {           // §3, kept as data so §14 answers are data changes
-  A: number; B: number; backFrame: number;        // 14, 10, 10 (H5b: the real 10″ back, Andre 2026-09-27)
+  A: number; B: number; backFrame: number;        // 14 (arm width, editable 6–14 since H5d), 10, 10 (H5b: the real 10″ back, Andre 2026-09-27)
   legHeight: number; deckHeight: number; seatHeight: number;   // 1, 10, 18
   cushionCrown: number; cushionEdge: number;      // 8, 8 (H5b: the tight seat is flat; kept so old links decode)
   armHeight: number; backHeight: number; tableHeight: number;  // 23, 27, 18 (H5b: table top flush with the seat)
@@ -503,7 +503,7 @@ Refused on wedge-only runs and on unfilled ends.
 | Code | Fires when |
 |---|---|
 | `pieceOver108` | A piece is over 108 (safety net) |
-| `seatUnder20` | A cushion (not the piece) is under 20 |
+| `seatNarrow` | A cushion (not the piece) is under 23: "Seat 17″ (under 23)" (H5d, Andre 2026-09-28; was `seatUnder20`). 20 stays the smallest a resize makes |
 | `tableOutOfRange` | A table is outside 16–40 |
 | `wedgeFaceUnder8` | The angled face is over 0 and under 8 |
 | `openingUnder60` | Either opening dimension is under 60 |
@@ -1013,7 +1013,7 @@ Two profiles:
   - Tighten the `check:bundle` budget to measured + 15 % (§3).
 - **Files:** `src/{App.tsx, main.tsx}`, `src/state/**`, `src/plan/{PlanView,PlanDrawing,DimsLayer,dims,format,textMetrics,geometry,theme}.*`, `src/ui/{HavenLayout,TopBar,Sidebar,MeasureField,WedgeSlider,StartMenu,WarningsList,UpdateChip}.tsx`, `vite.config.ts`, `scripts/check-bundle.mjs`, `e2e/**`; dependencies `zustand`, the Radix primitives, `vite-plugin-pwa` (dev).
 - **Done when:**
-  - `/` opens on the Standard U (even with a saved draft) showing back chain `60 | 32 | 36 | 60`, overall `188"`, legs `72`, `44"D`, "Seats 7".
+  - `/` opens on the Standard U (even with a saved draft) showing back chain `60 | 32 | 36 | 60`, overall `188"`, legs `72` (drawn as seat `58` | arm `14` since H5d), `44"D`, "Seats 7".
   - Typing D = 36 shows back 52, legs 80, "Seats 7–8" (test 2).
   - The slider at 55 shows legs 77 and back 46 (test 6).
   - W = 300 shows `74 | 74` (test 5).
@@ -1160,6 +1160,16 @@ Two profiles:
 - **Placement like Andre's own top view (2026-09-28):** every square rests on the back cushions (pressing in up to 2.5″, `PILLOW_PRESS`) and the two of a pair touch (up to 2.5″, `PAIR_PRESS`); nothing floats in front. **Arm ends:** the taupe at the arm, the light one beyond it, both on the leg's cushions, turned 15° into the arm corner. **Wedges:** the light square on the back run's cushion, tucked into the corner against the leg's; the taupe on the leg's cushion below it, turned 35° to face the room diagonal, its corner end resting on the light one; one light ball beside the light square. Standard U 10 (8 squares + 2 balls) from 36″ to 48″ deep, each L 7.
 - A Blender back cushion would need width stretching (a 3D 9-slice), later if wanted.
 
+### H5d: Arm width, the arm shown, seat warning at 23 (Andre, 2026-09-28)
+- **Asked:** edit the arm thickness; show the arm as its own measurement ("31" on a one-arm piece hides 17 seat + 14 arm); size the seat part directly; warn under 23″ instead of 20″. Andre first proposed making arms separate pieces; he confirmed the arm is built into the one-arm frame, so the piece stays (a separate arm piece would put unbuilt pieces on the shop sheet and force a share-link version for no gain).
+- **As built:**
+  - `setArmWidth(config, A)`: 6–14″ on the half inch (refused outside). Each seat cushion keeps its size: the one-arm piece grows or shrinks with its arm and the run settles by the lock. Lock on with no other seat in the run (a Standard U leg is one piece), the piece keeps its footprint and its own cushion takes the change rather than leaving a gap. Links already carry `A` (`XA…`): no codec change; a link with `A` outside 6–14 is damaged.
+  - Plan (and the PDF sheet): a one-arm piece's chain reads seat | arm (`58 | 14`). The tap menu's field edits the seat; the title keeps the piece total ("One-arm seat · 72″ (58 + 14 arm)").
+  - Sidebar "Arm width" stepper (½″ steps, one undo step per burst like Seat width).
+  - Seat warning `seatNarrow` under 23 (`SEAT_WARN`); `MIN_SEAT` 20 stays the resize/tray minimum.
+  - 3D and pillows already follow `dims.A`.
+- **Measured:** vitest (arm width lock on/off, refusals, links, warning 22/23, dims split, a 10″ arm in 3D parts); e2e legs `58 | 14`, D 36 `66 | 14`, slider 55 `63 | 14`, arm width 10 → legs `62 | 10` with L held and one Undo back to 14, the 3b warning "(under 23)".
+
 ### H7: Cloud saves + tracker hand-off (optional, later; Andre decides, do not start until told)
 The configurator is complete without H7. Options, in order of cost:
 - **(a) Stay local (default).** Layouts live on each device; share links and PDFs move them between devices and people. Nothing to build.
@@ -1193,7 +1203,7 @@ No cross-repo code coupling in any option: no shared packages, no shared databas
 | T1 | Back [wedge 60][table 32][armless 36][wedge 60] = 188; legs one-arm 72 (58 + 14), LAF/RAF; seat depth 26 (to the back cushions, H5b; 34 before); opening 100 × 88; "Seats 7"; no warnings; exact wedge polygons (0,0)(60,0)(60,44)(44,60)(0,60) and mirror |
 | T2 | D = 36: C 52 (auto); back [32][52]; legs 80 (66 + 14); seat depth 18 (26 before H5b); W/L/R 188/132/132; opening 116 × 96; "Seats 7–8" |
 | T3a | `moveTable(→ left, replaceArm)`: left [armless 40][table 32], end cap `table`; back [armless 68]; "Seats 7" |
-| T3b | `moveTable(→ left, split)`: left [armless 13][table 32][one-arm 27 = 13 + 14]; back [68]; `seatUnder20` on both 13″ cushions; "Seats 6"; export not blocked |
+| T3b | `moveTable(→ left, split)`: left [armless 13][table 32][one-arm 27 = 13 + 14]; back [68]; `seatNarrow` on both 13″ cushions; "Seats 6"; export not blocked |
 | T4 | `standardL('right', {W120, R100})` with D 44: back one-arm 60 (46 + 14) arm at start, LAF; leg one-arm 40 (26 + 14); opening null; "Seats 2–3" |
 | T5 | W = 300: back [table 32][74][74] (one split group); legs 72; "Seats 11–12" |
 | T6 | `setWedge(55)`: legs 77 (63 + 14); back [32][46]; W/L/R unchanged; face 15.6; "Seats 7" |

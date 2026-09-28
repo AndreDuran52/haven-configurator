@@ -2,7 +2,7 @@
 // lock, seat width, warnings.
 import { lazy, Suspense, useState } from 'react';
 import { buildInfo } from '@/buildInfo';
-import { DEPTH_PRESETS, setLock, setMeasurements, setSeatWidth, setShape, setTableStyle, type Shape, type TableStyle } from '@/engine';
+import { ARM_MAX, ARM_MIN, DEPTH_PRESETS, setArmWidth, setLock, setMeasurements, setSeatWidth, setShape, setTableStyle, type Shape, type TableStyle } from '@/engine';
 import { useHavenStore, useLive } from '@/state/store';
 import { Button, Section, Segmented, Switch } from './controls';
 import { MeasureField } from './MeasureField';
@@ -85,6 +85,19 @@ export function Sidebar() {
             {live.seatWidth}″ per seat (snug {Math.min(live.snugWidth, live.seatWidth)}″)
           </span>
           <button type="button" className="stepper" aria-label="Seat width plus 1" onClick={() => commit(setSeatWidth(store.getState().config, live.seatWidth + 1), 'seatWidth')}>
+            +
+          </button>
+        </div>
+      </Section>
+      <Section title="Arm width">
+        <div className="flex items-center gap-2">
+          <button type="button" className="stepper" aria-label="Arm width minus ½" disabled={live.dims.A <= ARM_MIN} onClick={() => commit(setArmWidth(store.getState().config, live.dims.A - 0.5), 'armWidth')}>
+            −
+          </button>
+          <span className="flex-1 text-center text-sm tabular-nums" data-testid="arm-width">
+            {live.dims.A}″ arms (seats keep their size)
+          </span>
+          <button type="button" className="stepper" aria-label="Arm width plus ½" disabled={live.dims.A >= ARM_MAX} onClick={() => commit(setArmWidth(store.getState().config, live.dims.A + 0.5), 'armWidth')}>
             +
           </button>
         </div>

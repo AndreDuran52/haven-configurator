@@ -150,7 +150,7 @@ describe('table dragging', () => {
 
   it('while dragging from 3b the warning is live, and the drop back on the back run restores the Standard U', () => {
     const s = test3b();
-    expect(codes(valid(s))).toContain('seatUnder20');
+    expect(codes(valid(s))).toContain('seatNarrow');
     expect(shapeOf(snap(s, [76, 22]))).toEqual(shapeOf(U()));
   });
 });
