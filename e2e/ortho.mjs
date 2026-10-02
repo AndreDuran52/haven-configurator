@@ -1,6 +1,6 @@
 // H3 done-when checks (plan §10, V2/V3/V5/V6/V9), judged by outcome: pixels of
 // silhouette captures, projections, camera state, network timing.
-import { VIEWPORTS } from './browser.mjs'
+import { enterEditor, VIEWPORTS } from './browser.mjs'
 import { openApp, setField } from './lib.mjs'
 
 const SHOTS = 'test-results'
@@ -218,6 +218,7 @@ export async function ortho(browser, base, check) {
     const context = await browser.newContext({ viewport: VIEWPORTS.ipadPortrait, hasTouch: true, isMobile: true })
     const page = await context.newPage()
     await page.goto(base)
+    await enterEditor(page)
     await page.getByRole('radio', { name: '3D' }).click()
     await page.waitForFunction(() => !!window.__haven3d, null, { timeout: 30000 })
     await page.waitForTimeout(600)
@@ -263,11 +264,11 @@ export async function ortho(browser, base, check) {
       await navigator.serviceWorker.ready
     })
     await page.reload()
-    await page.waitForSelector('[data-plan-svg]')
+    await enterEditor(page)
     await page.waitForTimeout(2500) // the warm-up and precache
     await context.setOffline(true)
     await page.reload()
-    await page.waitForSelector('[data-plan-svg]')
+    await enterEditor(page)
     await page.getByRole('radio', { name: '3D' }).click()
     const ok = await page.waitForFunction(() => !!window.__haven3d, null, { timeout: 15000 }).then(() => true, () => false)
     check(ok, 'offline: switching to 3D works after one online load')

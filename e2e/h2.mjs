@@ -1,16 +1,21 @@
 // H2 done-when checks (plan §10), judged by outcome in the DOM.
 import { mkdirSync } from 'node:fs'
-import { VIEWPORTS } from './browser.mjs'
+import { enterEditor, VIEWPORTS } from './browser.mjs'
 import { config, dimTexts, labelCheck, openApp, seats, setField, slide, warnings } from './lib.mjs'
 
 const SHOTS = 'test-results'
 
 export async function h2(browser, base, check) {
-  // 1. `/` opens on the Standard U, even with a saved draft.
+  // 1. `/` opens the Projects home (H6b), never the draft by itself; "Standard U" opens the Standard U.
   {
     const { context, page } = await openApp(browser, base)
     await page.evaluate(() => localStorage.setItem('haven:draft', JSON.stringify({ code: '1UW300L132R132D44_bt32s74~s74_la72_ra72.fh', savedAt: 1 })))
     await page.reload()
+    await page.waitForSelector('[data-testid=projects-home]')
+    check(await page.getByTestId('continue').isVisible(), 'a reload opens the Projects home, offering "Continue last layout"')
+    await page.waitForTimeout(400)
+    check(!page.url().includes('#'), `the home has no layout in the URL (${page.url()})`)
+    await page.getByTestId('new-standardU').click()
     await page.waitForSelector('[data-plan-svg]')
     const t = await dimTexts(page)
     check(t.slice(0, 5).join(' | ') === `60" | 32" | 36" | 60" | 188" (15'-8")`, `Standard U: back chain 60 | 32 | 36 | 60, overall 188" (got ${t.slice(0, 5).join(' | ')})`)
@@ -166,11 +171,12 @@ export async function h2(browser, base, check) {
       await navigator.serviceWorker.ready
     })
     await page.reload()
-    await page.waitForSelector('[data-plan-svg]')
+    await enterEditor(page)
     const controlled = await page.evaluate(() => !!navigator.serviceWorker.controller)
     await context.setOffline(true)
     await page.reload()
-    const home = await page.waitForSelector('[data-plan-svg]', { timeout: 5000 }).then(() => true, () => false)
+    // `/` is the Projects home (H6b), or the editor when the hash was already written.
+    const home = await page.waitForSelector('[data-plan-svg], [data-testid=projects-home]', { timeout: 5000 }).then(() => true, () => false)
     const p2 = await context.newPage()
     await p2.goto(`${base}#c=1UW300L132R132D44_bt32s74~s74_la72_ra72.fh`)
     const link = await p2.waitForSelector('[data-plan-svg]', { timeout: 5000 }).then(() => true, () => false)

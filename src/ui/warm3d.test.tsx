@@ -4,6 +4,7 @@
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { encode, standardU } from '@/engine';
 import App from '@/App';
 import { WARM_FALLBACK_MS, warm3d } from './warm3d';
 
@@ -46,6 +47,8 @@ describe('3D warm-up', () => {
         disconnect() {}
       },
     );
+    // A link opens the editor (a plain open shows the Projects home, H6b).
+    window.location.hash = `#c=${encode(standardU())}`;
     const el = document.createElement('div');
     document.body.append(el);
     const root = createRoot(el);

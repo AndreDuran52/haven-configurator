@@ -33,7 +33,7 @@ async function makePdf(page, want, name) {
   await setViews(page, want)
   await page.getByTestId('make-pdf').click()
   await page.waitForSelector('[data-testid=made]', { timeout: 60000 })
-  const [dl] = await Promise.all([page.waitForEvent('download'), page.getByTestId('share-pdf').click()])
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.getByTestId('download-pdf').click()])
   const path = `${SHOTS}/${name}.pdf`
   await dl.saveAs(path)
   return { path, file: dl.suggestedFilename() }
@@ -142,7 +142,7 @@ export async function h6(browser, base, check) {
     await context.close()
   }
 
-  // 5. Saved layouts: save, reload, reopen, rename, delete; storage throwing.
+  // 5. Saved projects (H6b: on the Projects home): save, reload, reopen, save in place, rename, delete; storage throwing.
   {
     const { context, page } = await openApp(browser, base)
     await page.locator('#m-W').fill('200')
@@ -151,16 +151,28 @@ export async function h6(browser, base, check) {
     await page.getByTestId('save-name').fill('Mitchell family room')
     await page.getByTestId('save-confirm').click()
     await page.waitForTimeout(100)
+    check((await page.textContent('[data-testid=project-name]'))?.startsWith('Mitchell family room'), 'the top bar names the open project')
     await page.goto(base, { waitUntil: 'networkidle' })
-    await page.waitForSelector('[data-plan-svg]')
-    check((await config(page)).W === 188, 'a fresh load opens the Standard U')
-    await page.getByRole('button', { name: 'Start', exact: true }).click()
+    await page.waitForSelector('[data-testid=projects-home]')
     const row = page.locator('[data-saved="Mitchell family room"]')
     await row.waitFor()
-    await row.getByRole('button', { name: 'Open' }).click()
+    check((await row.locator('[data-thumb] [data-piece]').count()) > 0, 'the card shows a small plan')
+    await row.getByRole('button', { name: 'Open', exact: true }).click()
+    await page.waitForSelector('[data-plan-svg]')
+    check((await config(page)).W === 200, 'reopened from Projects: W 200')
+    await page.locator('#m-W').fill('210')
+    await page.locator('#m-W').press('Enter')
+    check(/edited/.test(await page.textContent('[data-testid=project-name]')), 'an edit marks the project "edited"')
+    await page.getByRole('button', { name: 'Save', exact: true }).click()
+    await page.getByTestId('save-project').click()
     await page.waitForTimeout(100)
-    check((await config(page)).W === 200, 'reopened from Start: W 200')
-    await page.getByRole('button', { name: 'Start', exact: true }).click()
+    await page.getByTestId('projects').click()
+    await page.waitForSelector('[data-testid=projects-home]')
+    check((await page.locator('[data-saved]').count()) === 1, 'Save on an open project updates it (still one card)')
+    await row.getByRole('button', { name: 'Open', exact: true }).click()
+    await page.waitForSelector('[data-plan-svg]')
+    check((await config(page)).W === 210, '…with the new layout (W 210)')
+    await page.getByTestId('projects').click()
     await row.getByRole('button', { name: 'Rename' }).click()
     await page.getByLabel('New name').fill('Mitchell, den')
     await page.getByRole('button', { name: 'OK' }).click()

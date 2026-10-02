@@ -1,7 +1,8 @@
 // Share & PDF (plan §9, Andre 2026-09-26: "easy to make into a PDF, download
 // and share on the iPad; the top CAD view and the 3D views I tick").
-// Two taps on the iPad: "Make PDF" (async), then "Share PDF" (fresh user
-// activation for navigator.share). Also the two links: view-only and editable.
+// Two taps: "Make PDF" (async), then Download / Print (H6b: the main actions,
+// Andre 2026-10-02) or "Share…" (fresh user activation for navigator.share).
+// Also the two links: view-only and editable.
 // Lazy-loaded; the PDF stack loads only on "Make PDF".
 import { useEffect, useState } from 'react';
 import type { PresetName } from '@/ortho/presets';
@@ -71,6 +72,21 @@ export default function ShareDialog({ open, onOpenChange }: { open: boolean; onO
   };
 
   const toast = (t: string) => store.getState().toast(t);
+  const [canShare, setCanShare] = useState(false);
+  useEffect(() => void import('@/export/share').then((m) => setCanShare(m.canShareFiles())), []);
+  const downloadPdf = async () => {
+    if (!made) return;
+    const { download } = await import('@/export/share');
+    download(made.pdf, made.name);
+    toast(`Downloaded ${made.name}`);
+  };
+  const print = async () => {
+    if (!made) return;
+    const { printPdf } = await import('@/export/share');
+    const r = await printPdf(made.pdf, made.name);
+    if (r === 'opened') toast('The PDF opened in a new tab: print it from there');
+    else if (r === 'failed') toast('Could not open the print dialog: use Download PDF');
+  };
   const share = async () => {
     if (!made) return;
     const { shareFile } = await import('@/export/share');
@@ -79,8 +95,10 @@ export default function ShareDialog({ open, onOpenChange }: { open: boolean; onO
   };
   const png = async () => {
     if (!made) return;
-    const [{ sheetPng }, { shareFile }] = await Promise.all([import('@/export/pdf'), import('@/export/share')]);
-    await shareFile(await sheetPng(made.svg), made.name.replace(/\.pdf$/, '.png'));
+    const [{ sheetPng }, { download }] = await Promise.all([import('@/export/pdf'), import('@/export/share')]);
+    const name = made.name.replace(/\.pdf$/, '.png');
+    download(await sheetPng(made.svg), name);
+    toast(`Downloaded ${name}`);
   };
   const sendLink = async (url: string, what: string) => {
     const { shareLink } = await import('@/export/share');
@@ -119,10 +137,22 @@ export default function ShareDialog({ open, onOpenChange }: { open: boolean; onO
         <div className="flex flex-col gap-2" data-testid="made">
           <img src={made.preview} alt="The sheet" className="w-full rounded-lg border border-line bg-white" />
           <div className="grid grid-cols-2 gap-2">
-            <Button tone="primary" onClick={share} data-testid="share-pdf">
-              Share / download PDF
+            <Button tone="primary" onClick={downloadPdf} data-testid="download-pdf">
+              Download PDF
             </Button>
-            <Button onClick={png}>Image (PNG)</Button>
+            <Button tone="primary" onClick={print} data-testid="print-pdf">
+              Print
+            </Button>
+          </div>
+          <div className={`grid gap-2 ${canShare ? 'grid-cols-2' : 'grid-cols-1'}`}>
+            {canShare && (
+              <Button onClick={share} data-testid="share-pdf">
+                Share…
+              </Button>
+            )}
+            <Button onClick={png} data-testid="download-png">
+              Image (PNG)
+            </Button>
           </div>
           <p className="text-xs text-ink-muted">{made.name}</p>
         </div>

@@ -1,10 +1,10 @@
-// Top bar (plan §8): Start, Reset, Undo/Redo, Save, Share, the seat count;
-// ?view shows "View only" and "Edit a copy" instead. Pads with the
+// Top bar (plan §8): Projects (H6b), Start, Reset, Undo/Redo, Save, Share, the
+// seat count; ?view shows "View only" and "Edit a copy" instead. Pads with the
 // top safe-area inset (status bar / notch) in the installed app.
 import { lazy, Suspense, useState } from 'react';
 import { encode } from '@/engine';
 import { presetFor, startLabel } from '@/state/start';
-import { builtOf, useHaven, useHavenStore, useLive } from '@/state/store';
+import { builtOf, isDirty, useHaven, useHavenStore, useLive } from '@/state/store';
 import { editUrl } from '@/state/url';
 import { Button } from './controls';
 
@@ -22,9 +22,13 @@ export function TopBar() {
   const seats = builtOf(useLive()).seats.label;
   const [startOpen, setStartOpen] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
-  const [saveOpen, setSaveOpen] = useState(false);
+  const [saveOpen, setSaveOpen] = useState<false | 'save' | 'leave'>(false);
   const [shareOpen, setShareOpen] = useState(false);
   const readOnly = useHaven((s) => s.ui.readOnly);
+  const project = useHaven((s) => s.ui.project);
+  const dirty = useHaven(isDirty);
+  // Unsaved changes: ask first (the draft keeps only the last layout).
+  const toProjects = () => (isDirty(store.getState()) ? setSaveOpen('leave') : store.getState().goHome());
 
   const reset = () => {
     const s = store.getState();
@@ -45,9 +49,23 @@ export function TopBar() {
 
   return (
     <header className="safe-top flex items-center gap-1 border-b border-line bg-panel px-2 sm:gap-2 sm:px-3">
-      <span className="mr-1 hidden text-base font-semibold tracking-tight sm:inline">
-        Haven <span className="text-accent">Configurator</span>
-      </span>
+      {readOnly ? (
+        <span className="mr-1 hidden text-base font-semibold tracking-tight sm:inline">
+          Haven <span className="text-accent">Configurator</span>
+        </span>
+      ) : (
+        <>
+          <Button tone="quiet" onClick={toProjects} data-testid="projects">
+            Projects
+          </Button>
+          {project && (
+            <span className="max-w-40 truncate text-sm font-semibold max-lg:hidden" data-testid="project-name" title={project.name}>
+              {project.name}
+              {dirty && <span className="text-ink-muted"> ·&nbsp;edited</span>}
+            </span>
+          )}
+        </>
+      )}
       {readOnly ? (
         <>
           <span className="rounded-full bg-panel-2 px-3 py-1.5 text-sm font-medium text-ink-muted" data-testid="view-only">
@@ -59,7 +77,7 @@ export function TopBar() {
         </>
       ) : (
         <>
-          <Button tone="quiet" onClick={() => setStartOpen(true)}>
+          <Button tone="quiet" className="max-sm:hidden" onClick={() => setStartOpen(true)}>
             Start
           </Button>
           {/* Phones: Reset and Save live elsewhere (Start; a link to share), so the bar fits 390 px. */}
@@ -74,7 +92,7 @@ export function TopBar() {
             Redo
           </Button>
           <div className="mx-1 h-6 w-px bg-line max-sm:hidden" aria-hidden />
-          <Button tone="quiet" className="max-sm:hidden" onClick={() => setSaveOpen(true)}>
+          <Button tone="quiet" className="max-sm:hidden" onClick={() => setSaveOpen('save')}>
             Save
           </Button>
         </>
@@ -88,7 +106,7 @@ export function TopBar() {
       <Suspense fallback={null}>
         {startOpen && <StartMenu open onOpenChange={setStartOpen} />}
         {confirmReset && <ResetConfirm open onOpenChange={setConfirmReset} label={startLabel(lastStart)} onReset={reset} />}
-        {saveOpen && <SaveDialog open onOpenChange={setSaveOpen} />}
+        {saveOpen && <SaveDialog open onOpenChange={(o) => setSaveOpen(o && saveOpen)} leaving={saveOpen === 'leave'} />}
         {shareOpen && <ShareDialog open onOpenChange={setShareOpen} />}
       </Suspense>
     </header>

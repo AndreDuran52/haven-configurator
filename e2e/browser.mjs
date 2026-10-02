@@ -18,7 +18,16 @@ export function launchBrowser() {
   })
 }
 
-/** Opens `url` in a fresh touch-enabled context and records console errors. */
+/** H6b: a plain open shows the Projects home; tap "Standard U" to reach the editor (a link opens it directly). */
+export async function enterEditor(page) {
+  await page.waitForSelector('[data-plan-svg], [data-testid=projects-home]')
+  if (await page.locator('[data-testid=projects-home]').count()) {
+    await page.getByTestId('new-standardU').click()
+    await page.waitForSelector('[data-plan-svg]')
+  }
+}
+
+/** Opens `url` in a fresh touch-enabled context (into the editor) and records console errors. */
 export async function openPage(browser, url, viewport = VIEWPORTS.ipadLandscape, init) {
   const context = await browser.newContext({ viewport, hasTouch: true })
   if (init) await context.addInitScript(init)
@@ -29,5 +38,6 @@ export async function openPage(browser, url, viewport = VIEWPORTS.ipadLandscape,
   })
   page.on('pageerror', (e) => errors.push(e.message))
   await page.goto(url, { waitUntil: 'networkidle' })
+  await enterEditor(page)
   return { context, page, errors }
 }
