@@ -4,7 +4,7 @@
 // (localStorage); the name never goes in a link.
 import { useState } from 'react';
 import { encode } from '@/engine';
-import { saveLayout, updateSaved } from '@/state/savedLayouts';
+import { saveFailure, saveLayout, updateSaved } from '@/state/savedLayouts';
 import { useHaven, useHavenStore } from '@/state/store';
 import { Button } from './controls';
 import { Dialog } from './Dialog';
@@ -16,7 +16,7 @@ export default function SaveDialog({ open, onOpenChange, leaving = false }: { op
   const [error, setError] = useState<string | null>(null);
   const done = (saved: { id: string; name: string } | null) => {
     const s = store.getState();
-    if (!saved) return setError("Can't save on this device (storage is off or full). Share a link instead.");
+    if (!saved) return setError(saveFailure());
     s.setUi({ project: { id: saved.id, name: saved.name, code: encode(s.config) } });
     s.toast(`Saved "${saved.name}"`);
     onOpenChange(false);

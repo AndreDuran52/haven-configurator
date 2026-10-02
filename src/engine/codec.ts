@@ -27,7 +27,7 @@
 import { buildHaven } from './buildHaven';
 import { DEFAULT_DIMS, DEFAULT_FABRIC, DEFAULT_FINISH, DEFAULT_TABLE_STYLE, SEAT_WIDTH_DEFAULT, SNUG_SEAT_WIDTH } from './defaults';
 import { openEnd, runIds } from './layout';
-import { ARM_MAX, ARM_MIN } from './pieces';
+import { ARM_MAX, ARM_MIN, WEDGE_RANGE } from './pieces';
 import type { Config, HavenDims, LoosePiece, RunId, RunPiece, Runs, Shape, TableFinish, TableStyle } from './types';
 
 export const LINK_VERSION = 2;
@@ -112,6 +112,13 @@ export function encode(c: Config): string {
 
 export type DecodeResult = { config: Config } | { error: 'damaged' | 'newer' };
 
+/**
+ * Values the app itself can never make (UX Phase 1 audit): a seat or snug
+ * width ≤ 0 (an "Infinity" seat count) or a manual wedge outside D…D+30.
+ */
+const inRange = (c: Config): boolean =>
+  c.seatWidth > 0 && c.snugWidth > 0 && (c.wedgeC === null || (c.wedgeC >= c.D && c.wedgeC <= c.D + WEDGE_RANGE));
+
 /** Strict decode: a damaged link reads "damaged"; a higher version reads "newer". */
 export function decode(link: string): DecodeResult {
   const m = /^(\d+)([A-Za-z].*)\.([0-9a-z]{2})$/.exec(link.trim());
@@ -122,7 +129,7 @@ export function decode(link: string): DecodeResult {
   const decoders: Record<number, (b: string) => Config | null> = { 1: (b) => decodeBody(b, 1), 2: (b) => decodeBody(b, 2) };
   const config = decoders[version]?.(m[2]!) ?? null;
   // Later versions: migrations[v](config), chained up to the current schema.
-  if (!config || buildHaven(config).errors.length > 0) return { error: 'damaged' };
+  if (!config || !inRange(config) || buildHaven(config).errors.length > 0) return { error: 'damaged' };
   return { config };
 }
 

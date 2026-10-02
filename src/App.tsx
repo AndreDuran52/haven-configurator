@@ -4,6 +4,7 @@
 import { lazy, Suspense, useState } from 'react';
 import { HavenStoreProvider, createHavenStore, useHaven } from '@/state/store';
 import { codeFromHash, initialConfig, isViewMode } from '@/state/url';
+import { restoreOpenProject, useOpenProject } from '@/state/openProject';
 import { useDraft } from '@/state/useDraft';
 import { useUrlSync } from '@/state/useUrlSync';
 import { HavenLayout } from '@/ui/HavenLayout';
@@ -14,7 +15,9 @@ function makeStore() {
   const readOnly = isViewMode(window.location.search);
   // H6b: a link (even a damaged one) or ?view opens the editor; a plain open, the Projects home.
   const screen = readOnly || codeFromHash(window.location.hash) !== null ? 'editor' : 'home';
-  const store = createHavenStore(config, { readOnly, screen });
+  // A reload keeps the open project (Save keeps updating it), only for the same layout.
+  const project = screen === 'editor' && !readOnly ? restoreOpenProject(config) : null;
+  const store = createHavenStore(config, { readOnly, screen, project });
   if (message) store.getState().toast(message);
   // For the e2e checks (judged against the committed config, never mutated there).
   (window as unknown as { __haven?: unknown }).__haven = store;
@@ -24,6 +27,7 @@ function makeStore() {
 function Effects() {
   useUrlSync();
   useDraft();
+  useOpenProject();
   return null;
 }
 
