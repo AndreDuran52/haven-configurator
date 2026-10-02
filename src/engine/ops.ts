@@ -1,9 +1,9 @@
 // Measurements, wedge, lock and settings (§5.3). These ALWAYS hold the typed
 // outside sizes (regardless of the lock): the runs absorb the change.
-import { half } from './pieces';
-import { reshapeRuns } from './absorb';
-import { clampWedge, wedgeC } from './layout';
-import { edit, refuse, type Outcome } from './edit';
+import { ARM_MAX, ARM_MIN, half, isSeat } from './pieces';
+import { reshapeRuns, settle } from './absorb';
+import { clampWedge, runIds, wedgeC } from './layout';
+import { edit, noRoom, refuse, type Outcome } from './edit';
 import { minMessage, shortfall, wedgeFits } from './limits';
 import { FABRICS, FINISHES } from './fabrics';
 import type { Config, EditResult, TableFinish, TableStyle } from './types';
@@ -81,6 +81,35 @@ export function setLock(config: Config, on: boolean): EditResult {
   return edit(config, (d) => {
     if (d.lockOutside === on) return null;
     d.lockOutside = on;
+    return true;
+  });
+}
+
+/**
+ * The arm width, for every arm (Andre, 2026-09-28): 6–14″ on the half inch.
+ * Each seat cushion keeps its size: the one-arm piece grows or shrinks with
+ * its arm and the run settles by the lock (lock ON: the nearest seat absorbs;
+ * OFF: the run and W/L/R change). Lock ON with no other seat in the run, the
+ * one-arm piece keeps its footprint and its cushion takes the change.
+ */
+export function setArmWidth(config: Config, width: number): EditResult {
+  return edit(config, (d, alloc): Outcome => {
+    const a = half(width);
+    if (!(a >= ARM_MIN && a <= ARM_MAX)) return refuse('infeasible', `Arm width must be ${ARM_MIN}–${ARM_MAX}″`);
+    const dA = a - d.dims.A;
+    if (!dA) return null;
+    d.dims.A = a;
+    for (const run of runIds(d.shape)) {
+      const pieces = d.runs[run]!;
+      for (const id of pieces.filter((p) => p.kind === 'oneArm').map((p) => p.id)) {
+        // Lock on with no other seat in the run to absorb (a leg that is one piece): the piece
+        // keeps its footprint and its own cushion takes the change, rather than leaving a gap.
+        if (d.lockOutside && !pieces.some((p) => isSeat(p) && p.id !== id)) continue;
+        const i = pieces.findIndex((p) => p.id === id);
+        pieces[i]!.length += dA;
+        if (!settle(d, run, { piece: i }, -dA, alloc, new Set([id]))) return noRoom('Not enough room for a wider arm');
+      }
+    }
     return true;
   });
 }

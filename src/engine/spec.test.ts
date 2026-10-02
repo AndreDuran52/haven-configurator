@@ -75,7 +75,7 @@ describe('§12 spec tests', () => {
     expect(desc(c, 'left')).toEqual(['armless 13', 'table 32', 'oneArm 27=13+14@end']);
     expect(desc(c, 'back')).toEqual(['armless 68']);
     const b = valid(c);
-    const under = b.warnings.filter((w) => w.code === 'seatUnder20');
+    const under = b.warnings.filter((w) => w.code === 'seatNarrow');
     // Both 13" cushions warn, including the one-arm piece whose FOOTPRINT is 27".
     expect(under.map((w) => w.pieceId)).toEqual([idAt(c, 'left', 0), idAt(c, 'left', 2)]);
     expect(b.seats.label).toBe('Seats 6');

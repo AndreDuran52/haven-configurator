@@ -96,7 +96,7 @@ export async function h4(browser, base, check) {
     let during = []
     await drag(line(t, to3b, 16), { during: async () => (during = await warnings(page)) })
     check((await code(page)) === T3B, `table drag by touch gives 3b (${await code(page)})`)
-    check(during.some((w) => /Seat .*under 20|20/.test(w)), `the 3b warning shows during the drag (${during.join('; ')})`)
+    check(during.some((w) => /Seat .*\(under 23\)/.test(w)), `the 3b warning shows during the drag (${during.join('; ')})`)
     check((await undoDepth(page)) === d0 + 1 && (await page.textContent('[data-testid=seats]')).includes('6'), 'one undo step; Seats 6')
     await page.waitForTimeout(400) // URL sync (300 ms)
     await page.reload({ waitUntil: 'networkidle' })

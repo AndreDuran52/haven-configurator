@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildHaven, standardL, standardU, type BuildResult, type Pt } from '@/engine';
+import { buildHaven, setArmWidth, standardL, standardU, type BuildResult, type Pt } from '@/engine';
 import { buildParts, LEG_INSET } from './parts';
 
 const built = buildHaven(standardU());
@@ -56,6 +56,14 @@ describe('the real Haven (Andre, 2026-09-27)', () => {
     expect(bbox(part('p3:seat').poly)).toEqual([10, 60.125, 44, 117.875]);
     // Nothing is crowned any more: every seat top is flat at 18.
     for (const p of parts.prisms.filter((q) => q.key.endsWith(':seat'))) expect(p.z1).toBe(18);
+  });
+
+  it('arm width (Andre, 2026-09-28): a 10″ arm renders 10″ wide, the frame and seat take the rest of the piece', () => {
+    const b10 = buildHaven(setArmWidth(standardU(), 10).config);
+    const p10 = buildParts(b10);
+    const get = (k: string) => p10.prisms.find((p) => p.key === k)!;
+    expect(bbox(get('p3:arm').poly)).toEqual([0, 122, 44, 132]);
+    expect(bbox(get('p3:frame').poly)).toEqual([0, 60, 10, 122]);
   });
 
   it('wedges: 10″ frames on both outside edges, the tight seat on the §8 polygon', () => {

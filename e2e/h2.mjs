@@ -14,7 +14,7 @@ export async function h2(browser, base, check) {
     await page.waitForSelector('[data-plan-svg]')
     const t = await dimTexts(page)
     check(t.slice(0, 5).join(' | ') === `60" | 32" | 36" | 60" | 188" (15'-8")`, `Standard U: back chain 60 | 32 | 36 | 60, overall 188" (got ${t.slice(0, 5).join(' | ')})`)
-    check(t.filter((x) => x === '72"').length === 2 && t.includes('44"D'), 'legs 72, 44"D')
+    check(t.filter((x) => x === '58"').length === 2 && t.filter((x) => x === '14"').length === 2 && !t.includes('72"') && t.includes('44"D'), 'legs one-arm 72 read seat 58 | arm 14 (Andre, 2026-09-28), 44"D')
     check((await seats(page)) === 'Seats 7', 'Seats 7')
     await context.close()
   }
@@ -24,7 +24,7 @@ export async function h2(browser, base, check) {
     const { context, page } = await openApp(browser, base)
     await setField(page, 'D', 36)
     const t = await dimTexts(page)
-    check(t.includes('52"') && t.filter((x) => x === '80"').length === 2 && (await seats(page)) === 'Seats 7–8', 'D = 36: back 52, legs 80, Seats 7–8')
+    check(t.includes('52"') && t.filter((x) => x === '66"').length === 2 && (await seats(page)) === 'Seats 7–8', 'D = 36: back 52, legs 80 (seat 66 | arm 14), Seats 7–8')
     await context.close()
   }
 
@@ -33,7 +33,7 @@ export async function h2(browser, base, check) {
     const { context, page } = await openApp(browser, base)
     await slide(page, 'ArrowLeft', 5)
     const t = await dimTexts(page)
-    check(t.filter((x) => x === '77"').length === 2 && t.includes('46"'), 'slider at 55: legs 77, back 46')
+    check(t.filter((x) => x === '63"').length === 2 && t.includes('46"'), 'slider at 55: legs 77 (seat 63 | arm 14), back 46')
     check((await config(page)).wedgeC === 55, 'wedge C stored as 55 (manual)')
     await context.close()
   }
@@ -63,6 +63,20 @@ export async function h2(browser, base, check) {
     check((await warnings(page)).includes('Opening 56″ deep (under 60)'), 'L = 100: "Opening 56″ deep (under 60)"')
     await setField(page, 'W', 190)
     check((await config(page)).W === 190, 'warnings never block editing')
+    await context.close()
+  }
+
+  // 6b. Arm width (Andre, 2026-09-28): 14 → 10 in half-inch steps; a one-piece leg keeps its
+  // footprint, so it reads seat 62 | arm 10; one Undo brings it back.
+  {
+    const { context, page } = await openApp(browser, base)
+    for (let i = 0; i < 8; i++) await page.getByRole('button', { name: 'Arm width minus ½' }).click()
+    const t = await dimTexts(page)
+    const c = await config(page)
+    check(c.dims.A === 10 && t.filter((x) => x === '10"').length === 2 && t.filter((x) => x === '62"').length === 2 && c.L === 132, `arm width 10: legs read 62 | 10, L holds 132 (A ${c.dims.A}, ${t.join(' ')})`)
+    // Stepper presses coalesce into one undo step (like Seat width).
+    await page.getByRole('button', { name: 'Undo' }).click()
+    check((await config(page)).dims.A === 14, 'one Undo takes the arm width back to 14')
     await context.close()
   }
 

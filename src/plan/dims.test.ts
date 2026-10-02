@@ -25,10 +25,12 @@ const overlap = (a: { x: number; y: number; w: number; h: number }, b: typeof a)
   a.x < b.x + b.w - 1e-6 && b.x < a.x + a.w - 1e-6 && a.y < b.y + b.h - 1e-6 && b.y < a.y + a.h - 1e-6;
 
 describe('dimension layout (plan §8)', () => {
-  it('Standard U: back chain 60 | 32 | 36 | 60, overall 188" (15\'-8"), legs 72, 44"D', () => {
+  it('Standard U: back chain 60 | 32 | 36 | 60, overall 188" (15\'-8"), legs as seat 58 | arm 14 (Andre, 2026-09-28), 44"D', () => {
     const { layout } = fitScreen(buildHaven(u), 860, 700);
     const texts = layout.texts.map((t) => t.text);
-    expect(texts).toEqual(expect.arrayContaining(['60"', '32"', '36"', '72"', `188" (15'-8")`, '44"D']));
+    expect(texts).toEqual(expect.arrayContaining(['60"', '32"', '36"', '58"', '14"', `188" (15'-8")`, '44"D']));
+    expect(texts).not.toContain('72"');
+    expect(texts.filter((t) => t === '14"')).toHaveLength(2);
     expect(texts.filter((t) => t === '60"')).toHaveLength(4); // 2 wedges on the top chain, 1 on each leg chain
   });
 

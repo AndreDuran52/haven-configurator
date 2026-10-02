@@ -2,7 +2,7 @@
 import { CLEARANCE_MIN, OPENING_MIN, SEAT_DEPTH_MIN, WEDGE_FACE_MIN } from './defaults';
 import { BACK_CUSHION } from './profiles';
 import { corners, runIds } from './layout';
-import { MAX_PIECE, MIN_SEAT, TABLE_MAX, TABLE_MIN, cushionOf, isSeat } from './pieces';
+import { MAX_PIECE, SEAT_WARN, TABLE_MAX, TABLE_MIN, cushionOf, isSeat } from './pieces';
 import type { Clearance, Config, SeatCount, Warning } from './types';
 
 const fmt = (n: number): string => String(Math.round(n * 10) / 10);
@@ -75,8 +75,8 @@ export function collectWarnings(c: Config, C: number, clearances: Clearance[]): 
       if (p.length > MAX_PIECE) {
         w.push({ code: 'pieceOver108', run, pieceId: p.id, message: `Piece ${fmt(p.length)}″ (over ${MAX_PIECE})` });
       }
-      if (isSeat(p) && cushionOf(p, A) < MIN_SEAT) {
-        w.push({ code: 'seatUnder20', run, pieceId: p.id, message: `Seat ${fmt(cushionOf(p, A))}″ (under ${MIN_SEAT})` });
+      if (isSeat(p) && cushionOf(p, A) < SEAT_WARN) {
+        w.push({ code: 'seatNarrow', run, pieceId: p.id, message: `Seat ${fmt(cushionOf(p, A))}″ (under ${SEAT_WARN})` });
       }
       if (p.kind === 'table' && (p.length < TABLE_MIN || p.length > TABLE_MAX)) {
         w.push({ code: 'tableOutOfRange', run, pieceId: p.id, message: `Table ${fmt(p.length)}″ (outside ${TABLE_MIN}–${TABLE_MAX})` });

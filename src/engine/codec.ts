@@ -27,6 +27,7 @@
 import { buildHaven } from './buildHaven';
 import { DEFAULT_DIMS, DEFAULT_FABRIC, DEFAULT_FINISH, DEFAULT_TABLE_STYLE, SEAT_WIDTH_DEFAULT, SNUG_SEAT_WIDTH } from './defaults';
 import { openEnd, runIds } from './layout';
+import { ARM_MAX, ARM_MIN } from './pieces';
 import type { Config, HavenDims, LoosePiece, RunId, RunPiece, Runs, Shape, TableFinish, TableStyle } from './types';
 
 export const LINK_VERSION = 2;
@@ -142,6 +143,8 @@ function decodeHeader(fields: string, version: number) {
       const dk = DIM_KEYS[key![1]!];
       if (!dk) ok = false;
       else dims[dk] = Number(n);
+      // The arm width is a choice in the app (6–14″); anything else is a damaged link.
+      if (dk === 'A' && !(dims.A >= ARM_MIN && dims.A <= ARM_MAX)) ok = false;
     } else {
       if (key! in vals) ok = false;
       vals[key!] = Number(n);

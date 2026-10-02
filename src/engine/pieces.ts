@@ -3,12 +3,17 @@ import type { RunEnd, RunPiece, RunPieceKind } from './types';
 
 /** Max single piece INCLUDING its arm (§3). Anything longer auto-splits. */
 export const MAX_PIECE = 108;
-/** Warn below this seat cushion length (§3). Never blocking. */
+/** The smallest seat cushion a resize, the tray or a conversion makes (§3). */
 export const MIN_SEAT = 20;
+/** Warn below this seat cushion width: "a little too little room" (Andre, 2026-09-28). Never blocking. */
+export const SEAT_WARN = 23;
+/** Arm width range, inches (Andre, 2026-09-28: any width 6–14″, 0.5″ steps; 14 by default). */
+export const ARM_MIN = 6;
+export const ARM_MAX = 14;
 /**
  * Hard floor for a seat cushion when it is squeezed by rebalancing (and for
  * resize/convert). Not in the spec: it only stops degenerate slivers. The
- * 20" rule above stays a warning, which is why test 3b's 13" seats are legal.
+ * seat warning stays a warning, which is why test 3b's 13" seats are legal.
  */
 export const ABSORB_FLOOR = 6;
 /** A table split needs at least this much cushion left to share (6" each side). */
@@ -33,7 +38,7 @@ export const LOOSE_DEFAULTS = {
 /** What the "Add piece" tray shows. */
 export const PIECE_LIBRARY = [
   { kind: 'armless', label: 'Armless seat', min: MIN_SEAT, max: MAX_PIECE, defaultLength: ARMLESS_DEFAULT },
-  { kind: 'oneArm', label: 'One-arm seat', min: MIN_SEAT, max: MAX_PIECE, defaultLength: ONE_ARM_SEAT_DEFAULT, note: 'length includes the 14" arm' },
+  { kind: 'oneArm', label: 'One-arm seat', min: MIN_SEAT, max: MAX_PIECE, defaultLength: ONE_ARM_SEAT_DEFAULT, note: 'length includes the arm' },
   { kind: 'table', label: 'Table insert', min: TABLE_MIN, max: TABLE_MAX, defaultLength: TABLE_DEFAULT },
   { kind: 'ottoman', label: 'Ottoman (loose)', ...LOOSE_DEFAULTS.ottoman },
   { kind: 'coffeeTable', label: 'Coffee table (loose)', ...LOOSE_DEFAULTS.coffeeTable },
