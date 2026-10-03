@@ -4,7 +4,7 @@
 import { createContext, createElement, useContext, useState, type ReactNode } from 'react';
 import { useStore } from 'zustand';
 import { createStore, type StoreApi } from 'zustand/vanilla';
-import { buildHaven, type BuildResult, type Config } from '@/engine';
+import { buildHaven, encode, type BuildResult, type Config } from '@/engine';
 import { DEFAULT_PRESET, type PresetName } from '@/ortho/presets';
 import type { TrayKind } from '@/plan/placementTargets';
 import * as H from './history';
@@ -41,6 +41,10 @@ export interface UiState {
   readOnly: boolean;
   /** A short message (refusals, damaged links, loads). */
   toast: { text: string; at: number } | null;
+  /** H6b: the Projects home, or the editor (a link or `?view` opens straight into the editor). */
+  screen: 'home' | 'editor';
+  /** The saved project being edited (Save updates it), with the code last saved, to tell unsaved changes. UI only. */
+  project: { id: string; name: string; code: string } | null;
 }
 
 export interface HavenState extends H.History {
@@ -53,6 +57,9 @@ export interface HavenState extends H.History {
   setUi: (patch: Partial<UiState>) => void;
   setView: (view: UiState['view']) => void;
   toast: (text: string) => void;
+  /** Open a layout in the editor from the Projects home: a fresh undo history (never undoable into another project). */
+  open: (config: Config, opts?: { project?: UiState['project']; lastStart?: StartChoice }) => void;
+  goHome: () => void;
 }
 
 export type HavenStore = StoreApi<HavenState>;
@@ -81,6 +88,8 @@ export function createHavenStore(initial: Config, ui: Partial<UiState> = {}): Ha
         lastStart: DEFAULT_START,
         readOnly: false,
         toast: null,
+        screen: 'editor',
+        project: null,
         ...ui,
       },
       setDraft: (next) => apply((h) => H.setDraft(h, next)),
@@ -96,6 +105,14 @@ export function createHavenStore(initial: Config, ui: Partial<UiState> = {}): Ha
         set({ ui: { ...u, view, ...(first ? { seen3d: true, handoff: u.planFit } : {}) } });
       },
       toast: (text) => set({ ui: { ...get().ui, toast: { text, at: Date.now() } } }),
+      open: (config, opts = {}) => {
+        const u = get().ui;
+        set({
+          ...H.initHistory(config),
+          ui: { ...u, screen: 'editor', project: opts.project ?? null, lastStart: opts.lastStart ?? u.lastStart, selectedId: null, placing: null, dragging: null, readOnly: false },
+        });
+      },
+      goHome: () => set({ ui: { ...get().ui, screen: 'home', selectedId: null, placing: null, dragging: null } }),
     };
   });
 }
@@ -123,6 +140,15 @@ export function useHavenStore(): HavenStore {
 
 export function useHaven<T>(selector: (s: HavenState) => T): T {
   return useStore(useHavenStore(), selector);
+}
+
+/** Edits not yet saved: changed since the open project was last saved, or (no project) any undoable edit. */
+export const isDirty = (s: HavenState): boolean => (s.ui.project ? codeOf(s.config) !== s.ui.project.code : s.past.length > 0);
+const codeCache = new WeakMap<Config, string>();
+function codeOf(c: Config): string {
+  let code = codeCache.get(c);
+  if (code === undefined) codeCache.set(c, (code = encode(c)));
+  return code;
 }
 
 /** The config every view draws: the live draft during a gesture, else the committed config. */

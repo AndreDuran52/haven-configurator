@@ -580,7 +580,7 @@ These are deduplicated from the spec audit (ENG-, 3D-, EXP-, PLAT-, ORTHO- ids) 
 | EXP-02 | §10 | jsPDF can't draw SVG | svg2pdf.js, vector | no |
 | EXP-03 | §10 | Downloads in the installed iOS app | Two taps: Generate, then `navigator.share({files})`; laptop uses `save()` | no |
 | EXP-04 | §10 | Share-link design and audience | Text codec v1 in the URL fragment; no names or prices | **Q17** |
-| EXP-05 | §2 | Where saved configs live | On the device: URL hash + localStorage draft + localStorage "Saved layouts" list (H6); cross-device saves are optional H7 | **Q18** |
+| EXP-05 | §2 | Where saved configs live | On the device: URL hash + localStorage draft + localStorage "Saved layouts" list (H6), shown as the Projects home with a backup file (H6b); cross-device saves are optional H7 | **Q18** |
 | EXP-06 | §9/§10 | "Don't stretch models" vs "rebuild with real models" | Export `parts[]` dimensions and both cameras; Andre defines "real models" before H8 | **Q24, Q31** |
 | EXP-07 | §10 | Hard-coded "44″D" callout | Print the live D | no |
 | PLAT-01 | §11 | Where it lives; bundle; offline use | Standalone repo + Vercel project, no backend, entry-chunk budget, precache service worker (§3) | Q2 (answered) |
@@ -859,10 +859,11 @@ Two profiles:
 - `replaceState`, not `location.hash = …`: assigning the hash pushes a browser history entry per edit and fires `hashchange`.
 - The hash, not search params: changing it never reloads the page, and it is never sent to the server (no layout in Vercel logs).
 - A `hashchange` from outside the app (a pasted link, the browser Back button in a tab) decodes and loads that layout as one undoable commit; a damaged or newer link shows the codec's message and keeps the current layout.
-- Load order: hash, then Standard U (spec §2: it "loads first"). The localStorage draft is never loaded automatically; it is offered as "Resume last layout" in the Start menu. The draft is written 1 s after each commit (as a codec string, through `state/storage.ts`).
+- Load order: hash, then Standard U (spec §2: it "loads first"); since H6b a plain open (no hash, no `?view`) shows the **Projects home** instead, and the home has no layout in the URL. The localStorage draft is never loaded automatically; it is offered as "Continue last layout" on the Projects home (and "Resume last layout" in the Start menu). The draft is written 1 s after each commit (as a codec string, through `state/storage.ts`).
 
 **Saved layouts (H6, per device).**
-- "Save" asks for a name and stores `{id, name, code, savedAt}` in a localStorage list (codec string, newest first, cap 200). The Start menu's "Saved" lists them with rename, duplicate and delete (delete asks to confirm).
+- "Save" asks for a name and stores `{id, name, code, savedAt}` in a localStorage list (codec string, newest first, cap 200). Since H6b they are **projects** on the Projects home (cards with a small plan; open, rename, duplicate, share link, delete with a confirm); Save on an open project updates it in place ("Save as new" beside it), and Projects with unsaved changes asks first.
+- **Backup (H6b):** "Back up all projects" downloads `haven-projects-YYYY-MM-DD.json` (names included: the file stays with Andre; links never carry names); "Restore from file" merges by id (a newer copy wins, damaged codes are skipped). This is the cross-device and anti-eviction path until H7.
 - They are **per device and per browser context**: on iOS the home-screen app has its own storage, separate from Safari's, so a layout saved in Safari does not appear in the installed app. The Saved list therefore offers "Share link" on every row, which is the cross-device path until H7.
 - On first save, call `navigator.storage.persist()` (feature-detected, result ignored) to ask the browser not to evict the list.
 - **UNVERIFIED:** whether iOS evicts script-written storage of a home-screen app that goes unopened for weeks (WebKit's 7-day rule counts days of use per app). Mitigation: the share links above, and H7 if it matters.
@@ -890,7 +891,7 @@ Two profiles:
 
 *Measured:* vector shop sheets are 6–8 kB and take 31–48 ms; text is selectable; scale is exact. jspdf 386.24 kB + svg2pdf 87.53 kB raw (~160 kB gzip together), loaded only when exporting.
 
-**Delivery.** iPad: two taps ("Generate", then "Share PDF" → `navigator.share({files})`), because user activation expires during generation. Laptop: `doc.save()`. PNG: the same SVG drawn to a canvas at 200 dpi (2200 × 1700, 581 kB) for "send as image".
+**Delivery.** Two taps, because user activation expires during generation: "Make PDF", then (H6b, Andre 2026-10-02: "download or print are the main ones we use") **Download PDF** or **Print**, with **Share…** (`navigator.share({files})`) only where the browser can share files. Print: a hidden same-origin iframe and its print dialog on a laptop; on iPad/iPhone the share sheet (its Print row), else the PDF in a new tab. PNG: the same SVG drawn to a canvas at 200 dpi (2200 × 1700, 581 kB) for "send as image".
 
 **Scale.**
 - `fitSheet` picks the largest of 1″, 3/4″, 1/2″, 3/8″, 1/4″, 3/16″, 1/8″ = 1′-0″ that fits. The Standard U prints at 3/8″; W 300 at 1/4″.
@@ -1170,6 +1171,20 @@ Two profiles:
   - 3D and pillows already follow `dims.A`.
 - **Measured:** vitest (arm width lock on/off, refusals, links, warning 22/23, dims split, a 10″ arm in 3D parts); e2e legs `58 | 14`, D 36 `66 | 14`, slider 55 `63 | 14`, arm width 10 → legs `62 | 10` with L held and one Undo back to 14, the 3b warning "(under 23)".
 
+### H6b: Projects home, Download / Print first (Andre, 2026-10-02)
+- **Asked:** "where is that being saved? should we have a home screen where we can see projects"; the PDF only offered the share sheet (Windows Chrome: no print, no download), "download or print … should be the main thing"; "should we make people login?" (No: see Q18.)
+- **As built:**
+  - The app opens to the **Projects home** unless a link or `?view` opens a layout: New Haven (Standard U, L left, L right, Blank…), "Continue last layout" (the draft), the saved projects as cards with a small plan (drawn from the code, nothing extra stored), and Back up / Restore from file.
+  - Opening anything from the home starts a fresh undo history (`store.open`), never writes the draft by itself, and a reload on the home stays home (no hash).
+  - Top bar: **Projects** (asks "Save before leaving?" when there are unsaved changes), the open project's name ("· edited" when changed); Start stays (hidden on phones; the home has the same choices).
+  - Save: an open project is saved in place, or "Save as new".
+  - Share & PDF: **Download PDF** · **Print** first; **Share…** only where files can be shared; Image (PNG) downloads.
+- **Measured:** vitest (update in place, backup → restore on another device, restoring twice, newer copy wins, damaged entries, storage throwing; store open/goHome/dirty); e2e `h6b.mjs` (unsaved-changes guard and Continue, backup/restore in a fresh browser, Download PDF / Print frame / PNG), `h6.mjs` saved projects through the home, screenshots of the home at 3 viewports.
+- **UNVERIFIED:** Print and Download on Andre's laptop (Windows Chrome) and on the iPad (installed app); a backup restored from the iPad to the laptop.
+
+### H6c: Room floor space (next; Andre, 2026-10-02)
+The client's room (W × D, the sofa's gap to the left and back walls) drawn in the plan, the PDF and as the 3D floor, with clearances to each wall and a `roomTooSmall` warning; Center and Fill the width. Carried in links (codec v3, written only when a room is set, so every older link stays byte-identical).
+
 ### H7: Cloud saves + tracker hand-off (optional, later; Andre decides, do not start until told)
 The configurator is complete without H7. Options, in order of cost:
 - **(a) Stay local (default).** Layouts live on each device; share links and PDFs move them between devices and people. Nothing to build.
@@ -1311,7 +1326,7 @@ Answer in a word. **Q1 is answered (camera, spring-back orbit), and Q9, Q10, Q12
 | Q15 | Pillows: 2 square + 1 ball per wedge, 1 square per arm? *yes / or give counts* | yes. **2026-09-26:** Andre wants pillows like the showroom photo, which shows 2 square (one taupe, one light) + 1 ball at each corner **and** each arm end (built that way in H5). **2026-09-27 (H5b):** down-feather "karate chop" squares (taupe + oatmeal linen). **2026-09-27 (H5c, photos):** a touching pair of squares at each wedge and arm end, 1 light (cream) ball on each wedge, none at the arms |
 | Q16 | Before H5: the pillow `.glb`s, fabric/wood textures, the sketch reference image, and which fabrics besides white bouclé (names + texture maps)? *yes / date* | **2026-09-26:** Andre said start H5 without them. Built with defaults: procedural pillows from the showroom photo, procedural bouclé/wood at true scale, Sketch per the §10 description. Still wanted: the fabric list (names + colours), and the sketch reference if the style should change. **2026-09-27 (H5c):** the square pillow comes from Andre's Blender model (`src/three/models/pillow-square.glb`) |
 | Q17 | Share links go to clients (no names, no prices)? *yes / no* | yes |
-| Q18 | *(Rewritten.)* Before H7: which option for saves across devices and hand-off to the production tracker? *(a) stay local + share links/PDFs / (b) own small backend / (c) PDF uploaded by hand* | (a), with (c) whenever a sheet should live on a tracker item; H7 not started unless Andre asks |
+| Q18 | *(Rewritten.)* Before H7: which option for saves across devices and hand-off to the production tracker? *(a) stay local + share links/PDFs / (b) own small backend / (c) PDF uploaded by hand* | (a), with (c) whenever a sheet should live on a tracker item; H7 not started unless Andre asks. 2026-10-02: Andre asked about a login; no login while he is the only user (the H6b backup file moves projects between devices); revisit H7 (b) when a second person needs the same projects |
 | Q19 | Attach the shop sheet to a tracker item automatically? | **Not applicable** (folded into Q18 option c: by hand) |
 | Q20 | Client sheet shows each piece's length? *yes / no* | no (overall + tables only; pieces on the shop sheet) |
 | Q21 | Block both sheets while gaps are unfilled? *yes / or "draft watermark"* | yes |

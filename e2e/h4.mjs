@@ -1,7 +1,7 @@
 // H4 done-when checks (plan §10 H4, V5), driven by CDP touch at iPad size,
 // DPR 2, and judged by outcome: the committed config (as its share code), the
 // undo stack, the DOM.
-import { VIEWPORTS } from './browser.mjs'
+import { enterEditor, VIEWPORTS } from './browser.mjs'
 import { config, warnings } from './lib.mjs'
 import { planShapes, topParityIoU } from './parity.mjs'
 
@@ -17,7 +17,7 @@ async function open(browser, base, path = '', viewport = VIEWPORTS.ipadLandscape
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()))
   page.on('pageerror', (e) => errors.push(e.message))
   await page.goto(base + path, { waitUntil: 'networkidle' })
-  await page.waitForSelector('[data-plan-svg]')
+  await enterEditor(page)
   const cdp = await context.newCDPSession(page)
   const touch = (type, pts) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: pts })
   /** A one-finger drag through `path` (client px), a frame per step. */
