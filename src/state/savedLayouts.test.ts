@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { encode } from '@/engine';
 import { canon, fixtures } from '@/engine/testing';
-import { deleteSaved, duplicateSaved, exportSaved, importSaved, listSaved, openSaved, renameSaved, saveLayout, SAVED_CAP, updateSaved } from './savedLayouts';
+import { deleteSaved, duplicateSaved, exportSaved, importSaved, listSaved, openSaved, renameSaved, saveFailure, saveLayout, SAVED_CAP, updateSaved } from './savedLayouts';
 
 function memoryStorage(throwing = false): Storage {
   const m = new Map<string, string>();
@@ -47,11 +47,15 @@ describe('saved layouts (plan §8, H6)', () => {
     }
   });
 
-  it('caps the list at 200', () => {
+  it('a full list (200) refuses a new project and never drops an old one (UX Phase 1)', () => {
     const c = fixtures().T1!;
-    for (let i = 0; i < SAVED_CAP + 5; i++) saveLayout(`L${i}`, c, i);
+    for (let i = 0; i < SAVED_CAP; i++) expect(saveLayout(`L${i}`, c, i)).not.toBeNull();
+    expect(saveLayout('one more', c, 999)).toBeNull();
+    expect(duplicateSaved(listSaved()[0]!.id)).toBeNull();
     expect(listSaved()).toHaveLength(SAVED_CAP);
-    expect(listSaved()[0]!.name).toBe(`L${SAVED_CAP + 4}`);
+    expect(listSaved().at(-1)!.name).toBe('L0');
+    expect(saveFailure()).toMatch(/already holds 200 projects/);
+    expect(updateSaved(listSaved()[0]!.id, fixtures().T2!)).not.toBeNull(); // saving in place still works
   });
 
   it('storage throwing: an empty list, and save reports failure', () => {
@@ -77,17 +81,17 @@ describe('saved layouts (plan §8, H6)', () => {
     const file = exportSaved(10);
     expect(JSON.parse(file)).toMatchObject({ app: 'haven-configurator', kind: 'projects', version: 1, exportedAt: 10 });
     vi.stubGlobal('localStorage', memoryStorage()); // the other device
-    expect(importSaved(file)).toEqual({ added: 2, updated: 0, skipped: 0 });
+    expect(importSaved(file)).toEqual({ added: 2, updated: 0, skipped: 0, full: false });
     expect(listSaved().map((x) => x.name)).toEqual(['Garcia', 'Mitchell']);
-    expect(importSaved(file)).toEqual({ added: 0, updated: 0, skipped: 2 });
+    expect(importSaved(file)).toEqual({ added: 0, updated: 0, skipped: 2, full: false });
     updateSaved(g.id, f.T2!, 1); // older here than in the file
-    expect(importSaved(file)).toEqual({ added: 0, updated: 1, skipped: 1 });
+    expect(importSaved(file)).toEqual({ added: 0, updated: 1, skipped: 1, full: false });
     expect(encode(openSaved(listSaved().find((x) => x.id === g.id)!)!)).toBe(encode(f.T4!));
   });
 
   it('H6b: a bare list is accepted; damaged codes and junk are skipped or refused', () => {
     const ok = { id: 'a', name: 'A', code: encode(fixtures().T1!), savedAt: 5 };
-    expect(importSaved(JSON.stringify([ok, { ...ok, id: 'b', code: 'garbage' }, { nope: 1 }]))).toEqual({ added: 1, updated: 0, skipped: 2 });
+    expect(importSaved(JSON.stringify([ok, { ...ok, id: 'b', code: 'garbage' }, { nope: 1 }]))).toEqual({ added: 1, updated: 0, skipped: 2, full: false });
     expect(importSaved('not json')).toEqual({ error: 'notBackup' });
     expect(importSaved('{"projects": 3}')).toEqual({ error: 'notBackup' });
     vi.stubGlobal('localStorage', memoryStorage(true));

@@ -1,13 +1,12 @@
 // A typed measurement (plan §8): text input with inputMode=decimal, 16 px font
-// (no iOS zoom), accepts 188 / 188.5 / 188 1/2 / 15'8". A valid parse drafts
-// after 150 ms; blur or Enter commits; Escape cancels. A refused value reverts
-// and shows the minimum ("min 158″"). ±1″ steppers commit, coalesced by key.
-import { useEffect, useRef, useState } from 'react';
+// (no iOS zoom), accepts 188 / 188.5 / 188 1/2 / 15'8". Nothing changes while
+// typing (Andre, UX Phase 1: "38" must never show "3"); blur or Enter commits;
+// Escape cancels. A refused value reverts and shows the minimum ("min 158″").
+// ±1″ steppers commit, coalesced by key.
+import { useRef, useState } from 'react';
 import type { Config, EditResult } from '@/engine';
 import { fmtIn, parseInches } from '@/plan/format';
 import { useHavenStore } from '@/state/store';
-
-export const DRAFT_DELAY_MS = 150;
 
 const show = (n: number) => fmtIn(n, { mark: false });
 
@@ -43,10 +42,6 @@ export function MeasureField({
   const [errorState, setErrorState] = useState<{ text: string | null; at: number } | null>(null);
   const setError = (text: string | null) => setErrorState(text ? { text, at: read(store.getState().config) } : null);
   const error = errorState && errorState.at === value ? errorState.text : null;
-  const timer = useRef(0);
-
-  useEffect(() => () => window.clearTimeout(timer.current), []);
-
   const tryValue = (raw: string): EditResult | null => {
     const v = parseInches(raw);
     if (v === null) return null;
@@ -66,22 +61,13 @@ export function MeasureField({
   const onChange = (raw: string) => {
     setText(raw);
     setError(null);
-    window.clearTimeout(timer.current);
-    timer.current = window.setTimeout(() => {
-      const r = tryValue(raw);
-      if (!r) return;
-      if (r.rejected) store.getState().cancelDraft();
-      else store.getState().setDraft(r.config);
-    }, DRAFT_DELAY_MS);
   };
 
   const finish = (commit: boolean) => {
-    window.clearTimeout(timer.current);
     active.current = false;
     setEditing(false);
     const s = store.getState();
     if (!commit) {
-      s.cancelDraft();
       setText(show(read(s.config)));
       return;
     }
@@ -91,7 +77,6 @@ export function MeasureField({
       setError(null);
       return;
     }
-    s.cancelDraft();
     setText(show(read(s.config)));
     setError(r ? message(r) : 'Not a size');
   };

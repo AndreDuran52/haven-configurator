@@ -7,7 +7,9 @@
 import { useRef, useState } from 'react';
 import type { Config } from '@/engine';
 import { readDraft } from '@/state/draft';
-import { exportSaved, importSaved, listSaved, savedDate } from '@/state/savedLayouts';
+import { projectFor } from '@/state/openProject';
+import { exportSaved, importSaved, listSaved, SAVED_CAP, savedDate } from '@/state/savedLayouts';
+import { dismissRecovered, recoveredNotice } from '@/state/savedRecovery';
 import { presetFor, type StartChoice } from '@/state/start';
 import { useHavenStore } from '@/state/store';
 import { BlankForm } from './BlankForm';
@@ -19,7 +21,10 @@ import { UpdateChip } from './UpdateChip';
 export default function ProjectsHome() {
   const store = useHavenStore();
   const [list, setList] = useState(listSaved);
+  // listSaved() above copies an unreadable list aside first, so the notice is current.
+  const [recovered, setRecovered] = useState(recoveredNotice);
   const [draft] = useState(readDraft);
+  const [draftProject] = useState(() => projectFor(draft?.projectId));
   const [blank, setBlank] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const file = useRef<HTMLInputElement>(null);
@@ -50,7 +55,7 @@ export default function ProjectsHome() {
     if (file.current) file.current.value = '';
     if ('error' in r) return toast(r.error === 'storage' ? "Can't save on this device (storage is off or full)" : 'That file is not a Haven projects backup');
     setList(listSaved());
-    toast(`Restored: ${r.added} added, ${r.updated} updated${r.skipped ? `, ${r.skipped} skipped` : ''}`);
+    toast(`Restored: ${r.added} added, ${r.updated} updated${r.skipped ? `, ${r.skipped} skipped` : ''}${r.full ? ` (the list is full at ${SAVED_CAP})` : ''}`);
   };
 
   return (
@@ -62,6 +67,27 @@ export default function ProjectsHome() {
           </h1>
           <p className="text-sm text-ink-muted">Saved on this device</p>
         </header>
+
+        {recovered && (
+          <section role="alert" className="flex flex-col gap-2 rounded-xl border border-danger p-3" data-testid="recovered">
+            <p className="text-sm font-semibold">Your saved list could not be read.</p>
+            <p className="text-sm">A copy was kept on this device. Restore from a backup file to bring projects back. Saving works as normal.</p>
+            <div className="flex flex-wrap gap-2">
+              <Button tone="primary" onClick={() => file.current?.click()}>
+                Restore from file
+              </Button>
+              <Button
+                tone="quiet"
+                onClick={() => {
+                  dismissRecovered();
+                  setRecovered(null);
+                }}
+              >
+                Dismiss
+              </Button>
+            </div>
+          </section>
+        )}
 
         <section className="flex flex-col gap-2">
           <h2 className="text-xs font-semibold tracking-wide text-ink-muted uppercase">New Haven</h2>
@@ -81,10 +107,10 @@ export default function ProjectsHome() {
 
         {draft && (
           <section className="flex flex-col gap-2">
-            <h2 className="text-xs font-semibold tracking-wide text-ink-muted uppercase">Last layout (not saved as a project)</h2>
+            <h2 className="text-xs font-semibold tracking-wide text-ink-muted uppercase">Last layout</h2>
             <button
               type="button"
-              onClick={() => store.getState().open(draft.config)}
+              onClick={() => store.getState().open(draft.config, { project: draftProject })}
               className="flex min-h-11 items-center gap-3 rounded-xl border border-line bg-panel p-2 text-left"
               data-testid="continue"
             >
@@ -92,7 +118,7 @@ export default function ProjectsHome() {
                 <PlanThumb config={draft.config} />
               </span>
               <span className="flex flex-col">
-                <span className="font-semibold">Continue last layout</span>
+                <span className="font-semibold">Continue last layout{draftProject ? ` (${draftProject.name})` : ''}</span>
                 <span className="text-xs text-ink-muted">{savedDate(draft.savedAt)}</span>
               </span>
             </button>

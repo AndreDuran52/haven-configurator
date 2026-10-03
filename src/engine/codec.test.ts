@@ -95,6 +95,13 @@ describe('share link v1', () => {
     expect(decode(`${body}.${((h >>> 0) % 1296).toString(36).padStart(2, '0')}`)).toEqual({ error: 'damaged' });
   });
 
+  it('UX Phase 1: values the app can never make read as damaged (seat width 0, a wedge outside D…D+30)', () => {
+    for (const bad of [{ seatWidth: 0 }, { snugWidth: 0 }, { wedgeC: 80 }, { wedgeC: 40 }]) {
+      expect(decode(encode({ ...U(), ...bad })), JSON.stringify(bad)).toEqual({ error: 'damaged' });
+    }
+    expect('config' in decode(encode(op.setWedge(U(), 66)))).toBe(true); // a real manual wedge still opens
+  });
+
   it('carries geometry, fabric and finish only (no names or prices exist in the config)', () => {
     const c = { ...U(), tableFinish: 'darkWood' as const };
     expect(encode(c)).toMatch(/^1UW188L132R132D44T1_bt32s36_la72_ra72\.[0-9a-z]{2}$/);

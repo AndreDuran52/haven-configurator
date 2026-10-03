@@ -1182,6 +1182,29 @@ Two profiles:
 - **Measured:** vitest (update in place, backup → restore on another device, restoring twice, newer copy wins, damaged entries, storage throwing; store open/goHome/dirty); e2e `h6b.mjs` (unsaved-changes guard and Continue, backup/restore in a fresh browser, Download PDF / Print frame / PNG), `h6.mjs` saved projects through the home, screenshots of the home at 3 viewports.
 - **UNVERIFIED:** Print and Download on Andre's laptop (Windows Chrome) and on the iPad (installed app); a backup restored from the iPad to the laptop.
 
+### UX pass, Phase 1: wrong dimensions and lost work (Andre's UX brief, 2026-10-02)
+The UX brief runs in phases (0 audit, 1 safety, 2 editor clean-up, 3 understandable edits, 4 selection and corners, 5 options and Present, 6 visual tray), one PR each, stopping for Andre. Decisions from the Phase 0 review:
+- the depth rule stays (outside size fixed, corners D + 16, seats absorb);
+- iPad and laptop equally;
+- light and dark themes;
+- no arm flip (G11);
+- one wedge size for both corners;
+- rounding and clamping stay but get reported by the Phase 3 result line.
+
+Also queued for later phases:
+- Phase 2: restyle the seam handle as a grip;
+- Phase 3: the camera refits only when the sofa would leave the view;
+- Phase 5: confirm with Andre how seat depth is computed (D − 10 frame − 8 cushion) before Present shows it.
+
+As built in Phase 1:
+- **Typing:** measurement fields no longer preview while typing; Enter or blur commits once.
+- **Unreadable saved list:** its exact text is copied once to `haven:saved:recovered-<time>` (and checked) before a fresh list may replace it. Saving is never blocked. The Projects home warns, with Restore and Dismiss. If the copy can't be made, nothing overwrites the old text.
+- **Full list:** at 200 projects, a new project or duplicate is refused with a message; nothing is dropped.
+- **Open project:** `haven:open` keeps it across a reload, restored only when the URL still carries the layout last seen with it. It is cleared only by the tab's own transitions. The draft remembers its project, so Continue keeps saving into it.
+- **Update chip:** with unsaved changes, the first tap asks.
+- **Draft failures:** a failed draft write is reported once.
+- **Codec:** a seat or snug width ≤ 0, or a manual wedge outside D…D+30, reads as damaged. The goldens are unchanged.
+
 ### H6c: Room floor space (next; Andre, 2026-10-02)
 The client's room (W × D, the sofa's gap to the left and back walls) drawn in the plan, the PDF and as the 3D floor, with clearances to each wall and a `roomTooSmall` warning; Center and Fill the width. Carried in links (codec v3, written only when a room is set, so every older link stays byte-identical).
 

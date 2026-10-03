@@ -4,7 +4,7 @@
 // separate lists, so every card can send its link, and the home has Back up.
 import { useState } from 'react';
 import { encode, type Config } from '@/engine';
-import { deleteSaved, duplicateSaved, openSaved, renameSaved, savedDate, type SavedLayout } from '@/state/savedLayouts';
+import { deleteSaved, duplicateSaved, openSaved, renameSaved, saveFailure, savedDate, type SavedLayout } from '@/state/savedLayouts';
 import { shareLinks } from '@/state/url';
 import { Button } from './controls';
 import { PlanThumb } from './PlanThumb';
@@ -61,7 +61,7 @@ export function SavedList({ list, onChange, onOpen, onToast }: { list: SavedLayo
               <Button
                 tone="quiet"
                 onClick={() => {
-                  if (!duplicateSaved(e.id)) onToast("Can't save on this device");
+                  if (!duplicateSaved(e.id)) onToast(saveFailure());
                   onChange();
                 }}
               >
