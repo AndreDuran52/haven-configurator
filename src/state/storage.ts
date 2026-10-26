@@ -5,6 +5,10 @@ export const KEYS = {
   draft: 'haven:draft',
   saved: 'haven:saved',
   sheetViews: 'haven:sheetViews',
+  /** The recovery copy of an unreadable saved list (savedRecovery.ts). */
+  savedRecovered: 'haven:savedRecovered',
+  /** The project open in the editor, so a reload keeps Save updating it. */
+  open: 'haven:open',
 } as const;
 
 function store(): Storage | null {

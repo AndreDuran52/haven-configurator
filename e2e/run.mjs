@@ -8,6 +8,7 @@ import { h4 } from './h4.mjs'
 import { h5 } from './h5.mjs'
 import { h6 } from './h6.mjs'
 import { h6b } from './h6b.mjs'
+import { phase1 } from './phase1.mjs'
 import { reporter } from './lib.mjs'
 import { ortho } from './ortho.mjs'
 import { smoke } from './smoke.mjs'
@@ -27,6 +28,7 @@ try {
   await h5(browser, BASE, check)
   await h6(browser, BASE, check)
   await h6b(browser, BASE, check)
+  await phase1(browser, BASE, check)
 } finally {
   await browser.close()
   await server.close()

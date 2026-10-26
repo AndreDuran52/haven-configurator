@@ -1,10 +1,13 @@
 // Saved layouts (plan §8 "Saved layouts", H6): a localStorage list per device
-// and browser context, newest first, capped at 200. Each entry stores the share
-// code (links are forever, so saved layouts are too). Every read/write goes
-// through storage.ts; a throwing storage reads as an empty list and a failed
-// write returns false ("Can't save on this device").
+// and browser context, newest first, capped at 200 (a full list refuses a new
+// project, never drops one). Each entry stores the share code (links are
+// forever, so saved layouts are too). Every read/write goes through storage.ts;
+// a throwing storage reads as an empty list and a failed write returns false
+// ("Can't save on this device"). An unreadable list is copied aside before
+// anything replaces it (savedRecovery.ts).
 import { decode, encode, type Config } from '@/engine';
-import { KEYS, readJson, writeItem } from './storage';
+import { secureRaw } from './savedRecovery';
+import { KEYS, readItem, writeItem } from './storage';
 
 export interface SavedLayout {
   id: string;
@@ -21,14 +24,40 @@ export const savedDate = (t: number) => new Date(t).toLocaleString([], { dateSty
 const valid = (x: unknown): x is SavedLayout =>
   !!x && typeof x === 'object' && typeof (x as SavedLayout).id === 'string' && typeof (x as SavedLayout).name === 'string' && typeof (x as SavedLayout).code === 'string';
 
+/** The stored list; `clean` is false when the text is not exactly a list of valid entries. */
+function load(): { list: SavedLayout[]; clean: boolean; raw: string | null } {
+  const raw = readItem(KEYS.saved);
+  if (raw === null) return { list: [], clean: true, raw };
+  let parsed: unknown = null;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    // unreadable: handled below
+  }
+  const list = Array.isArray(parsed) ? parsed.filter(valid) : [];
+  return { list, clean: Array.isArray(parsed) && list.length === parsed.length, raw };
+}
+
 export function listSaved(): SavedLayout[] {
-  const raw = readJson<unknown>(KEYS.saved);
-  return Array.isArray(raw) ? raw.filter(valid) : [];
+  const l = load();
+  if (!l.clean) secureRaw(l.raw!);
+  return l.list;
 }
 
 function write(list: SavedLayout[]): boolean {
-  return writeItem(KEYS.saved, JSON.stringify(list.slice(0, SAVED_CAP)));
+  const l = load();
+  // Never replace text we could not read until an exact copy of it is kept.
+  if (!l.clean && !secureRaw(l.raw!)) return false;
+  return writeItem(KEYS.saved, JSON.stringify(list));
 }
+
+export const isFull = (): boolean => listSaved().length >= SAVED_CAP;
+
+/** Why a save failed, in Andre's words for the dialog. */
+export const saveFailure = (): string =>
+  isFull()
+    ? `This device already holds ${SAVED_CAP} projects. Delete one (or back up and remove old ones) to save a new one.`
+    : "Can't save on this device (storage is off or full). Share a link instead.";
 
 let counter = 0;
 const newId = (now: number) => `s${now.toString(36)}${(counter++).toString(36)}`;
@@ -45,7 +74,7 @@ function persist(): void {
 export function saveLayout(name: string, config: Config, now = Date.now()): SavedLayout | null {
   const entry: SavedLayout = { id: newId(now), name: name.trim() || 'Untitled layout', code: encode(config), savedAt: now };
   const list = listSaved();
-  if (!write([entry, ...list])) return null;
+  if (list.length >= SAVED_CAP || !write([entry, ...list])) return null;
   if (list.length === 0) persist();
   return entry;
 }
@@ -61,7 +90,7 @@ export function renameSaved(id: string, name: string): boolean {
 export function duplicateSaved(id: string, now = Date.now()): SavedLayout | null {
   const list = listSaved();
   const e = list.find((x) => x.id === id);
-  if (!e) return null;
+  if (!e || list.length >= SAVED_CAP) return null;
   const copy = { ...e, id: newId(now), name: `${e.name} (copy)`, savedAt: now };
   return write([copy, ...list]) ? copy : null;
 }
@@ -94,7 +123,7 @@ export function exportSaved(now = Date.now()): string {
   return JSON.stringify(b, null, 1);
 }
 
-export type ImportResult = { added: number; updated: number; skipped: number } | { error: 'notBackup' | 'storage' };
+export type ImportResult = { added: number; updated: number; skipped: number; full: boolean } | { error: 'notBackup' | 'storage' };
 
 /**
  * Merge a backup into this device's projects: new ids are added, an id already
@@ -114,6 +143,7 @@ export function importSaved(text: string): ImportResult {
   let added = 0;
   let updated = 0;
   let skipped = 0;
+  let full = false;
   for (const x of items) {
     if (!valid(x) || !('config' in decode(x.code))) {
       skipped++;
@@ -121,7 +151,10 @@ export function importSaved(text: string): ImportResult {
     }
     const entry: SavedLayout = { id: x.id, name: x.name, code: x.code, savedAt: Number(x.savedAt) || 0 };
     const i = list.findIndex((y) => y.id === entry.id);
-    if (i < 0) {
+    if (i < 0 && list.length >= SAVED_CAP) {
+      full = true;
+      skipped++;
+    } else if (i < 0) {
       list.push(entry);
       added++;
     } else if (entry.savedAt > list[i]!.savedAt) {
@@ -129,11 +162,11 @@ export function importSaved(text: string): ImportResult {
       updated++;
     } else skipped++;
   }
-  if (added + updated === 0) return { added, updated, skipped };
+  if (added + updated === 0) return { added, updated, skipped, full };
   list.sort((a, b) => b.savedAt - a.savedAt);
   if (!write(list)) return { error: 'storage' };
   persist();
-  return { added, updated, skipped };
+  return { added, updated, skipped, full };
 }
 
 /** The layout of a saved entry, or null when its code no longer decodes. */

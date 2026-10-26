@@ -37,7 +37,7 @@ Layout: `src/{engine, ortho, state, plan, three, ui, export}` (plan §4). The sh
 
 Each milestone: `git fetch`, branch from `origin/main` (`h0b-scaffold`, `h1-engine`, `h2-plan-view`, `h3-ortho`, `h4-editing`, `h5-look`, `h6-exports`), build only that §10 block, meet its done-when list, open a PR, **stop**. Andre previews (localhost or the Vercel preview; from H2 on, installed on the iPad) and it merges on Andre's word. Tick the box below in the same PR.
 
-**Current status: H6b** (the app opens to a Projects home: saved projects as cards, save in place, backup/restore file; the PDF's main actions are Download and Print). Next: H6c room floor space. No login (plan Q18). H7/H8 only when Andre asks.
+**Current status: UX pass, Phase 1** (Andre's UX brief, 2026-10-02, phases 0–6, one PR each, stop after each: plan §10 "UX pass"). Phase 1: no partial commits while typing, an unreadable saved list is copied aside (saving never blocked), the open project survives a reload. H6c (room) is on hold (brief §13). No login (plan Q18). H7/H8 only when Andre asks.
 
 - [x] H0 Docs hand-off (plan, spec, prototypes, evidence in `docs/`)
 - [x] H0b Scaffold (Vite, strict TS, oxlint guards, vitest, bundle budget, manifest, Vercel)
@@ -51,7 +51,9 @@ Each milestone: `git fetch`, branch from `origin/main` (`h0b-scaffold`, `h1-engi
 - [x] H5c Andre's Blender pillow (`src/three/models/pillow-square.glb`) + puffier back cushions (2026-09-27)
 - [x] H5d Arm width editable (6–14″), arm shown in the plan (seat | arm), seat warning under 23″ (2026-09-28)
 - [x] H6b Projects home (cards, save in place, unsaved-changes guard, backup/restore), Download / Print first (2026-10-02)
-- [ ] H6c Room floor space (W × D + wall gaps; plan, PDF, 3D floor; fit warning; codec v3)
+- [x] UX Phase 0 audit + Phase 1 (no partial commits, saved-list recovery, open project kept on reload, codec checks; 2026-10-02)
+- [ ] UX Phases 2–6 (editor clean-up, understandable edits, selection and corners, options and Present, visual tray)
+- [ ] H6c Room floor space (on hold: brief §13) (W × D + wall gaps; plan, PDF, 3D floor; fit warning; codec v3)
 - [ ] H7 Cloud saves + tracker hand-off (optional; do not start unless Andre asks)
 - [ ] H8 Blender round-trip (later; do not start unless Andre asks)
 

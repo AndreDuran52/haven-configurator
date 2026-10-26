@@ -1,5 +1,5 @@
 // The on-screen plan editor (plan §8): fits PlanDrawing to its container and
-// runs the gestures. The fit follows the live config (a measurement draft
+// runs the gestures. The fit follows the live config (a slider or stepper draft
 // rescales as you type), except during a plan gesture: then k, the viewBox and
 // the CTM stay frozen, so a lock-off drag never rescales under the finger.
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';

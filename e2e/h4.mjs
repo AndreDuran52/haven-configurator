@@ -238,7 +238,9 @@ export async function h4(browser, base, check) {
     for (const name of ['top', 'threeQuarter', 'iso', 'front', 'side']) {
       await page.locator(`[data-preset=${name}]`).click()
       await page.waitForTimeout(200)
-      await page.waitForFunction(() => window.__haven3d?.state().resting, null, { timeout: 20000, polling: 100 })
+      // Software WebGL in a busy sandbox can render ~1.5 frames/s, so a preset tween can take
+      // well over 20 s to settle (measured on main too, 2026-10-03); the framing check itself is unchanged.
+      await page.waitForFunction(() => window.__haven3d?.state().resting, null, { timeout: 90000, polling: 100 })
       const out = await page.evaluate(() => {
         const api = window.__haven3d
         const [w, h] = api.state().size
