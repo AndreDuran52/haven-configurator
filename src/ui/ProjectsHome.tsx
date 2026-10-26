@@ -5,7 +5,7 @@
 // file is how they move between the iPad and the laptop or survive the browser
 // clearing its storage. Lazy-loaded.
 import { useRef, useState } from 'react';
-import type { Config } from '@/engine';
+import { rootConfig, type Layout } from '@/engine';
 import { readDraft } from '@/state/draft';
 import { projectFor } from '@/state/openProject';
 import { exportSaved, importSaved, listSaved, SAVED_CAP, savedDate } from '@/state/savedLayouts';
@@ -31,16 +31,16 @@ export default function ProjectsHome() {
   const toast = (t: string) => store.getState().toast(t);
 
   const start = (choice: StartChoice) => {
-    let config: Config;
+    let layout: Layout;
     try {
-      config = presetFor(choice);
+      layout = presetFor(choice);
     } catch {
       return setError('Those sizes are too small for this shape');
     }
-    store.getState().open(config, { lastStart: choice });
+    store.getState().open(layout, { lastStart: choice });
   };
-  const openProject: OpenProject = (config, project) => {
-    store.getState().open(config, { project });
+  const openProject: OpenProject = (layout, project) => {
+    store.getState().open(layout, { project });
     toast(`Opened "${project.name}"`);
   };
   const backup = async () => {
@@ -110,12 +110,12 @@ export default function ProjectsHome() {
             <h2 className="text-xs font-semibold tracking-wide text-ink-muted uppercase">Last layout</h2>
             <button
               type="button"
-              onClick={() => store.getState().open(draft.config, { project: draftProject })}
+              onClick={() => store.getState().open(draft.layout, { project: draftProject })}
               className="flex min-h-11 items-center gap-3 rounded-xl border border-line bg-panel p-2 text-left"
               data-testid="continue"
             >
               <span className="h-20 w-32 shrink-0 rounded-lg bg-white p-1">
-                <PlanThumb config={draft.config} />
+                <PlanThumb config={rootConfig(draft.layout)} />
               </span>
               <span className="flex flex-col">
                 <span className="font-semibold">Continue last layout{draftProject ? ` (${draftProject.name})` : ''}</span>

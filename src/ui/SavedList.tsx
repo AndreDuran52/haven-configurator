@@ -3,13 +3,14 @@
 // share link, delete (asks first). Per device: the installed app and Safari keep
 // separate lists, so every card can send its link, and the home has Back up.
 import { useState } from 'react';
-import { encode, type Config } from '@/engine';
-import { deleteSaved, duplicateSaved, openSaved, renameSaved, saveFailure, savedDate, type SavedLayout } from '@/state/savedLayouts';
+import { rootConfig, type Layout } from '@/engine';
+import { deleteSaved, duplicateSaved, openSaved, renameSaved, saveFailure, savedDate, savedStatus, type SavedLayout } from '@/state/savedLayouts';
+import { codeOf } from '@/state/store';
 import { shareLinks } from '@/state/url';
 import { Button } from './controls';
 import { PlanThumb } from './PlanThumb';
 
-export type OpenProject = (c: Config, project: { id: string; name: string; code: string }) => void;
+export type OpenProject = (l: Layout, project: { id: string; name: string; code: string }) => void;
 
 export function SavedList({ list, onChange, onOpen, onToast }: { list: SavedLayout[]; onChange: () => void; onOpen: OpenProject; onToast: (t: string) => void }) {
   const [renaming, setRenaming] = useState<{ id: string; name: string } | null>(null);
@@ -18,12 +19,22 @@ export function SavedList({ list, onChange, onOpen, onToast }: { list: SavedLayo
   return (
     <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3" data-testid="saved-list">
       {list.map((e) => {
-        const config = openSaved(e);
-        const open = () => (config ? onOpen(config, { id: e.id, name: e.name, code: encode(config) }) : onToast('This saved project looks damaged'));
+        const layout = openSaved(e);
+        const newer = !layout && savedStatus(e) === 'newer';
+        const open = () =>
+          layout
+            ? onOpen(layout, { id: e.id, name: e.name, code: codeOf(layout) })
+            : onToast(newer ? 'Made with a newer version. Update the app to open it.' : 'This saved project looks damaged');
         return (
           <li key={e.id} className="flex flex-col gap-2 rounded-xl border border-line bg-panel p-2" data-saved={e.name}>
             <button type="button" onClick={open} className="h-36 rounded-lg bg-white p-1" aria-label={`Open ${e.name}`}>
-              {config ? <PlanThumb config={config} /> : <span className="text-sm text-danger">Damaged</span>}
+              {layout ? (
+                <PlanThumb config={rootConfig(layout)} />
+              ) : newer ? (
+                <span className="text-sm text-ink-muted">Made with a newer version. Update the app.</span>
+              ) : (
+                <span className="text-sm text-danger">Damaged</span>
+              )}
             </button>
             {renaming?.id === e.id ? (
               <div className="flex gap-2">
@@ -70,9 +81,9 @@ export function SavedList({ list, onChange, onOpen, onToast }: { list: SavedLayo
               <Button
                 tone="quiet"
                 onClick={async () => {
-                  if (!config) return;
+                  if (!layout) return;
                   const { shareLink } = await import('@/export/share');
-                  const r = await shareLink(shareLinks(config).edit, e.name);
+                  const r = await shareLink(shareLinks(layout).edit, e.name);
                   if (r === 'copied') onToast('Link copied');
                 }}
               >

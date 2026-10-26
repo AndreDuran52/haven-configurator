@@ -5,7 +5,8 @@
 // a throwing storage reads as an empty list and a failed write returns false
 // ("Can't save on this device"). An unreadable list is copied aside before
 // anything replaces it (savedRecovery.ts).
-import { decode, encode, type Config } from '@/engine';
+import { decodeLayout, encodeLayout, type Layout } from '@/engine';
+import { canOpen } from './layoutGate';
 import { secureRaw } from './savedRecovery';
 import { KEYS, readItem, writeItem } from './storage';
 
@@ -71,8 +72,8 @@ function persist(): void {
   }
 }
 
-export function saveLayout(name: string, config: Config, now = Date.now()): SavedLayout | null {
-  const entry: SavedLayout = { id: newId(now), name: name.trim() || 'Untitled layout', code: encode(config), savedAt: now };
+export function saveLayout(name: string, layout: Layout, now = Date.now()): SavedLayout | null {
+  const entry: SavedLayout = { id: newId(now), name: name.trim() || 'Untitled layout', code: encodeLayout(layout), savedAt: now };
   const list = listSaved();
   if (list.length >= SAVED_CAP || !write([entry, ...list])) return null;
   if (list.length === 0) persist();
@@ -101,11 +102,11 @@ export function deleteSaved(id: string): boolean {
 }
 
 /** Overwrite a project with the current layout (Save on an open project) and move it to the top. Null when it no longer exists or the write fails. */
-export function updateSaved(id: string, config: Config, now = Date.now()): SavedLayout | null {
+export function updateSaved(id: string, layout: Layout, now = Date.now()): SavedLayout | null {
   const list = listSaved();
   const e = list.find((x) => x.id === id);
   if (!e) return null;
-  const next = { ...e, code: encode(config), savedAt: now };
+  const next = { ...e, code: encodeLayout(layout), savedAt: now };
   return write([next, ...list.filter((x) => x.id !== id)]) ? next : null;
 }
 
@@ -128,7 +129,8 @@ export type ImportResult = { added: number; updated: number; skipped: number; fu
 /**
  * Merge a backup into this device's projects: new ids are added, an id already
  * here takes the backup's copy only when that one is newer, and entries whose
- * code no longer decodes are skipped. Accepts the backup object or a bare list.
+ * code no longer decodes are skipped (a code from a newer version is kept: a
+ * later update opens it). Accepts the backup object or a bare list.
  */
 export function importSaved(text: string): ImportResult {
   let raw: unknown;
@@ -145,7 +147,7 @@ export function importSaved(text: string): ImportResult {
   let skipped = 0;
   let full = false;
   for (const x of items) {
-    if (!valid(x) || !('config' in decode(x.code))) {
+    if (!valid(x) || savedStatus(x) === 'damaged') {
       skipped++;
       continue;
     }
@@ -169,8 +171,15 @@ export function importSaved(text: string): ImportResult {
   return { added, updated, skipped, full };
 }
 
-/** The layout of a saved entry, or null when its code no longer decodes. */
-export function openSaved(e: SavedLayout): Config | null {
-  const d = decode(e.code);
-  return 'config' in d ? d.config : null;
+/** Whether this build can open a saved entry: 'newer' = made by a newer version (kept, opens after an update). */
+export function savedStatus(e: Pick<SavedLayout, 'code'>): 'ok' | 'newer' | 'damaged' {
+  const d = decodeLayout(e.code);
+  if ('layout' in d) return canOpen(d.layout) ? 'ok' : 'newer';
+  return d.error;
+}
+
+/** The layout of a saved entry, or null when this build can't open it (damaged, or from a newer version). */
+export function openSaved(e: SavedLayout): Layout | null {
+  const d = decodeLayout(e.code);
+  return 'layout' in d && canOpen(d.layout) ? d.layout : null;
 }

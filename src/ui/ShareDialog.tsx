@@ -27,6 +27,7 @@ type Made = { pdf: Blob; svg: string; name: string; preview: string; sig: string
 export default function ShareDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const store = useHavenStore();
   const config = useHaven((s) => s.config);
+  const layout = useHaven((s) => s.layout);
   const uiLook = useHaven((s) => s.ui.look);
   const pillows = useHaven((s) => s.ui.pillows);
   const [views, setViews] = useState<Views>(() => ({ ...DEFAULT_VIEWS, ...readJson<Partial<Views>>(KEYS.sheetViews) }));
@@ -35,7 +36,7 @@ export default function ShareDialog({ open, onOpenChange }: { open: boolean; onO
   const [busy, setBusy] = useState(false);
   const [madeState, setMade] = useState<Made | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const links = shareLinks(config);
+  const links = shareLinks(layout);
   const blocked = builtOf(config).exportBlocked;
   const chosen = VIEW_LABELS.filter((v) => views[v.key]);
 

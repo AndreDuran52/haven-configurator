@@ -3,9 +3,8 @@
 // button when there are unsaved changes ("Save first?"). Stored on this device
 // (localStorage); the name never goes in a link.
 import { useState } from 'react';
-import { encode } from '@/engine';
 import { saveFailure, saveLayout, updateSaved } from '@/state/savedLayouts';
-import { useHaven, useHavenStore } from '@/state/store';
+import { codeOf, useHaven, useHavenStore } from '@/state/store';
 import { Button } from './controls';
 import { Dialog } from './Dialog';
 
@@ -17,7 +16,7 @@ export default function SaveDialog({ open, onOpenChange, leaving = false }: { op
   const done = (saved: { id: string; name: string } | null) => {
     const s = store.getState();
     if (!saved) return setError(saveFailure());
-    s.setUi({ project: { id: saved.id, name: saved.name, code: encode(s.config) } });
+    s.setUi({ project: { id: saved.id, name: saved.name, code: codeOf(s.layout) } });
     s.toast(`Saved "${saved.name}"`);
     onOpenChange(false);
     if (leaving) s.goHome();
@@ -25,9 +24,9 @@ export default function SaveDialog({ open, onOpenChange, leaving = false }: { op
   const saveInPlace = () => {
     const s = store.getState();
     // The project was deleted meanwhile (another tab): save it again as new.
-    done(updateSaved(project!.id, s.config) ?? saveLayout(project!.name, s.config));
+    done(updateSaved(project!.id, s.layout) ?? saveLayout(project!.name, s.layout));
   };
-  const saveNew = () => done(saveLayout(name, store.getState().config));
+  const saveNew = () => done(saveLayout(name, store.getState().layout));
 
   return (
     <Dialog

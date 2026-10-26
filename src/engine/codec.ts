@@ -20,17 +20,19 @@
 // are kept forever (codec.golden.test.ts); a format change bumps LINK_VERSION
 // and adds a decoder/migration.
 //
-// Versions: v1 (H1) · v2 adds Y (table style, 2026-09-26). A link is written at
-// the LOWEST version that can express the config, so every layout that v1 could
-// already share keeps its exact v1 link; an older app shown a v2 link says
-// "newer" instead of "damaged".
+// Versions: v1 (H1) · v2 adds Y (table style, 2026-09-26) · v3 adds joined
+// sections (`_P` tokens, the T shape, 2026-10-26; codecLayout.ts). A link is
+// written at the LOWEST version that can express the layout, so every layout
+// that v1 could already share keeps its exact v1 link; an older app shown a
+// newer link says "newer" instead of "damaged". This file is the one-sofa
+// format; codecLayout.ts wraps it for layouts (the app only uses that one).
 import { buildHaven } from './buildHaven';
 import { DEFAULT_DIMS, DEFAULT_FABRIC, DEFAULT_FINISH, DEFAULT_TABLE_STYLE, SEAT_WIDTH_DEFAULT, SNUG_SEAT_WIDTH } from './defaults';
 import { openEnd, runIds } from './layout';
 import { ARM_MAX, ARM_MIN, WEDGE_RANGE } from './pieces';
 import type { Config, HavenDims, LoosePiece, RunId, RunPiece, Runs, Shape, TableFinish, TableStyle } from './types';
 
-export const LINK_VERSION = 2;
+export const LINK_VERSION = 3;
 
 /** Append-only: a fabric's index is its link code. */
 /** Append-only: a fabric's index is its link code (every FABRICS key must be here). */
@@ -61,9 +63,9 @@ const DIM_KEYS: Record<string, keyof HavenDims> = {
 };
 const DIM_INV = Object.fromEntries(Object.entries(DIM_KEYS).map(([k, v]) => [v, k])) as Record<keyof HavenDims, string>;
 
-const num = (n: number): string => String(Math.round(n * 2) / 2 + 0);
+export const num = (n: number): string => String(Math.round(n * 2) / 2 + 0);
 
-function checksum(body: string): string {
+export function checksum(body: string): string {
   let h = 2166136261;
   for (let i = 0; i < body.length; i++) h = Math.imul(h ^ body.charCodeAt(i), 16777619);
   return ((h >>> 0) % 1296).toString(36).padStart(2, '0');
@@ -75,23 +77,9 @@ function code(list: readonly string[], value: string, what: string): number {
   return i;
 }
 
-export function encode(c: Config): string {
-  const style = code(TABLE_STYLE_CODES, c.tableStyle, 'table style');
-  const version = style ? 2 : 1;
-  let h = `${version}${SHAPE[c.shape]}W${num(c.W)}L${num(c.L)}R${num(c.R)}D${num(c.D)}`;
-  if (c.wedgeC !== null) h += `C${num(c.wedgeC)}`;
-  if (!c.lockOutside) h += 'K';
-  if (c.seatWidth !== SEAT_WIDTH_DEFAULT) h += `S${num(c.seatWidth)}`;
-  if (c.snugWidth !== SNUG_SEAT_WIDTH) h += `N${num(c.snugWidth)}`;
-  for (const k of Object.keys(DEFAULT_DIMS) as (keyof HavenDims)[]) {
-    if (c.dims[k] !== DEFAULT_DIMS[k]) h += `X${DIM_INV[k]}${num(c.dims[k])}`;
-  }
-  const fabric = code(FABRIC_CODES, c.fabric, 'fabric');
-  const finish = code(FINISH_CODES, c.tableFinish, 'table finish');
-  if (fabric) h += `F${fabric}`;
-  if (finish) h += `T${finish}`;
-  if (style) h += `Y${style}`;
-  const parts = [h];
+/** A run token per run of the config (`b…`, `l…`, `r…`), in the fixed order. */
+export function runTokens(c: Config): string[] {
+  const parts: string[] = [];
   for (const run of ['back', 'left', 'right'] as RunId[]) {
     const ps = c.runs[run];
     if (!ps) continue;
@@ -105,8 +93,38 @@ export function encode(c: Config): string {
     });
     parts.push(s);
   }
+  return parts;
+}
+
+export const SHAPE_CODE = (s: Shape): string => SHAPE[s];
+export const shapeFromCode = (s: string): Shape | undefined => SHAPE_INV[s];
+
+/** The lowest version for one sofa, and its tokens (header first, no version digit). */
+export function encodeParts(c: Config): { version: number; parts: string[] } {
+  const style = code(TABLE_STYLE_CODES, c.tableStyle, 'table style');
+  const version = style ? 2 : 1;
+  let h = `${SHAPE[c.shape]}W${num(c.W)}L${num(c.L)}R${num(c.R)}D${num(c.D)}`;
+  if (c.wedgeC !== null) h += `C${num(c.wedgeC)}`;
+  if (!c.lockOutside) h += 'K';
+  if (c.seatWidth !== SEAT_WIDTH_DEFAULT) h += `S${num(c.seatWidth)}`;
+  if (c.snugWidth !== SNUG_SEAT_WIDTH) h += `N${num(c.snugWidth)}`;
+  for (const k of Object.keys(DEFAULT_DIMS) as (keyof HavenDims)[]) {
+    if (c.dims[k] !== DEFAULT_DIMS[k]) h += `X${DIM_INV[k]}${num(c.dims[k])}`;
+  }
+  const fabric = code(FABRIC_CODES, c.fabric, 'fabric');
+  const finish = code(FINISH_CODES, c.tableFinish, 'table finish');
+  if (fabric) h += `F${fabric}`;
+  if (finish) h += `T${finish}`;
+  if (style) h += `Y${style}`;
+  const parts = [h, ...runTokens(c)];
   for (const l of c.loose) parts.push(`${l.kind === 'ottoman' ? 'o' : 'c'}x${num(l.x)}y${num(l.y)}w${num(l.w)}d${num(l.d)}`);
-  const body = parts.join('_');
+  return { version, parts };
+}
+
+/** One sofa's link (engine-internal and tests; the app encodes layouts with encodeLayout). */
+export function encode(c: Config): string {
+  const { version, parts } = encodeParts(c);
+  const body = `${version}${parts.join('_')}`;
   return `${body}.${checksum(body)}`;
 }
 
@@ -116,24 +134,29 @@ export type DecodeResult = { config: Config } | { error: 'damaged' | 'newer' };
  * Values the app itself can never make (UX Phase 1 audit): a seat or snug
  * width ≤ 0 (an "Infinity" seat count) or a manual wedge outside D…D+30.
  */
-const inRange = (c: Config): boolean =>
+export const inRange = (c: Config): boolean =>
   c.seatWidth > 0 && c.snugWidth > 0 && (c.wedgeC === null || (c.wedgeC >= c.D && c.wedgeC <= c.D + WEDGE_RANGE));
 
-/** Strict decode: a damaged link reads "damaged"; a higher version reads "newer". */
+/**
+ * Strict one-sofa decode: a damaged link reads "damaged"; a higher version reads
+ * "newer". A v3 link holding joined sections is not one sofa: "newer" here
+ * (decodeLayout reads it).
+ */
 export function decode(link: string): DecodeResult {
   const m = /^(\d+)([A-Za-z].*)\.([0-9a-z]{2})$/.exec(link.trim());
   if (!m) return { error: 'damaged' };
   const version = Number(m[1]);
   if (version > LINK_VERSION) return { error: 'newer' };
   if (checksum(`${m[1]}${m[2]}`) !== m[3]) return { error: 'damaged' };
-  const decoders: Record<number, (b: string) => Config | null> = { 1: (b) => decodeBody(b, 1), 2: (b) => decodeBody(b, 2) };
+  if (version === 3 && /_P/.test(m[2]!)) return { error: 'newer' };
+  const decoders: Record<number, (b: string) => Config | null> = { 1: (b) => decodeBody(b, 1), 2: (b) => decodeBody(b, 2), 3: (b) => decodeBody(b, 3) };
   const config = decoders[version]?.(m[2]!) ?? null;
   // Later versions: migrations[v](config), chained up to the current schema.
   if (!config || !inRange(config) || buildHaven(config).errors.length > 0) return { error: 'damaged' };
   return { config };
 }
 
-const NUM = '(\\d+(?:\\.5)?)';
+export const NUM = '(\\d+(?:\\.5)?)';
 const SNUM = '(-?\\d+(?:\\.5)?)'; // loose pieces may sit at negative coordinates
 
 function decodeHeader(fields: string, version: number) {
@@ -161,7 +184,7 @@ function decodeHeader(fields: string, version: number) {
   return ok && left === '' ? { vals, dims, unlocked } : null;
 }
 
-function decodeRun(body: string, oe: 'start' | 'end' | null, id: () => string): RunPiece[] | null {
+export function decodeRun(body: string, oe: 'start' | 'end' | null, id: () => string): RunPiece[] | null {
   const pieces: RunPiece[] = [];
   const joins: boolean[] = [];
   let consumed = 0;
@@ -193,7 +216,7 @@ function decodeRun(body: string, oe: 'start' | 'end' | null, id: () => string): 
   return unpaired ? null : pieces;
 }
 
-function decodeBody(s: string, version: number): Config | null {
+export function decodeBody(s: string, version: number): Config | null {
   const [head, ...rest] = s.split('_');
   const hm = /^([Ulr])(.*)$/.exec(head!);
   if (!hm) return null;

@@ -1205,8 +1205,72 @@ As built in Phase 1:
 - **Draft failures:** a failed draft write is reported once.
 - **Codec:** a seat or snug width ≤ 0, or a manual wedge outside D…D+30, reads as damaged. The goldens are unchanged.
 
+### Shapes: combine standard sofas, the T first (Andre, 2026-10-26)
+A client asked for a T: 229″ across the top, a 110″ stem, seating on each side of the stem. The back runs along the top and down the middle of the stem.
+
+Andre's decisions:
+- **Combine standard shapes.** Free placement of single pieces is out.
+- **Stem back:** offer both, per T:
+  - **Shared back:** one 10″ frame with cushions on both sides; stem 2D − B, so 78″ at 44 deep.
+  - **Two backs:** two standard L's pushed together; stem 2D = 88″.
+- **Order:** shapes first, then UX Phases 2–6.
+
+**The model.** A T is an L-right (left half) plus an L-left (right half) with their legs back to back. It needs only a translation.
+- `Layout = { schema: 1, sections: Section[] }`, with `Section = { id, config, join }`.
+  - Each section is an unchanged engine Config in its own coordinates.
+  - `sections[0]` is the root at (0,0), and its coordinates are the world's.
+- **Placement is derived from the join, never stored.** For a `legs` join, child x = parent x + parent W − (shared back ? B : 0). Editing one half keeps the other attached.
+- **Shared fields** (D, corner, lock, seat widths, fabric, finish, table style, dims) are equal in every section.
+  - `replaceSection` keeps them equal by running the sibling's own engine op.
+  - A refusal anywhere is the same reference, with the half named.
+- **Loose pieces** live in the root.
+- **A one-section layout is the single sofa,** byte for byte.
+
+**Link v3** (`codecLayout.ts`):
+- One section writes the v1/v2 link exactly.
+- Two or more: `3` + the root as before + per section `_P<g = legs><U|l|r>W…L…R…[H = shared back]` and its run tokens.
+- Shared fields are never repeated: a future per-section D is v4, read as "newer" by this app.
+- The one-sofa `decode()` reads a T as "newer". App code may only use `encodeLayout` / `decodeLayout` (a guard test checks this).
+
+**Client numbers** (229, stem 110 measured from the back like the app's legs, D 44, corners 60):
+
+| | Shared back | Two backs |
+|---|---|---|
+| Halves | 119.5 / 119.5 | 114.5 / 114.5 |
+| Wings | one-arm 59.5 (45.5 + 14) | one-arm 54.5 (40.5 + 14) |
+| Stem legs | one-arm 50 (36 + 14) | same |
+| Stem width | 78 | 88 |
+| Seats | 6 | 6 |
+
+The left half gets the extra 0.5″ when the width does not split evenly.
+
+**Stages** (one PR each):
+- **A, layouts under the hood: done.**
+  - Store and undo history over Layout.
+  - Every save, link and draft path on the layout codec.
+  - A project or link from a newer version is listed and kept, never opened or overwritten.
+  - The editor opens one-section layouts only until B1 (`state/layoutGate.ts`).
+- **B1:** the T in the plan, the editor, the Projects home and the PDF plan. The 3D view is hidden for T's until B2.
+- **B2:** the T in 3D, with the shared frame shown once.
+- **C1:** attach a shape by tapping or dragging it onto a "+" on a leg or a back.
+- **Then** UX Phases 2–6.
+- **Later:**
+  - C2: Straight shape;
+  - C3: 180° turns for back-to-back sofas;
+  - C4: S/Z and cross.
+
+**Measured (Stage A):**
+- vitest:
+  - solo identity on every fixture, and all 12 v1/v2 goldens written byte for byte as one-section layouts;
+  - v3 goldens for both back options;
+  - damaged cases;
+  - the client numbers;
+  - 2,000 random ops on T halves (shared fields equal, joins valid, no overlap outside the strip, round trip);
+  - store tests: a depth change on the right half is one undo step for both.
+- e2e: unchanged and green.
+
 ### H6c: Room floor space (next; Andre, 2026-10-02)
-The client's room (W × D, the sofa's gap to the left and back walls) drawn in the plan, the PDF and as the 3D floor, with clearances to each wall and a `roomTooSmall` warning; Center and Fill the width. Carried in links (codec v3, written only when a room is set, so every older link stays byte-identical).
+The client's room (W × D, the sofa's gap to the left and back walls) drawn in the plan, the PDF and as the 3D floor, with clearances to each wall and a `roomTooSmall` warning; Center and Fill the width. Carried in links (codec v4, written only when a room is set, so every older link stays byte-identical; v3 went to shapes, 2026-10-26).
 
 ### H7: Cloud saves + tracker hand-off (optional, later; Andre decides, do not start until told)
 The configurator is complete without H7. Options, in order of cost:
@@ -1363,6 +1427,11 @@ Answer in a word. **Q1 is answered (camera, spring-back orbit), and Q9, Q10, Q12
 | Q29 | Ottoman and coffee-table heights? *give inches* | 18 / 16 |
 | Q30 | 3D pictures on the client sheet: *front elevation + 3/4 / front elevation + iso / front elevation only / none*? | front elevation + 3/4 ("not to scale") |
 | Q31 | Blender photo renders: *orthographic / perspective / both*? | both |
+| Q32 | Shapes: how is a shared stem back built (does one half own the frame; one arm or two at the stem end; the junction read as 110 or 60 \| 50)? | the left half owns the frame; two arms; "110" (ask at the B1 review) |
+| Q33 | Default back option for a new T | Shared back (as in Andre's sketch) |
+| Q34 | Default T sizes in the form | the client's 229 × 110 × 44 |
+| Q35 | May a T half be a U (an E-like shape)? | hidden until C1 |
+| Q36 | Names of the halves | "Left half / Right half" |
 
 ---
 

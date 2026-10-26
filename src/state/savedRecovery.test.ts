@@ -1,7 +1,7 @@
 // UX Phase 1 (Andre, 2026-10-02): saved work is never lost to an unreadable
 // list, a reload, or "Continue last layout"; saving is never blocked.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { encode, setMeasurements, standardU } from '@/engine';
+import { encode, setMeasurements, solo, standardU } from '@/engine';
 import { fixtures } from '@/engine/testing';
 import { readDraft, saveDraft } from './draft';
 import { projectFor, restoreOpenProject } from './openProject';
@@ -46,7 +46,7 @@ describe('an unreadable saved list (UX Phase 1)', () => {
       expect(recoveredKeys(s.m)).toHaveLength(1);
       expect(s.m.get(recoveredKeys(s.m)[0]!)).toBe(raw);
       expect(recoveredNotice()?.key).toBe(recoveredKeys(s.m)[0]);
-      expect(saveLayout('Garcia', standardU(), 5)).not.toBeNull();
+      expect(saveLayout('Garcia', solo(standardU()), 5)).not.toBeNull();
       expect(listSaved().map((x) => x.name)).toEqual(['Garcia', ...kept]);
       expect(recoveredKeys(s.m)).toHaveLength(1); // copied once, not on every read
       dismissRecovered();
@@ -59,14 +59,14 @@ describe('an unreadable saved list (UX Phase 1)', () => {
     const s = memoryStorage((k) => k.startsWith(RECOVERED_PREFIX));
     vi.stubGlobal('localStorage', s);
     s.m.set(KEYS.saved, 'garbage');
-    expect(saveLayout('Garcia', standardU())).toBeNull();
+    expect(saveLayout('Garcia', solo(standardU()))).toBeNull();
     expect(s.m.get(KEYS.saved)).toBe('garbage');
   });
 
   it('a readable list is never copied', () => {
     const s = memoryStorage();
     vi.stubGlobal('localStorage', s);
-    saveLayout('Mitchell', standardU());
+    saveLayout('Mitchell', solo(standardU()));
     listSaved();
     expect(recoveredKeys(s.m)).toEqual([]);
     expect(recoveredNotice()).toBeNull();
@@ -79,22 +79,22 @@ describe('the open project survives a reload; Continue keeps its project (UX Pha
 
   it('restores only when the URL still carries the layout last seen with it', () => {
     const c = fixtures().T1!;
-    const e = saveLayout('Mitchell', c)!;
+    const e = saveLayout('Mitchell', solo(c))!;
     const edited = setMeasurements(c, { W: 200 }).config;
     localStorage.setItem(KEYS.open, JSON.stringify({ id: e.id, code: encode(edited) }));
-    const p = restoreOpenProject(edited)!;
+    const p = restoreOpenProject(solo(edited))!;
     expect(p).toEqual({ id: e.id, name: 'Mitchell', code: encode(c) }); // the saved code: "edited" stays correct
-    expect(restoreOpenProject(fixtures().T4!)).toBeNull(); // another link never attaches to the project
+    expect(restoreOpenProject(solo(fixtures().T4!))).toBeNull(); // another link never attaches to the project
     localStorage.setItem(KEYS.open, JSON.stringify({ id: 'gone', code: encode(edited) }));
-    expect(restoreOpenProject(edited)).toBeNull(); // a deleted project is ignored
+    expect(restoreOpenProject(solo(edited))).toBeNull(); // a deleted project is ignored
   });
 
   it('the draft remembers its project; Continue finds it, or none when it was deleted', () => {
-    const e = saveLayout('Garcia', standardU())!;
-    saveDraft(standardU(), 7, e.id);
+    const e = saveLayout('Garcia', solo(standardU()))!;
+    saveDraft(solo(standardU()), 7, e.id);
     expect(readDraft()).toMatchObject({ savedAt: 7, projectId: e.id });
     expect(projectFor(readDraft()!.projectId)?.name).toBe('Garcia');
-    saveDraft(standardU(), 8);
+    saveDraft(solo(standardU()), 8);
     expect(readDraft()!.projectId).toBeNull();
     expect(projectFor('nope')).toBeNull();
   });

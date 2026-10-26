@@ -2,9 +2,8 @@
 // seat count; ?view shows "View only" and "Edit a copy" instead. Pads with the
 // top safe-area inset (status bar / notch) in the installed app.
 import { lazy, Suspense, useState } from 'react';
-import { encode } from '@/engine';
 import { presetFor, startLabel } from '@/state/start';
-import { builtOf, isDirty, useHaven, useHavenStore, useLive } from '@/state/store';
+import { builtOf, codeOf, isDirty, useHaven, useHavenStore, useLive } from '@/state/store';
 import { editUrl } from '@/state/url';
 import { Button } from './controls';
 
@@ -32,7 +31,7 @@ export function TopBar() {
 
   const reset = () => {
     const s = store.getState();
-    s.commit(presetFor(s.ui.lastStart), { key: 'reset' });
+    s.commitLayout(presetFor(s.ui.lastStart), { key: 'reset' });
     s.toast(`Reset to the ${startLabel(s.ui.lastStart)}`);
     setConfirmReset(false);
   };
@@ -43,7 +42,7 @@ export function TopBar() {
   };
   const askReset = () => {
     // Confirm first only when the layout differs from the preset.
-    if (encode(store.getState().config) === encode(presetFor(lastStart))) return;
+    if (codeOf(store.getState().layout) === codeOf(presetFor(lastStart))) return;
     setConfirmReset(true);
   };
 
