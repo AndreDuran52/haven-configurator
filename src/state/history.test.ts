@@ -12,8 +12,8 @@ describe('history (plan §8)', () => {
     expect(h.past).toHaveLength(0);
     h = commit(h);
     expect(h.past).toHaveLength(1);
-    expect(h.config.runs.back!.map((p) => p.length)).toEqual([37, 31]);
-    expect(undo(h).config).toBe(u);
+    expect(h.present.runs.back!.map((p) => p.length)).toEqual([37, 31]);
+    expect(undo(h).present).toBe(u);
   });
 
   it('cancel leaves no trace; refused / no-op edits create no step', () => {
@@ -27,9 +27,9 @@ describe('history (plan §8)', () => {
   it('6 fast nudges with one key = 1 step; after 800 ms a new step starts', () => {
     let h = initHistory(u);
     let t = 1000;
-    for (let i = 0; i < 6; i++) h = commit(h, seam(h.config, 0.5), { key: 'seam:back:1', now: (t += 150) });
+    for (let i = 0; i < 6; i++) h = commit(h, seam(h.present, 0.5), { key: 'seam:back:1', now: (t += 150) });
     expect(h.past).toHaveLength(1);
-    h = commit(h, seam(h.config, 0.5), { key: 'seam:back:1', now: (t += 2000) });
+    h = commit(h, seam(h.present, 0.5), { key: 'seam:back:1', now: (t += 2000) });
     expect(h.past).toHaveLength(2);
   });
 
@@ -37,22 +37,22 @@ describe('history (plan §8)', () => {
     let h = initHistory(u);
     const steps = [seam(u, 1), setMeasurements(u, { D: 36 }).config, setMeasurements(u, { W: 300 }).config];
     for (const s of steps) h = commit(h, s);
-    expect(setDraft(h, u).config).toBe(steps[2]);
-    expect(undo(setDraft(h, u)).config).toBe(steps[2]);
+    expect(setDraft(h, u).present).toBe(steps[2]);
+    expect(undo(setDraft(h, u)).present).toBe(steps[2]);
     h = undo(h);
-    expect(h.config).toBe(steps[1]);
+    expect(h.present).toBe(steps[1]);
     h = undo(undo(h));
-    expect(h.config).toBe(u);
+    expect(h.present).toBe(u);
     expect(undo(h)).toBe(h);
     h = redo(h);
-    expect(h.config).toBe(steps[0]);
+    expect(h.present).toBe(steps[0]);
     h = commit(h, steps[2]);
     expect(h.future).toEqual([]);
   });
 
   it(`keeps at most ${HISTORY_LIMIT} steps`, () => {
     let h = initHistory(u);
-    for (let i = 0; i < HISTORY_LIMIT + 20; i++) h = commit(h, setMeasurements(h.config, { W: 188 + ((i % 40) + 1) }).config);
+    for (let i = 0; i < HISTORY_LIMIT + 20; i++) h = commit(h, setMeasurements(h.present, { W: 188 + ((i % 40) + 1) }).config);
     expect(h.past).toHaveLength(HISTORY_LIMIT);
   });
 });

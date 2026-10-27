@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { encode, standardU } from '@/engine';
+import { encode, solo, standardU } from '@/engine';
 import { readDraft, saveDraft } from './draft';
 import { KEYS, readItem, removeItem, writeItem } from './storage';
 
@@ -40,7 +40,7 @@ describe('storage (CLAUDE.md rule 9)', () => {
     expect(writeItem('a', '1')).toBe(false);
     expect(readItem('a')).toBeNull();
     expect(() => removeItem('a')).not.toThrow();
-    expect(saveDraft(standardU())).toBe(false);
+    expect(saveDraft(solo(standardU()))).toBe(false);
     expect(readDraft()).toBeNull();
   });
 
@@ -58,7 +58,7 @@ describe('storage (CLAUDE.md rule 9)', () => {
 
   it('the draft is a codec string; a damaged one reads as none', () => {
     vi.stubGlobal('localStorage', memoryStorage());
-    expect(saveDraft(standardU(), 1234)).toBe(true);
+    expect(saveDraft(solo(standardU()), 1234)).toBe(true);
     expect(JSON.parse(readItem(KEYS.draft)!)).toEqual({ code: encode(standardU()), savedAt: 1234 });
     expect(readDraft()!.savedAt).toBe(1234);
     writeItem(KEYS.draft, '{"code":"1UW188.zz","savedAt":1}');

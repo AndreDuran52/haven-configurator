@@ -1,16 +1,17 @@
 // Undo/redo around a draft slot (plan §8 "Undo / redo"), as pure functions so
-// the store stays thin and this is unit-tested on its own.
-// - Only `config` is domain state; `draft` previews a gesture (renderers use draft ?? config).
+// the store stays thin and this is unit-tested on its own. Generic over the
+// domain state: the store keeps a history of whole Layouts (shapes milestone),
+// so one undo step restores every section together.
+// - Only `present` is domain state; `draft` previews a gesture (renderers use draft ?? present).
 // - commit() skips a same-reference result (engine refusals / no-ops).
 // - The same key within COALESCE_MS replaces the top step (steppers, key nudges).
 // - undo/redo are ignored while a draft is live.
-import type { Config } from '@/engine';
 
-export interface History {
-  config: Config;
-  draft: Config | null;
-  past: Config[];
-  future: Config[];
+export interface History<T> {
+  present: T;
+  draft: T | null;
+  past: T[];
+  future: T[];
   lastKey: string | null;
   lastAt: number;
 }
@@ -18,8 +19,8 @@ export interface History {
 export const HISTORY_LIMIT = 100;
 export const COALESCE_MS = 800;
 
-export const initHistory = (config: Config): History => ({
-  config,
+export const initHistory = <T>(present: T): History<T> => ({
+  present,
   draft: null,
   past: [],
   future: [],
@@ -27,37 +28,37 @@ export const initHistory = (config: Config): History => ({
   lastAt: 0,
 });
 
-export const setDraft = (h: History, draft: Config): History => ({ ...h, draft });
-export const cancelDraft = (h: History): History => (h.draft ? { ...h, draft: null } : h);
+export const setDraft = <T>(h: History<T>, draft: T): History<T> => ({ ...h, draft });
+export const cancelDraft = <T>(h: History<T>): History<T> => (h.draft ? { ...h, draft: null } : h);
 
 export interface CommitOptions {
   key?: string;
   now?: number;
 }
 
-export function commit(h: History, next?: Config, opts: CommitOptions = {}): History {
+export function commit<T>(h: History<T>, next?: T, opts: CommitOptions = {}): History<T> {
   const target = next ?? h.draft;
-  if (!target || target === h.config) return h.draft ? { ...h, draft: null } : h;
+  if (!target || target === h.present) return h.draft ? { ...h, draft: null } : h;
   const now = opts.now ?? Date.now();
   const coalesce = !!opts.key && opts.key === h.lastKey && now - h.lastAt < COALESCE_MS && h.past.length > 0;
   return {
-    config: target,
+    present: target,
     draft: null,
-    past: coalesce ? h.past : [...h.past, h.config].slice(-HISTORY_LIMIT),
+    past: coalesce ? h.past : [...h.past, h.present].slice(-HISTORY_LIMIT),
     future: [],
     lastKey: opts.key ?? null,
     lastAt: now,
   };
 }
 
-export function undo(h: History): History {
+export function undo<T>(h: History<T>): History<T> {
   const prev = h.past[h.past.length - 1];
   if (!prev || h.draft) return h;
-  return { ...h, config: prev, past: h.past.slice(0, -1), future: [h.config, ...h.future], lastKey: null };
+  return { ...h, present: prev, past: h.past.slice(0, -1), future: [h.present, ...h.future], lastKey: null };
 }
 
-export function redo(h: History): History {
+export function redo<T>(h: History<T>): History<T> {
   const next = h.future[0];
   if (!next || h.draft) return h;
-  return { ...h, config: next, past: [...h.past, h.config], future: h.future.slice(1), lastKey: null };
+  return { ...h, present: next, past: [...h.past, h.present], future: h.future.slice(1), lastKey: null };
 }

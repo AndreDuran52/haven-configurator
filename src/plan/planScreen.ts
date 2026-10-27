@@ -1,6 +1,6 @@
 // The live plan <svg>, for things outside it that need its coordinates: a tray
 // drag (client -> plan inches through the CTM) and Escape (cancel a gesture).
-import { anchoredTargets, buildHaven, encode, type Config, type Pt } from '@/engine';
+import { anchoredTargets, buildHaven, encodeLayout, type Config, type Layout, type Pt } from '@/engine';
 
 let svg: React.RefObject<SVGSVGElement | null> | null = null;
 let cancelGesture: (() => boolean) | null = null;
@@ -51,13 +51,13 @@ export function planK(): number | null {
  * `window.__plan` for the e2e scripts (like `window.__haven`): plan <-> client
  * coordinates, table-drag anchors and the share code, all read from the app.
  */
-export function installPlanTestApi(get: () => Config) {
+export function installPlanTestApi(get: () => Config, getLayout: () => Layout) {
   const w = window as unknown as { __plan?: unknown };
   w.__plan = {
     toClient: (x: number, y: number) => planToClient(x, y),
     k: () => planK(),
     anchors: (id: string) => anchoredTargets(get(), id).map((t) => ({ placement: t.placement, client: planToClient(...t.anchor) })),
-    encode: () => encode(get()),
+    encode: () => encodeLayout(getLayout()),
     exportBlocked: () => buildHaven(get()).exportBlocked,
   };
 }

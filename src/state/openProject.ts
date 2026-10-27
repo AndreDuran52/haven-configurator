@@ -4,10 +4,10 @@
 // id and the layout code last seen; it is restored only when the URL still
 // carries that exact layout, so a different link never attaches to a project.
 import { useEffect, useRef } from 'react';
-import { encode, type Config } from '@/engine';
+import type { Layout } from '@/engine';
 import { listSaved, openSaved } from './savedLayouts';
 import { KEYS, readJson, removeItem, writeItem } from './storage';
-import { useHaven, type UiState } from './store';
+import { codeOf, useHaven, type UiState } from './store';
 
 interface StoredOpen {
   id: string;
@@ -17,14 +17,14 @@ interface StoredOpen {
 /** The saved project (as it is stored) for an id, or null when it is gone or damaged. */
 export function projectFor(id: string | null | undefined): UiState['project'] {
   const e = id ? listSaved().find((x) => x.id === id) : undefined;
-  const c = e && openSaved(e);
-  return e && c ? { id: e.id, name: e.name, code: encode(c) } : null;
+  const l = e && openSaved(e);
+  return e && l ? { id: e.id, name: e.name, code: codeOf(l) } : null;
 }
 
 /** At boot: the open project, if the URL's layout is the one last seen with it. */
-export function restoreOpenProject(config: Config): UiState['project'] {
+export function restoreOpenProject(layout: Layout): UiState['project'] {
   const o = readJson<StoredOpen>(KEYS.open);
-  if (!o || typeof o.id !== 'string' || o.code !== encode(config)) return null;
+  if (!o || typeof o.id !== 'string' || o.code !== codeOf(layout)) return null;
   return projectFor(o.id);
 }
 
@@ -36,15 +36,15 @@ export function restoreOpenProject(config: Config): UiState['project'] {
 export function useOpenProject(): void {
   const project = useHaven((s) => s.ui.project);
   const home = useHaven((s) => s.ui.screen === 'home');
-  const config = useHaven((s) => s.config);
+  const layout = useHaven((s) => s.layout);
   const had = useRef(false);
   useEffect(() => {
     if (!home && project) {
       had.current = true;
-      writeItem(KEYS.open, JSON.stringify({ id: project.id, code: encode(config) } satisfies StoredOpen));
+      writeItem(KEYS.open, JSON.stringify({ id: project.id, code: codeOf(layout) } satisfies StoredOpen));
     } else if (had.current) {
       had.current = false;
       removeItem(KEYS.open);
     }
-  }, [project, home, config]);
+  }, [project, home, layout]);
 }

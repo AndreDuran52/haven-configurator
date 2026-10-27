@@ -3,7 +3,7 @@
 // and sets ui.lastStart (what Reset returns to). Saved projects moved to the
 // Projects home (H6b).
 import { useState } from 'react';
-import type { Config } from '@/engine';
+import type { Layout } from '@/engine';
 import { readDraft } from '@/state/draft';
 import { presetFor, startLabel, type StartChoice } from '@/state/start';
 import { useHavenStore } from '@/state/store';
@@ -16,9 +16,9 @@ export default function StartMenu({ open, onOpenChange }: { open: boolean; onOpe
   const [error, setError] = useState<string | null>(null);
   const draft = open ? readDraft() : null;
 
-  const load = (config: Config, text: string, lastStart?: StartChoice) => {
+  const load = (layout: Layout, text: string, lastStart?: StartChoice) => {
     const s = store.getState();
-    s.commit(config, { key: 'start' });
+    s.commitLayout(layout, { key: 'start' });
     if (lastStart) s.setUi({ lastStart });
     s.toast(text);
     onOpenChange(false);
@@ -41,7 +41,7 @@ export default function StartMenu({ open, onOpenChange }: { open: boolean; onOpe
         <Button onClick={() => start({ kind: 'standardL', side: 'right' })}>Standard L right</Button>
       </div>
       {draft && (
-        <Button onClick={() => load(draft.config, 'Resumed the last layout')} data-testid="resume">
+        <Button onClick={() => load(draft.layout, 'Resumed the last layout')} data-testid="resume">
           Resume last layout ({new Date(draft.savedAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })})
         </Button>
       )}

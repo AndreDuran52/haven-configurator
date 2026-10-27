@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { decode, encode, LINK_VERSION } from './codec';
+import { checksum, decode, encode, LINK_VERSION } from './codec';
+import { decodeLayout, encodeLayout } from './codecLayout';
+import { solo } from './layoutOps';
+import { teeLayout } from './tee';
 import type { Config } from './types';
 import { canon, fixtures, kitchenSink } from './testing';
 
@@ -48,8 +51,6 @@ describe('golden links v2', () => {
     kitchenSinkAllWood: { ...kitchenSink(), tableStyle: 'allWood' },
   };
 
-  it('is the current version', () => expect(LINK_VERSION).toBe(2));
-
   it('every golden link still decodes to its fixture', () => {
     for (const [name, link] of Object.entries(GOLDEN_V2)) {
       const d = decode(link);
@@ -65,6 +66,49 @@ describe('golden links v2', () => {
   it('v1 links decode to the standard table style; a v1 link may not carry Y', () => {
     const d = decode(GOLDEN_V1.T1!);
     expect('config' in d && d.config.tableStyle).toBe('standard');
-    expect(decode('1UW188L132R132D44Y1_bt32s36_la72_ra72.00')).toEqual({ error: 'damaged' });
+    // A valid checksum, so the version gate itself is what refuses it.
+    const body = '1UW188L132R132D44Y1_bt32s36_la72_ra72';
+    expect(decode(`${body}.${checksum(body)}`)).toEqual({ error: 'damaged' });
+  });
+});
+
+// v3 (2026-10-26, shapes) adds joined sections (`_P`), the T sectional first.
+// A one-section layout still writes its exact v1/v2 link. NEVER edit these.
+const GOLDEN_V3: Record<string, string> = {
+  Tshared: '3rW119.5L110R110D44_ba59.5_ra50_PglW119.5L110R110H_ba59.5_la50.7o',
+  Ttwo: '3rW114.5L110R110D44_ba54.5_ra50_PglW114.5L110R110_ba54.5_la50.y2',
+};
+
+describe('golden links v3', () => {
+  const layouts = {
+    Tshared: teeLayout({ total: 229, stem: 110, D: 44, sharedBack: true }),
+    Ttwo: teeLayout({ total: 229, stem: 110, D: 44, sharedBack: false }),
+  };
+
+  it('is the current version', () => expect(LINK_VERSION).toBe(3));
+
+  it('the current encoder still produces them, and they decode back to the same layout', () => {
+    for (const [name, l] of Object.entries(layouts)) {
+      expect(encodeLayout(l), name).toBe(GOLDEN_V3[name]);
+      const d = decodeLayout(GOLDEN_V3[name]!);
+      expect(d, name).toHaveProperty('layout');
+      if ('layout' in d) expect(d.layout.sections.map((s) => canon(s.config)), name).toEqual(l.sections.map((s) => canon(s.config)));
+    }
+  });
+
+  it('every v1 and v2 golden is still written byte for byte as a one-section layout', () => {
+    const all: Record<string, Config> = {
+      ...fixtures(),
+      kitchenSink: kitchenSink(),
+      T1allWood: { ...fixtures().T1!, tableStyle: 'allWood' },
+      kitchenSinkAllWood: { ...kitchenSink(), tableStyle: 'allWood' },
+    };
+    const golden = { ...GOLDEN_V1, ...GOLDEN_V2 };
+    for (const [name, link] of Object.entries(golden)) {
+      expect(encodeLayout(solo(all[name]!)), name).toBe(link);
+      const d = decodeLayout(link);
+      expect('layout' in d && d.layout.sections.length, name).toBe(1);
+      if ('layout' in d) expect(canon(d.layout.sections[0]!.config), name).toEqual(canon(all[name]!));
+    }
   });
 });

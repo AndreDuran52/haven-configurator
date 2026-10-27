@@ -1,5 +1,5 @@
 // "Start from" choices (plan §8 Start menu) and the preset Reset returns to.
-import { blankConfig, standardL, standardU, type Config, type Shape } from '@/engine';
+import { blankConfig, solo, standardL, standardU, type Layout, type Shape } from '@/engine';
 
 export type StartChoice =
   | { kind: 'standardU' }
@@ -8,11 +8,11 @@ export type StartChoice =
 
 export const DEFAULT_START: StartChoice = { kind: 'standardU' };
 
-/** The preset for a start choice at its default size (Blank keeps its typed sizes). */
-export function presetFor(s: StartChoice): Config {
-  if (s.kind === 'standardU') return standardU();
-  if (s.kind === 'standardL') return standardL(s.side);
-  return blankConfig(s.shape, { W: s.W, L: s.L, R: s.R, D: s.D });
+/** The preset layout for a start choice at its default size (Blank keeps its typed sizes). */
+export function presetFor(s: StartChoice): Layout {
+  if (s.kind === 'standardU') return solo(standardU());
+  if (s.kind === 'standardL') return solo(standardL(s.side));
+  return solo(blankConfig(s.shape, { W: s.W, L: s.L, R: s.R, D: s.D }));
 }
 
 export function startLabel(s: StartChoice): string {

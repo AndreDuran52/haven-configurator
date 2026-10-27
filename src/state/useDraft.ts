@@ -12,18 +12,18 @@ let warned = false;
  */
 export function useDraft(): void {
   const store = useHavenStore();
-  const config = useHaven((s) => s.config);
+  const layout = useHaven((s) => s.layout);
   const fresh = useHaven((s) => s.past.length === 0 && s.future.length === 0);
   const projectId = useHaven((s) => s.ui.project?.id);
   useEffect(() => {
     if (fresh) return;
     const t = window.setTimeout(() => {
       // A failed write is said once (UX Phase 1), never silently dropped every time.
-      if (!saveDraft(config, Date.now(), projectId) && !warned) {
+      if (!saveDraft(layout, Date.now(), projectId) && !warned) {
         warned = true;
         store.getState().toast("Can't keep a backup copy on this device (storage is off or full). Save or share a link.");
       }
     }, DRAFT_DELAY_MS);
     return () => window.clearTimeout(t);
-  }, [config, fresh, projectId, store]);
+  }, [layout, fresh, projectId, store]);
 }

@@ -3,7 +3,7 @@
 // H6b: with no layout in the URL the app opens to the Projects home.
 import { lazy, Suspense, useState } from 'react';
 import { HavenStoreProvider, createHavenStore, useHaven } from '@/state/store';
-import { codeFromHash, initialConfig, isViewMode } from '@/state/url';
+import { codeFromHash, initialLayout, isViewMode } from '@/state/url';
 import { restoreOpenProject, useOpenProject } from '@/state/openProject';
 import { useDraft } from '@/state/useDraft';
 import { useUrlSync } from '@/state/useUrlSync';
@@ -11,15 +11,15 @@ import { HavenLayout } from '@/ui/HavenLayout';
 import { Toast } from '@/ui/Toast';
 
 function makeStore() {
-  const { config, message } = initialConfig(window.location.hash);
+  const { layout, message } = initialLayout(window.location.hash);
   const readOnly = isViewMode(window.location.search);
   // H6b: a link (even a damaged one) or ?view opens the editor; a plain open, the Projects home.
   const screen = readOnly || codeFromHash(window.location.hash) !== null ? 'editor' : 'home';
   // A reload keeps the open project (Save keeps updating it), only for the same layout.
-  const project = screen === 'editor' && !readOnly ? restoreOpenProject(config) : null;
-  const store = createHavenStore(config, { readOnly, screen, project });
+  const project = screen === 'editor' && !readOnly ? restoreOpenProject(layout) : null;
+  const store = createHavenStore(layout, { readOnly, screen, project });
   if (message) store.getState().toast(message);
-  // For the e2e checks (judged against the committed config, never mutated there).
+  // For the e2e checks (judged against the committed layout/config, never mutated there).
   (window as unknown as { __haven?: unknown }).__haven = store;
   return store;
 }

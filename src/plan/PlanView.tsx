@@ -41,7 +41,7 @@ export function PlanView() {
   }, []);
   const store = useHavenStore();
   useEffect(() => registerPlanSvg(svgRef), []);
-  useEffect(() => installPlanTestApi(() => store.getState().config), [store]);
+  useEffect(() => installPlanTestApi(() => store.getState().config, () => store.getState().layout), [store]);
 
   const liveFit = useMemo(() => (size.w > 40 && size.h > 40 ? planFit(built, size.w, size.h) : null), [built, size]);
   const liveGrips = useMemo(() => (liveFit ? gripPoints(built, liveFit.k) : []), [built, liveFit]);
