@@ -9,7 +9,7 @@ const SHOTS = 'test-results'
 const T1 = '1UW188L132R132D44_bt32s36_la72_ra72.wh'
 
 /** Text items of page 1: { str, x, y (from the top), w }. */
-async function pdfText(path) {
+export async function pdfText(path) {
   const { getDocument } = await import('pdfjs-dist/legacy/build/pdf.mjs')
   const doc = await getDocument({ data: new Uint8Array(readFileSync(path)), verbosity: 0 }).promise
   const page = await doc.getPage(1)

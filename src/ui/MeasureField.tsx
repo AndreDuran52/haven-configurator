@@ -4,7 +4,7 @@
 // Escape cancels. A refused value reverts and shows the minimum ("min 158″").
 // ±1″ steppers commit, coalesced by key.
 import { useRef, useState } from 'react';
-import type { Config, EditResult } from '@/engine';
+import type { Config, EditResult, Layout, LayoutResult, Rejection } from '@/engine';
 import { fmtIn, parseInches } from '@/plan/format';
 import { useHavenStore } from '@/state/store';
 
@@ -19,6 +19,8 @@ export function MeasureField({
   step = 1,
   read = (c) => c[name as 'W'],
   labelClass = 'w-6',
+  layoutOp,
+  readLayout,
 }: {
   /** W / L / R / D, or any other field name (then pass `read`). */
   name: string;
@@ -32,6 +34,9 @@ export function MeasureField({
   /** The committed value (default: config[name]). */
   read?: (c: Config) => number;
   labelClass?: string;
+  /** Shapes: a field for the whole layout (a T's total width or stem); replaces apply/read. */
+  layoutOp?: (l: Layout, v: number) => LayoutResult;
+  readLayout?: (l: Layout) => number;
 }) {
   const store = useHavenStore();
   const [text, setText] = useState(show(value));
@@ -40,18 +45,31 @@ export function MeasureField({
   const active = useRef(false);
   // An error belongs to the value it was shown for: any other change to the field clears it.
   const [errorState, setErrorState] = useState<{ text: string | null; at: number } | null>(null);
-  const setError = (text: string | null) => setErrorState(text ? { text, at: read(store.getState().config) } : null);
+  const committed = () => {
+    const s = store.getState();
+    return readLayout ? readLayout(s.layout) : read(s.config);
+  };
+  const setError = (text: string | null) => setErrorState(text ? { text, at: committed() } : null);
   const error = errorState && errorState.at === value ? errorState.text : null;
-  const tryValue = (raw: string): EditResult | null => {
+  /** The op on the committed state, and how to commit it (a section edit can still be refused by the other half). */
+  const run = (v: number): { rejected: Rejection | null; commit: () => Rejection | null } => {
+    const s = store.getState();
+    if (layoutOp) {
+      const r = layoutOp(s.layout, v);
+      return { rejected: r.rejected, commit: () => (s.commitLayout(r.layout, { key: `measure:${name}` }), null) };
+    }
+    const r = apply(s.config, v);
+    return { rejected: r.rejected, commit: () => s.commit(r.config, { key: `measure:${name}` }) };
+  };
+  const tryValue = (raw: string) => {
     const v = parseInches(raw);
-    if (v === null) return null;
-    return apply(store.getState().config, v);
+    return v === null ? null : run(v);
   };
 
   // The minimum may belong to another measurement (D 44 needs W 158): name it then.
-  const message = (r: EditResult) => {
+  const message = (r: { rejected: Rejection | null }) => {
     const min = r.rejected?.min;
-    if (!min) return r.rejected?.message ?? null;
+    if (!min || layoutOp) return r.rejected?.message ?? null;
     const own = min[name as keyof typeof min];
     if (own !== undefined) return `min ${show(own)}″`;
     const [k, v] = Object.entries(min)[0] ?? [];
@@ -66,29 +84,26 @@ export function MeasureField({
   const finish = (commit: boolean) => {
     active.current = false;
     setEditing(false);
-    const s = store.getState();
     if (!commit) {
-      setText(show(read(s.config)));
+      setText(show(committed()));
       return;
     }
     const r = tryValue(text);
     if (r && !r.rejected) {
-      s.commit(r.config, { key: `measure:${name}` });
-      setError(null);
+      const refused = r.commit();
+      setError(refused ? message({ rejected: refused }) : null);
+      if (refused) setText(show(committed()));
       return;
     }
-    setText(show(read(s.config)));
+    setText(show(committed()));
     setError(r ? message(r) : 'Not a size');
   };
 
   const nudge = (d: number) => {
-    const s = store.getState();
-    const r = apply(s.config, read(s.config) + d);
-    if (r.rejected) setError(message(r));
-    else {
-      setError(null);
-      s.commit(r.config, { key: `measure:${name}` });
-    }
+    const r = run(committed() + d);
+    if (r.rejected) return setError(message(r));
+    const refused = r.commit();
+    setError(refused ? message({ rejected: refused }) : null);
   };
 
   const err = error;

@@ -1,15 +1,17 @@
 // Measurements and settings (plan §8): shape picker, W/L/R/D with D chips, the
-// lock, seat width, warnings.
+// lock, seat width, warnings. A T (Shapes B1) swaps the shape picker and W/L/R
+// for its sections panel; the rest works on the edited half.
 import { lazy, Suspense, useState } from 'react';
 import { buildInfo } from '@/buildInfo';
 import { ARM_MAX, ARM_MIN, DEPTH_PRESETS, setArmWidth, setLock, setMeasurements, setSeatWidth, setShape, setTableStyle, type Shape, type TableStyle } from '@/engine';
-import { useHavenStore, useLive } from '@/state/store';
+import { useHavenStore, useLive, useLiveLayout } from '@/state/store';
 import { Button, Section, Segmented, Switch } from './controls';
 import { MeasureField } from './MeasureField';
 import { WarningsList } from './WarningsList';
 
 // Look (swatches, pillows, plan style) loads after the first paint: it keeps the entry chunk in budget.
 const LookSection = lazy(() => import('./LookSection').then((m) => ({ default: m.LookSection })));
+const SectionsPanel = lazy(() => import('./SectionsPanel'));
 
 const TABLE_STYLES: { value: TableStyle; label: string }[] = [
   { value: 'standard', label: 'Wood top' },
@@ -25,6 +27,7 @@ const SHAPES: { value: Shape; label: string }[] = [
 export function Sidebar() {
   const store = useHavenStore();
   const live = useLive();
+  const joined = useLiveLayout().sections.length > 1;
   /** W/L/R at the moment of unlocking, shown as a reference (UI state, not config). */
   const [atUnlock, setAtUnlock] = useState<{ W: number; L: number; R: number } | null>(null);
   const commit = (r: ReturnType<typeof setShape>, key?: string) => {
@@ -41,9 +44,15 @@ export function Sidebar() {
 
   return (
     <div className="flex min-w-0 flex-col gap-5">
-      <Section title="Shape">
-        <Segmented label="Shape" value={live.shape} options={SHAPES} onChange={(v) => commit(setShape(store.getState().config, v))} />
-      </Section>
+      {joined ? (
+        <Suspense fallback={null}>
+          <SectionsPanel />
+        </Suspense>
+      ) : (
+        <Section title="Shape">
+          <Segmented label="Shape" value={live.shape} options={SHAPES} onChange={(v) => commit(setShape(store.getState().config, v))} />
+        </Section>
+      )}
       <Section
         title="Room"
         aside={
@@ -58,9 +67,9 @@ export function Sidebar() {
           />
         }
       >
-        <MeasureField name="W" label="W" value={live.W} apply={(c, v) => setMeasurements(c, { W: v })} hint={was('W')} />
-        {hasLeft && <MeasureField name="L" label="L" value={live.L} apply={(c, v) => setMeasurements(c, { L: v })} hint={was('L')} />}
-        {hasRight && <MeasureField name="R" label="R" value={live.R} apply={(c, v) => setMeasurements(c, { R: v })} hint={was('R')} />}
+        {!joined && <MeasureField name="W" label="W" value={live.W} apply={(c, v) => setMeasurements(c, { W: v })} hint={was('W')} />}
+        {!joined && hasLeft && <MeasureField name="L" label="L" value={live.L} apply={(c, v) => setMeasurements(c, { L: v })} hint={was('L')} />}
+        {!joined && hasRight && <MeasureField name="R" label="R" value={live.R} apply={(c, v) => setMeasurements(c, { R: v })} hint={was('R')} />}
         <MeasureField name="D" label="D" value={live.D} apply={(c, v) => setMeasurements(c, { D: v })} />
         <div className="flex gap-2 pl-8" role="group" aria-label="Depth presets">
           {DEPTH_PRESETS.map((d) => (

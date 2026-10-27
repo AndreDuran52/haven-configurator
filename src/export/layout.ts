@@ -20,6 +20,18 @@ const HEADER_H = 42;
 const FOOTER_H = 40;
 const GAP = 14;
 const LABEL_H = 14;
+/** The footer link: 6 pt text in a 260 pt column (3 lines fit the footer; a 4th uses the margin). */
+const LINK_W = 260;
+export const LINK_LINE = 7;
+const LINK_CHARS = 72;
+
+/** The link split into footer lines (a hard wrap: links have no spaces). */
+export function linkLines(link: string): string[] {
+  const out: string[] = [];
+  for (let i = 0; i < link.length; i += LINK_CHARS) out.push(link.slice(i, i + LINK_CHARS));
+  return out.length ? out : [''];
+}
+
 /** Render resolution for the 3D views: about 216 dpi on paper. */
 export const RENDER_PX_PER_PT = 3;
 
@@ -79,8 +91,8 @@ export class SheetLayout {
     return { w: Math.round(img.w * k), h: Math.round(img.h * k) };
   }
 
-  /** The clickable link in the footer (right-aligned text). */
-  get linkBox(): Box {
-    return { x: this.footer.x + this.footer.w - 260, y: this.footer.y + 4, w: 260, h: 22 };
+  /** The clickable link in the footer (right-aligned text, wrapped: a T's link is longer). */
+  linkBox(link: string): Box {
+    return { x: this.footer.x + this.footer.w - LINK_W, y: this.footer.y + 4, w: LINK_W, h: 10 + LINK_LINE * linkLines(link).length };
   }
 }

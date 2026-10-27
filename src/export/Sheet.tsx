@@ -4,14 +4,17 @@
 // translate() scale(S), S = 72 × paper scale, so it prints exactly to scale at
 // 100 %; the 3D views are JPEG renders (illustrations, not to scale).
 // Text is WinAnsi-safe (straight quotes): jsPDF's Helvetica has no ″ or ′.
-import type { BuildResult, Config } from '@/engine';
-import { fabricOf, finishOf } from '@/engine';
+import type { BuildResult, Config, LayoutBuild } from '@/engine';
+import { fabricOf, finishOf, type Layout } from '@/engine';
+import { DimsLayer } from '@/plan/DimsLayer';
+import { soloSource } from '@/plan/dims';
 import { fmtIn } from '@/plan/format';
+import { layoutDimSource, layoutSeatsAt } from '@/plan/layoutDims';
 import { PlanDrawing } from '@/plan/PlanDrawing';
 import { LIGHT, SKETCH } from '@/plan/theme';
 import { PRESET_LABELS, type PresetName } from '@/ortho/presets';
-import { fitPlan, sizesLine } from './fit';
-import { SheetLayout, type SheetViews } from './layout';
+import { fitPlan, headerLine } from './fit';
+import { LINK_LINE, linkLines, SheetLayout, type SheetViews } from './layout';
 
 const INK = '#1c1b19';
 const MUTED = '#6b665e';
@@ -23,8 +26,13 @@ export interface SheetRender {
 }
 
 export interface SheetProps {
+  /** The root section's build (one sofa: the whole sofa). */
   built: BuildResult;
+  /** The root section's config (shared fields: fabric, tables). */
   config: Config;
+  /** Shapes B1: the whole layout (a T draws both halves). */
+  layout: Layout;
+  layoutBuild: LayoutBuild;
   views: SheetViews;
   renders: SheetRender[];
   look: 'cad' | 'sketch';
@@ -61,12 +69,12 @@ export function Sheet(p: SheetProps) {
   const b = p.built;
   const L = new SheetLayout(p.views);
   const theme = p.look === 'sketch' ? SKETCH : LIGHT;
-  const plan = L.plan ? fitPlan(b, L.plan) : null;
-  const shape = b.shape === 'U' ? 'U shape' : b.shape === 'L-left' ? 'L shape, left' : 'L shape, right';
-  const hasTable = Object.values(p.config.runs).some((ps) => ps?.some((q) => q.kind === 'table'));
+  const lb = p.layoutBuild;
+  const plan = L.plan ? fitPlan(lb.solo ? soloSource(b) : layoutDimSource(lb), L.plan) : null;
+  const hasTable = p.layout.sections.some((s) => Object.values(s.config.runs).some((ps) => ps?.some((q) => q.kind === 'table')));
   const style = p.config.tableStyle === 'standard' ? '2" wood top on a fabric base' : 'all wood';
   const spec = [
-    b.seats.label,
+    lb.seats.label,
     `Seat depth ${fmtIn(b.seatDepth)}`,
     `Fabric: ${fabricOf(p.config.fabric).name}`,
     hasTable ? `Tables: ${style}, ${finishOf(p.config.tableFinish).name.toLowerCase()}` : null,
@@ -79,7 +87,7 @@ export function Sheet(p: SheetProps) {
       <rect x={0} y={0} width={page.w} height={page.h} fill="#ffffff" />
       {/* Header */}
       <T x={header.x} y={header.y + 16} s="HAVEN SECTIONAL" size={15} bold />
-      <T x={header.x} y={header.y + 32} s={`${shape}  ·  ${sizesLine(b)}`} size={9} />
+      <T x={header.x} y={header.y + 32} s={headerLine(p.layout, b)} size={9} />
       {p.meta.title && <T x={header.x + header.w} y={header.y + 16} s={p.meta.title} size={11} bold anchor="end" />}
       <T x={header.x + header.w} y={header.y + 32} s={p.meta.date} size={8} anchor="end" fill={MUTED} />
       <line x1={header.x} y1={header.y + header.h} x2={header.x + header.w} y2={header.y + header.h} stroke={INK} strokeWidth={0.6} />
@@ -89,7 +97,22 @@ export function Sheet(p: SheetProps) {
         <g data-plan-view="">
           <T x={L.plan.x} y={L.plan.y + 9} s={`PLAN  ·  ${plan.label}`} size={7} bold />
           <g transform={`translate(${plan.ox.toFixed(3)} ${plan.oy.toFixed(3)}) scale(${plan.S})`} data-plan-scale={plan.S}>
-            <PlanDrawing built={b} dims={plan.dims} k={1 / plan.S} theme={theme} showWarnings={false} seatsSize={10} gapLabelSize={7} />
+            {lb.solo ? (
+              <PlanDrawing built={b} dims={plan.dims} k={1 / plan.S} theme={theme} showWarnings={false} seatsSize={10} gapLabelSize={7} />
+            ) : (
+              <>
+                {/* The root last: with a shared back it owns the frame down the stem (as on screen). */}
+                {[...lb.sections].reverse().map((s) => (
+                  <g key={s.id} data-section={s.id} transform={`translate(${s.offset[0]} ${s.offset[1]})`}>
+                    <PlanDrawing built={s.built} dims={null} k={1 / plan.S} theme={theme} showWarnings={false} showSeats={false} gapLabelSize={7} />
+                  </g>
+                ))}
+                <DimsLayer dims={plan.dims} theme={theme} />
+                <text x={layoutSeatsAt(lb)[0]} y={layoutSeatsAt(lb)[1]} fontSize={+(10 / plan.S).toFixed(4)} fontFamily={theme.font} fontWeight={theme.bold} fill={theme.ink} textAnchor="middle">
+                  {lb.seats.label}
+                </text>
+              </>
+            )}
           </g>
         </g>
       )}
@@ -116,7 +139,9 @@ export function Sheet(p: SheetProps) {
       )}
       <T x={footer.x + footer.w / 2} y={footer.y + 12} s={spec} size={7} anchor="middle" />
       <T x={footer.x + footer.w} y={footer.y + 12} s="Open this layout:" size={6} anchor="end" fill={MUTED} />
-      <T x={footer.x + footer.w} y={footer.y + 22} s={p.meta.link} size={6} anchor="end" fill="#2f6fed" />
+      {linkLines(p.meta.link).map((line, i) => (
+        <T key={i} x={footer.x + footer.w} y={footer.y + 22 + i * LINK_LINE} s={line} size={6} anchor="end" fill="#2f6fed" />
+      ))}
     </svg>
   );
 }

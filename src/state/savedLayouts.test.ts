@@ -98,14 +98,23 @@ describe('saved layouts (plan §8, H6)', () => {
     expect(importSaved(JSON.stringify([{ ...ok, id: 'c' }]))).toEqual({ error: 'storage' });
   });
 
-  it('shapes Stage A: a project made by a newer version is listed, kept on restore, never opened or overwritten', async () => {
+  it('shapes B1: a saved T opens with both halves', async () => {
     const { encodeLayout, teeLayout } = await import('@/engine');
     const { savedStatus } = await import('./savedLayouts');
-    const tee = { id: 't', name: 'Rubin T', code: encodeLayout(teeLayout({ total: 229, stem: 110 })), savedAt: 7 };
-    expect(savedStatus(tee)).toBe('newer');
-    expect(openSaved(tee)).toBeNull();
-    expect(importSaved(JSON.stringify([tee]))).toEqual({ added: 1, updated: 0, skipped: 0, full: false });
-    expect(listSaved()[0]!.code).toBe(tee.code);
+    const layout = teeLayout({ total: 229, stem: 110 });
+    const tee = { id: 't', name: 'Rubin T', code: encodeLayout(layout), savedAt: 7 };
+    expect(savedStatus(tee)).toBe('ok');
+    expect(encodeLayout(openSaved(tee)!)).toBe(encodeLayout(layout));
+  });
+
+  it('a project made by a newer version is listed, kept on restore, never opened or overwritten', async () => {
+    const { encodeLayout, teeLayout } = await import('@/engine');
+    const { savedStatus } = await import('./savedLayouts');
+    const newer = { id: 't', name: 'Rubin T', code: `9${encodeLayout(teeLayout({ total: 229, stem: 110 })).slice(1)}`, savedAt: 7 };
+    expect(savedStatus(newer)).toBe('newer');
+    expect(openSaved(newer)).toBeNull();
+    expect(importSaved(JSON.stringify([newer]))).toEqual({ added: 1, updated: 0, skipped: 0, full: false });
+    expect(listSaved()[0]!.code).toBe(newer.code);
     expect(savedStatus({ code: 'garbage' })).toBe('damaged');
   });
 });

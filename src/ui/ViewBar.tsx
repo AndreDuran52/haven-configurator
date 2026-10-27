@@ -9,14 +9,16 @@ const pill = (on: boolean) =>
 
 export function ViewBar() {
   const store = useHavenStore();
-  const view = useHaven((s) => s.ui.view);
+  // A T (Shapes B1) has no 3D until B2: only the plan.
+  const joined = useHaven((s) => s.layout.sections.length > 1);
+  const view = useHaven((s) => (s.layout.sections.length > 1 ? 'plan' : s.ui.view));
   const preset = useHaven((s) => s.ui.preset);
   const showLoose = useHaven((s) => s.ui.showLoose);
   const hasLoose = useLive().loose.length > 0;
   return (
     <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-wrap items-start gap-1.5 p-1.5 min-[480px]:gap-2 min-[480px]:p-2">
       <div role="radiogroup" aria-label="View" className="pointer-events-auto flex gap-0.5 rounded-xl border border-line bg-panel/90 p-1 shadow-sm min-[480px]:gap-1">
-        {(['plan', '3d'] as const).map((v) => (
+        {(joined ? (['plan'] as const) : (['plan', '3d'] as const)).map((v) => (
           <button key={v} type="button" role="radio" aria-checked={view === v} className={pill(view === v)} onClick={() => store.getState().setView(v)}>
             {v === 'plan' ? 'Plan' : '3D'}
           </button>

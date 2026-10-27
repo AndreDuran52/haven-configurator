@@ -4,12 +4,13 @@
 import { createElement } from 'react';
 import { createRoot } from 'react-dom/client';
 import { flushSync } from 'react-dom';
-import { buildHaven, type Config } from '@/engine';
+import { buildHaven, buildLayout, rootConfig, teeOf, type Layout } from '@/engine';
 import { SheetLayout, PAGE, type SheetViews } from './layout';
 import { Sheet, type SheetRender } from './Sheet';
 
 export interface SheetRequest {
-  config: Config;
+  /** Shapes B1: the whole layout (one sofa, or a T). */
+  layout: Layout;
   views: SheetViews;
   look: 'cad' | 'sketch';
   pillows: boolean;
@@ -34,10 +35,11 @@ const slug = (s: string) =>
     .replace(/\s+/g, '-')
     .slice(0, 40);
 
-export function fileName(config: Config, title: string, date: Date, ext: string): string {
-  const b = buildHaven(config);
-  const shape = b.shape === 'U' ? 'U' : b.shape === 'L-left' ? 'L-left' : 'L-right';
-  const size = b.shape === 'U' ? `${b.W}x${b.L}x${b.R}` : `${b.W}x${b.shape === 'L-left' ? b.L : b.R}`;
+export function fileName(layout: Layout, title: string, date: Date, ext: string): string {
+  const b = buildHaven(rootConfig(layout));
+  const t = teeOf(layout);
+  const shape = t ? 'T' : b.shape === 'U' ? 'U' : b.shape === 'L-left' ? 'L-left' : 'L-right';
+  const size = t ? `${t.total}x${Math.max(...t.stem)}` : b.shape === 'U' ? `${b.W}x${b.L}x${b.R}` : `${b.W}x${b.shape === 'L-left' ? b.L : b.R}`;
   const day = date.toISOString().slice(0, 10);
   return [title ? slug(title) : 'Haven', shape, size, day].filter(Boolean).join('-') + `.${ext}`;
 }
@@ -54,23 +56,29 @@ function sheetElement(props: Parameters<typeof Sheet>[0]): { el: SVGSVGElement; 
 }
 
 export async function makeSheet(req: SheetRequest): Promise<SheetFile> {
-  const built = buildHaven(req.config);
-  if (built.exportBlocked) throw new Error('Fill the unfilled gaps first');
-  const layout = new SheetLayout(req.views);
+  const config = rootConfig(req.layout);
+  const built = buildHaven(config);
+  const lb = buildLayout(req.layout);
+  if (lb.exportBlocked) throw new Error('Fill the unfilled gaps first');
+  // A T has no 3D until Shapes B2: its sheet is the plan alone.
+  const views: SheetViews = lb.solo ? req.views : { plan: true, views: [] };
+  const layout = new SheetLayout(views);
   const renders: SheetRender[] = [];
   if (layout.cells.length) {
     const { exportView } = await import('@/three/export');
     for (const cell of layout.cells) {
       const px = layout.renderPx(cell);
-      const r = await exportView(req.config, cell.preset, px.w, px.h, { pillows: req.pillows });
+      const r = await exportView(config, cell.preset, px.w, px.h, { pillows: req.pillows });
       renders.push({ preset: cell.preset, url: r.url });
     }
   }
   const date = req.date ?? new Date();
   const { el, markup } = sheetElement({
     built,
-    config: req.config,
-    views: req.views,
+    config,
+    layout: req.layout,
+    layoutBuild: lb,
+    views,
     renders,
     look: req.look,
     meta: { title: req.title.trim(), date: date.toLocaleDateString('en-US', { dateStyle: 'long' }), link: req.link },
@@ -78,11 +86,11 @@ export async function makeSheet(req: SheetRequest): Promise<SheetFile> {
   const [{ jsPDF }] = await Promise.all([import('jspdf'), import('svg2pdf.js')]);
   const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'letter', compress: true, putOnlyUsedFonts: true });
   await doc.svg(el, { x: 0, y: 0, width: PAGE.w, height: PAGE.h });
-  const lb = layout.linkBox;
-  doc.link(lb.x, lb.y, lb.w, lb.h, { url: req.link });
+  const box = layout.linkBox(req.link);
+  doc.link(box.x, box.y, box.w, box.h, { url: req.link });
   doc.viewerPreferences({ PrintScaling: 'None' });
   doc.setDocumentProperties({ title: req.title ? `Haven sectional: ${req.title}` : 'Haven sectional', creator: 'Haven Configurator' });
-  return { pdf: doc.output('blob'), svg: markup, name: fileName(req.config, req.title, date, 'pdf') };
+  return { pdf: doc.output('blob'), svg: markup, name: fileName(req.layout, req.title, date, 'pdf') };
 }
 
 /** The same sheet as a PNG at `dpi` (200 dpi = 2200 × 1700), for "send as image". */

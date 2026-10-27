@@ -3,6 +3,14 @@
 import { anchoredTargets, buildHaven, encodeLayout, type Config, type Layout, type Pt } from '@/engine';
 
 let svg: React.RefObject<SVGSVGElement | null> | null = null;
+/** World position of the section being edited (shapes: the right half of a T sits at x > 0). */
+let offset: Pt = [0, 0];
+
+/** PlanView sets this on every render, so local (section) and world coordinates stay in step. */
+export const setPlanOffset = (o: Pt) => {
+  offset = o;
+};
+export const planOffset = (): Pt => offset;
 let cancelGesture: (() => boolean) | null = null;
 
 export function registerPlanSvg(ref: React.RefObject<SVGSVGElement | null>) {
@@ -41,6 +49,15 @@ export function planToClient(x: number, y: number): Pt | null {
   return [p.x, p.y];
 }
 
+/** Client px -> the edited section's own inches. */
+export function clientToLocal(x: number, y: number): Pt | null {
+  const p = clientToPlan(x, y);
+  return p && [p[0] - offset[0], p[1] - offset[1]];
+}
+
+/** The edited section's own inches -> client px. */
+export const localToClient = (x: number, y: number): Pt | null => planToClient(x + offset[0], y + offset[1]);
+
 /** Plan inches per CSS px on screen. */
 export function planK(): number | null {
   const k = Number(planSvg()?.dataset.k);
@@ -56,7 +73,8 @@ export function installPlanTestApi(get: () => Config, getLayout: () => Layout) {
   w.__plan = {
     toClient: (x: number, y: number) => planToClient(x, y),
     k: () => planK(),
-    anchors: (id: string) => anchoredTargets(get(), id).map((t) => ({ placement: t.placement, client: planToClient(...t.anchor) })),
+    anchors: (id: string) => anchoredTargets(get(), id).map((t) => ({ placement: t.placement, client: localToClient(...t.anchor) })),
+    offset: () => offset,
     encode: () => encodeLayout(getLayout()),
     exportBlocked: () => buildHaven(get()).exportBlocked,
   };

@@ -7,7 +7,7 @@
 import { useEffect, useState } from 'react';
 import type { PresetName } from '@/ortho/presets';
 import { KEYS, readJson, writeItem } from '@/state/storage';
-import { builtOf, useHaven, useHavenStore } from '@/state/store';
+import { layoutBuiltOf, useHaven, useHavenStore } from '@/state/store';
 import { shareLinks } from '@/state/url';
 import { Button, Segmented } from './controls';
 import { Dialog } from './Dialog';
@@ -26,7 +26,6 @@ type Made = { pdf: Blob; svg: string; name: string; preview: string; sig: string
 
 export default function ShareDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const store = useHavenStore();
-  const config = useHaven((s) => s.config);
   const layout = useHaven((s) => s.layout);
   const uiLook = useHaven((s) => s.ui.look);
   const pillows = useHaven((s) => s.ui.pillows);
@@ -37,8 +36,12 @@ export default function ShareDialog({ open, onOpenChange }: { open: boolean; onO
   const [madeState, setMade] = useState<Made | null>(null);
   const [error, setError] = useState<string | null>(null);
   const links = shareLinks(layout);
-  const blocked = builtOf(config).exportBlocked;
-  const chosen = VIEW_LABELS.filter((v) => views[v.key]);
+  const blocked = layoutBuiltOf(layout).exportBlocked;
+  // A T (Shapes B1) has no 3D until B2: its sheet is the plan alone.
+  const joined = layout.sections.length > 1;
+  const labels = joined ? VIEW_LABELS.filter((v) => v.key === 'plan') : VIEW_LABELS;
+  const ticked = (k: keyof Views) => (joined ? k === 'plan' : views[k]);
+  const chosen = labels.filter((v) => ticked(v.key));
 
   // A new layout or new choices make the old PDF stale.
   const sig = JSON.stringify([links.edit, views, look, title, pillows]);
@@ -57,7 +60,7 @@ export default function ShareDialog({ open, onOpenChange }: { open: boolean; onO
     try {
       const { makeSheet } = await import('@/export/pdf');
       const r = await makeSheet({
-        config,
+        layout,
         views: { plan: views.plan, views: (['threeQuarter', 'iso', 'front', 'side'] as PresetName[]).filter((k) => views[k as keyof Views]) },
         look,
         pillows,
@@ -112,9 +115,9 @@ export default function ShareDialog({ open, onOpenChange }: { open: boolean; onO
     <Dialog open={open} onOpenChange={onOpenChange} title="Share & PDF" description="A one-page sheet (Letter): the plan to scale, plus the 3D views you tick.">
       <fieldset className="flex flex-col gap-1" data-testid="sheet-views">
         <legend className="mb-1 text-xs font-semibold tracking-wide text-ink-muted uppercase">On the sheet</legend>
-        {VIEW_LABELS.map((v) => (
+        {labels.map((v) => (
           <label key={v.key} className="flex min-h-11 items-center gap-3 text-sm">
-            <input type="checkbox" className="h-5 w-5 accent-[var(--accent)]" checked={views[v.key]} onChange={() => toggle(v.key)} data-view={v.key} />
+            <input type="checkbox" className="h-5 w-5 accent-[var(--accent)]" checked={ticked(v.key)} disabled={joined} onChange={() => toggle(v.key)} data-view={v.key} />
             {v.label}
           </label>
         ))}

@@ -2,8 +2,8 @@
 // default preserveAspectRatio "xMidYMid meet"). Shared by PlanView and the
 // Plan -> 3D parity hand-off, so both use the same numbers.
 import type { BuildResult } from '@/engine';
-import { fitScreen } from './dimLayout';
-import type { DimLayout } from './dims';
+import { fitSource } from './dimLayout';
+import { soloSource, type DimLayout, type DimSource } from './dims';
 
 export const PLAN_PAD_PX = 12;
 
@@ -18,7 +18,12 @@ export interface PlanFitResult {
 }
 
 export function planFit(built: BuildResult, w: number, h: number): PlanFitResult {
-  const { k, layout } = fitScreen(built, w, h, PLAN_PAD_PX);
+  return planFitSource(soloSource(built), w, h);
+}
+
+/** planFit for any dimension source (one sofa, or a layout's world dimensions). */
+export function planFitSource(src: DimSource, w: number, h: number): PlanFitResult {
+  const { k, layout } = fitSource(src, w, h, PLAN_PAD_PX);
   const pad = PLAN_PAD_PX * k;
   const b = layout.bounds;
   const viewBox = { x: b.x - pad, y: b.y - pad, w: b.w + 2 * pad, h: b.h + 2 * pad };
