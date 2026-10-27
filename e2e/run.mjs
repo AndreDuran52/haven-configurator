@@ -11,6 +11,7 @@ import { h6b } from './h6b.mjs'
 import { phase1 } from './phase1.mjs'
 import { reporter } from './lib.mjs'
 import { ortho } from './ortho.mjs'
+import { shapes } from './shapes.mjs'
 import { smoke } from './smoke.mjs'
 
 const PORT = 4179
@@ -29,6 +30,7 @@ try {
   await h6(browser, BASE, check)
   await h6b(browser, BASE, check)
   await phase1(browser, BASE, check)
+  await shapes(browser, BASE, check)
 } finally {
   await browser.close()
   await server.close()

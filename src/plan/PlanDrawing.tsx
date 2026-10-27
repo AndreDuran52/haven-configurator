@@ -21,6 +21,8 @@ export interface PlanDrawingProps {
   /** display units: 16 on screen (px), ~10 on paper (pt) */
   seatsSize?: number;
   gapLabelSize?: number;
+  /** false for each section of a layout (the layout draws one seat label). */
+  showSeats?: boolean;
 }
 
 const Box = ({ box: r, ...rest }: { box: Rect } & Omit<React.SVGProps<SVGRectElement>, 'r'>) => (
@@ -29,7 +31,7 @@ const Box = ({ box: r, ...rest }: { box: Rect } & Omit<React.SVGProps<SVGRectEle
 
 const inset = (r: Rect, d: number): Rect => ({ x: r.x + d, y: r.y + d, w: r.w - 2 * d, h: r.h - 2 * d });
 
-export function PlanDrawing({ built, dims, k, theme, showWarnings, selectedId, seatsSize = 16, gapLabelSize = 11 }: PlanDrawingProps) {
+export function PlanDrawing({ built, dims, k, theme, showWarnings, selectedId, seatsSize = 16, gapLabelSize = 11, showSeats = true }: PlanDrawingProps) {
   const lw = (u: number) => +(u * k).toFixed(4); // display units -> plan inches
   const warnIds = new Set(showWarnings ? built.warnings.map((w) => w.pieceId).filter(Boolean) : []);
   const runPieces = (run: string) => built.pieces.filter((p) => p.run === run);
@@ -131,7 +133,7 @@ export function PlanDrawing({ built, dims, k, theme, showWarnings, selectedId, s
       </g>
       <g data-loose="">{loose.map(piece)}</g>
       {dims && <DimsLayer dims={dims} theme={theme} />}
-      <g data-seats="">{text(seatsAt[0], seatsAt[1], built.seats.label, lw(seatsSize), { bold: true, fill: theme.ink })}</g>
+      {showSeats && <g data-seats="">{text(seatsAt[0], seatsAt[1], built.seats.label, lw(seatsSize), { bold: true, fill: theme.ink })}</g>}
     </g>
   );
 }

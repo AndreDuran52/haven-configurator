@@ -1249,8 +1249,13 @@ The left half gets the extra 0.5″ when the width does not split evenly.
   - Store and undo history over Layout.
   - Every save, link and draft path on the layout codec.
   - A project or link from a newer version is listed and kept, never opened or overwritten.
-  - The editor opens one-section layouts only until B1 (`state/layoutGate.ts`).
-- **B1:** the T in the plan, the editor, the Projects home and the PDF plan. The 3D view is hidden for T's until B2.
+  - The editor opened one-section layouts only until B1 (`state/layoutGate.ts`).
+- **B1, the T in the plan: built 2026-10-27 (waiting for Andre's review).**
+  - "T shape…" on the Projects home and in Start: Total width, Stem, Depth (field + 44/40/36), Shared back / Two backs, and a live engine line ("Each half 119½″. Stem 78″ wide. Seats 6.").
+  - The editor draws both halves in place with one set of dimensions; a tap on a half edits it. The sidebar's "T shape" panel: Editing Left half / Right half, Total width, Stem, the back down the stem, and the edited half's own width and stem. Every other control works on the edited half; shared fields (depth, corner, lock, seat widths, fabric, tables) reach both.
+  - Seat pill, warnings (named by half), `?view` summary, Projects cards, save, share and reload all carry the whole T.
+  - The PDF sheet is the plan alone for a T, to scale (229 × 110 prints at 3/8″ = 1′-0″); header "T shape, shared back · 229″ W x 110″ stem · 44″ deep"; file `Haven-T-229x110-<date>.pdf`; the footer link wraps.
+  - The 3D view (and the sheet's 3D views) are hidden for T's until B2.
 - **B2:** the T in 3D, with the shared frame shown once.
 - **C1:** attach a shape by tapping or dragging it onto a "+" on a leg or a back.
 - **Then** UX Phases 2–6.
@@ -1268,6 +1273,10 @@ The left half gets the extra 0.5″ when the width does not split evenly.
   - 2,000 random ops on T halves (shared fields equal, joins valid, no overlap outside the strip, round trip);
   - store tests: a depth change on the right half is one undo step for both.
 - e2e: unchanged and green.
+
+**Measured (Stage B1):**
+- vitest: T dimension labels for both back options and an uneven stem, no overlaps at three viewports and in print, the sheet's header, file name, scale and wrapped link.
+- e2e `e2e/shapes.mjs`: both back options built from the Projects home, the expected labels with 0 overlapping or clipped labels at 1180×820, 820×1180 and 390×844; edit the right half and Undo; a depth change reaches both halves; tap a half to edit it; a CDP touch seam drag in the right half is one undo step; save, reload, the `#c=3…` link in a fresh browser, `?view`; the PDF's file name, header, scale, labels and whole link. Screenshots light and dark at four sizes.
 
 ### H6c: Room floor space (next; Andre, 2026-10-02)
 The client's room (W × D, the sofa's gap to the left and back walls) drawn in the plan, the PDF and as the 3D floor, with clearances to each wall and a `roomTooSmall` warning; Center and Fill the width. Carried in links (codec v4, written only when a room is set, so every older link stays byte-identical; v3 went to shapes, 2026-10-26).

@@ -37,7 +37,7 @@ Layout: `src/{engine, ortho, state, plan, three, ui, export}` (plan §4). The sh
 
 Each milestone: `git fetch`, branch from `origin/main` (`h0b-scaffold`, `h1-engine`, `h2-plan-view`, `h3-ortho`, `h4-editing`, `h5-look`, `h6-exports`), build only that §10 block, meet its done-when list, open a PR, **stop**. Andre previews (localhost or the Vercel preview; from H2 on, installed on the iPad) and it merges on Andre's word. Tick the box below in the same PR.
 
-**Current status: Shapes, Stage A** (plan §10 "Shapes", Andre 2026-10-26): a project is a Layout of one or more joined sections (the T sectional = an L-right + an L-left, legs back to back, shared back or two backs); link v3; the editor opens one-section layouts only until Stage B1. Then B1 (the T in the plan), B2 (the T in 3D), C1 (attach shapes), then UX Phases 2–6. H6c (room) is on hold (brief §13) and now uses codec v4. No login (plan Q18). H7/H8 only when Andre asks.
+**Current status: Shapes, Stage B1** (plan §10 "Shapes", Andre 2026-10-26): a project is a Layout of one or more joined sections (the T sectional = an L-right + an L-left, legs back to back, shared back or two backs); link v3. B1 opens the T in the plan, the editor, the Projects home and the PDF plan; 3D is hidden for T's. Then B2 (the T in 3D), C1 (attach shapes), then UX Phases 2–6. H6c (room) is on hold (brief §13) and now uses codec v4. No login (plan Q18). H7/H8 only when Andre asks.
 
 - [x] H0 Docs hand-off (plan, spec, prototypes, evidence in `docs/`)
 - [x] H0b Scaffold (Vite, strict TS, oxlint guards, vitest, bundle budget, manifest, Vercel)
@@ -53,7 +53,8 @@ Each milestone: `git fetch`, branch from `origin/main` (`h0b-scaffold`, `h1-engi
 - [x] H6b Projects home (cards, save in place, unsaved-changes guard, backup/restore), Download / Print first (2026-10-02)
 - [x] UX Phase 0 audit + Phase 1 (no partial commits, saved-list recovery, open project kept on reload, codec checks; 2026-10-02)
 - [x] Shapes Stage A: layouts under the hood (sections, joins, link v3, store over Layout; 2026-10-26)
-- [ ] Shapes B1 (the T in the plan), B2 (the T in 3D), C1 (attach shapes by tap or drag)
+- [x] Shapes B1: the T in the plan (T shape form, both halves editable, T dimensions, PDF plan; 3D hidden for T's; 2026-10-27)
+- [ ] Shapes B2 (the T in 3D), C1 (attach shapes by tap or drag)
 - [ ] UX Phases 2–6 (editor clean-up, understandable edits, selection and corners, options and Present, visual tray)
 - [ ] H6c Room floor space (on hold: brief §13) (W × D + wall gaps; plan, PDF, 3D floor; fit warning; codec v4)
 - [ ] H7 Cloud saves + tracker hand-off (optional; do not start unless Andre asks)

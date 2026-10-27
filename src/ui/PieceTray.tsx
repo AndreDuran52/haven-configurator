@@ -6,7 +6,7 @@
 // plan §8): the plan keeps its height there; the tap menu still edits.
 import { useRef, useState } from 'react';
 import { addLoose, LOOSE_DEFAULTS, SNAP_HYSTERESIS, type Config } from '@/engine';
-import { clientToPlan, planSvg } from '@/plan/planScreen';
+import { clientToLocal, planSvg } from '@/plan/planScreen';
 import { isLooseTray, nearestTarget, placementTargets, type PlacementTarget, type TrayKind } from '@/plan/placementTargets';
 import { useHaven, useHavenStore } from '@/state/store';
 
@@ -90,7 +90,7 @@ export function PieceTray() {
     const svg = planSvg();
     const r = svg?.getBoundingClientRect();
     const inside = !!r && e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
-    const pt = inside ? clientToPlan(e.clientX, e.clientY) : null;
+    const pt = inside ? clientToLocal(e.clientX, e.clientY) : null;
     const s = store.getState();
     if (!pt) {
       d.current = null;

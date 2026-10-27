@@ -21,9 +21,11 @@ describe('URL hash (plan §8)', () => {
     expect(codeFromHash('#other')).toBeNull();
   });
 
-  it('Stage A: a T link is a newer layout this build does not open yet (never "damaged")', () => {
-    const t = initialLayout(`#c=${encodeLayout(teeLayout({ total: 229, stem: 110 }))}`);
-    expect(t.message).toBe(NEWER_MESSAGE);
-    expect(t.layout.sections).toHaveLength(1);
+  it('shapes B1: a T link opens with both halves', () => {
+    const tee = teeLayout({ total: 229, stem: 110 });
+    const t = initialLayout(`#c=${encodeLayout(tee)}`);
+    expect(t.message).toBeNull();
+    expect(t.layout.sections).toHaveLength(2);
+    expect(encodeLayout(t.layout)).toBe(encodeLayout(tee));
   });
 });

@@ -3,7 +3,7 @@
 // share link, delete (asks first). Per device: the installed app and Safari keep
 // separate lists, so every card can send its link, and the home has Back up.
 import { useState } from 'react';
-import { rootConfig, type Layout } from '@/engine';
+import type { Layout } from '@/engine';
 import { deleteSaved, duplicateSaved, openSaved, renameSaved, saveFailure, savedDate, savedStatus, type SavedLayout } from '@/state/savedLayouts';
 import { codeOf } from '@/state/store';
 import { shareLinks } from '@/state/url';
@@ -29,7 +29,7 @@ export function SavedList({ list, onChange, onOpen, onToast }: { list: SavedLayo
           <li key={e.id} className="flex flex-col gap-2 rounded-xl border border-line bg-panel p-2" data-saved={e.name}>
             <button type="button" onClick={open} className="h-36 rounded-lg bg-white p-1" aria-label={`Open ${e.name}`}>
               {layout ? (
-                <PlanThumb config={rootConfig(layout)} />
+                <PlanThumb layout={layout} />
               ) : newer ? (
                 <span className="text-sm text-ink-muted">Made with a newer version. Update the app.</span>
               ) : (
