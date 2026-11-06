@@ -2,7 +2,7 @@
 // owned by one op), so it may mutate its arguments. Arithmetic is in integer
 // half-inches (G10).
 import { ABSORB_FLOOR, cushionOf, distribute, isSeat, splitHalf, toH, toIn } from './pieces';
-import { available, openEnd, runEnds, runIds, type Alloc } from './layout';
+import { available, openEnds, runEnds, runIds, type Alloc } from './layout';
 import type { Config, RunEnd, RunId, RunPiece } from './types';
 
 /** Where an edit happened: a seam (0..n) or a piece index (the edited piece itself). */
@@ -18,8 +18,8 @@ export interface AbsorbOptions {
   mode?: AbsorbMode;
   /** Pieces that never absorb (the edited piece). */
   exclude?: Set<string>;
-  /** The run's open end, so a new gap never lands between an arm and its open end (G11). */
-  open?: RunEnd | null;
+  /** The run's open ends, so a new gap never lands between an arm and its open end (G11). */
+  opens?: RunEnd[];
 }
 
 interface Unit {
@@ -80,17 +80,19 @@ function applyToUnit(pieces: RunPiece[], u: Unit, d: number): void {
  * Seam where a new gap goes. A gap may never sit between a one-arm piece and
  * the open end it faces (G11), so such a gap moves to the arm piece's inner side.
  */
-export function gapSeam(pieces: RunPiece[], at: number, open: RunEnd | null | undefined): number {
-  if (!open) return at;
-  const k = pieces.findIndex((p) => p.kind === 'oneArm' && p.arm === open);
-  if (k < 0) return at;
-  if (open === 'end' && at > k) return k;
-  if (open === 'start' && at <= k) return k + 1;
-  return at;
+export function gapSeam(pieces: RunPiece[], at: number, opens: RunEnd[] = []): number {
+  let s = at;
+  for (const open of opens) {
+    const k = pieces.findIndex((p) => p.kind === 'oneArm' && p.arm === open);
+    if (k < 0) continue;
+    if (open === 'end' && s > k) s = k;
+    if (open === 'start' && s <= k) s = k + 1;
+  }
+  return s;
 }
 
-function insertGap(pieces: RunPiece[], at: number, length: number, open: RunEnd | null | undefined, alloc: Alloc) {
-  pieces.splice(gapSeam(pieces, at, open), 0, { id: alloc('p'), kind: 'gap', length });
+function insertGap(pieces: RunPiece[], at: number, length: number, opens: RunEnd[] | undefined, alloc: Alloc) {
+  pieces.splice(gapSeam(pieces, at, opens), 0, { id: alloc('p'), kind: 'gap', length });
 }
 
 /**
@@ -119,11 +121,11 @@ export function absorb(
   if (d > 0) {
     if (pieces.some((p) => p.kind === 'gap')) {
       if (opts.mode === 'measure' && gaps[0]) applyToUnit(pieces, gaps[0], d);
-      else insertGap(pieces, at, toIn(d), opts.open, alloc);
+      else insertGap(pieces, at, toIn(d), opts.opens, alloc);
     } else if (seats[0]) {
       applyToUnit(pieces, seats[0], d);
     } else {
-      insertGap(pieces, at, toIn(d), opts.open, alloc);
+      insertGap(pieces, at, toIn(d), opts.opens, alloc);
     }
     return true;
   }
@@ -148,11 +150,11 @@ export function absorb(
 export function settle(d: Config, run: RunId, anchor: Anchor, delta: number, alloc: Alloc, exclude?: Set<string>): boolean {
   const pieces = d.runs[run]!;
   const A = d.dims.A;
-  const open = openEnd(d.shape, run);
-  if (d.lockOutside) return absorb(pieces, anchor, delta, A, alloc, { mode: 'piece', exclude, open });
+  const opens = openEnds(d.shape, run);
+  if (d.lockOutside) return absorb(pieces, anchor, delta, A, alloc, { mode: 'piece', exclude, opens });
   const h = toH(delta);
   if (h > 0) {
-    if (pieces.some((p) => p.kind === 'gap')) insertGap(pieces, 'seam' in anchor ? anchor.seam : anchor.piece + 1, delta, open, alloc);
+    if (pieces.some((p) => p.kind === 'gap')) insertGap(pieces, 'seam' in anchor ? anchor.seam : anchor.piece + 1, delta, opens, alloc);
     return true;
   }
   let need = -h;
@@ -176,7 +178,7 @@ export function rebalanceEnds(
   endDelta: number,
   A: number,
   alloc: Alloc,
-  open: RunEnd | null,
+  opens: RunEnd[],
 ): boolean {
   const steps: [RunEnd, number][] = [
     ['start', startDelta],
@@ -185,15 +187,16 @@ export function rebalanceEnds(
   steps.sort((a, b) => b[1] - a[1]);
   for (const [end, delta] of steps) {
     const anchor = end === 'start' ? { seam: 0 } : { seam: pieces.length };
-    if (!absorb(pieces, anchor, delta, A, alloc, { mode: 'measure', open })) return false;
+    if (!absorb(pieces, anchor, delta, A, alloc, { mode: 'measure', opens })) return false;
   }
   return true;
 }
 
 /**
  * Re-flow every run after W/L/R/D/C changed. A wedge end absorbs -dC; an open
- * end absorbs its run's outside change; a U back (wedge at both ends) splits
- * dW in half, the start end taking the extra 0.5.
+ * end absorbs its run's outside change; a U back (wedge at both ends) and a
+ * straight sofa (open at both ends) split dW in half, the start end taking the
+ * extra 0.5.
  */
 export function reshapeRuns(d: Config, alloc: Alloc, dC: number, dW: number, dL: number, dR: number): boolean {
   for (const run of runIds(d.shape)) {
@@ -207,7 +210,11 @@ export function reshapeRuns(d: Config, alloc: Alloc, dC: number, dW: number, dL:
       s += a;
       e += b;
     }
-    if (!rebalanceEnds(d.runs[run]!, s, e, d.dims.A, alloc, openEnd(d.shape, run))) return false;
+    if (ends.start === 'open' && ends.end === 'open') {
+      // A straight sofa: the width change is shared by both ends (the start takes the extra 0.5).
+      [s, e] = splitHalf(dOuter);
+    }
+    if (!rebalanceEnds(d.runs[run]!, s, e, d.dims.A, alloc, openEnds(d.shape, run))) return false;
   }
   return true;
 }

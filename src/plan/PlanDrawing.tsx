@@ -21,6 +21,8 @@ export interface PlanDrawingProps {
   selectedId?: string | null;
   /** display units: 16 on screen (px), ~10 on paper (pt) */
   seatsSize?: number;
+  /** Screen px kept clear under a straight sofa for the seam grips (the live plan only). */
+  gripClear?: number;
   gapLabelSize?: number;
   /** false for each section of a layout (the layout draws one seat label). */
   showSeats?: boolean;
@@ -32,7 +34,7 @@ const Box = ({ box: r, ...rest }: { box: Rect } & Omit<React.SVGProps<SVGRectEle
 
 const inset = (r: Rect, d: number): Rect => ({ x: r.x + d, y: r.y + d, w: r.w - 2 * d, h: r.h - 2 * d });
 
-export function PlanDrawing({ built, dims, k, theme, showWarnings, selectedId, seatsSize = 16, gapLabelSize = 11, showSeats = true }: PlanDrawingProps) {
+export function PlanDrawing({ built, dims, k, theme, showWarnings, selectedId, seatsSize = 16, gripClear = 0, gapLabelSize = 11, showSeats = true }: PlanDrawingProps) {
   const lw = (u: number) => +(u * k).toFixed(4); // display units -> plan inches
   const warnIds = new Set(showWarnings ? built.warnings.map((w) => w.pieceId).filter(Boolean) : []);
   const runPieces = (run: string) => built.pieces.filter((p) => p.run === run);
@@ -83,9 +85,11 @@ export function PlanDrawing({ built, dims, k, theme, showWarnings, selectedId, s
     );
   };
 
-  // Seats label: centre of the U opening / inside corner of an L
+  // Seats label: centre of the U opening / inside corner of an L / in front of a straight sofa
   const usualSeatsAt: Pt =
-    built.shape === 'U'
+    built.shape === 'straight'
+      ? [built.W / 2, built.D + Math.max(20, lw(gripClear))]
+      : built.shape === 'U'
       ? [built.W / 2, built.D + Math.max(built.opening?.depth ?? 0, 20) * 0.45]
       : built.shape === 'L-left'
         ? [built.D + (built.W - built.D) / 2, built.D + (built.L - built.D) / 2]
@@ -97,7 +101,7 @@ export function PlanDrawing({ built, dims, k, theme, showWarnings, selectedId, s
     lw(seatsSize),
     built.seats.label.length,
     built.D,
-    Math.max(built.shape !== 'L-right' ? built.L : 0, built.shape !== 'L-left' ? built.R : 0),
+    built.shape === 'straight' ? built.D + 40 : Math.max(built.shape !== 'L-right' ? built.L : 0, built.shape !== 'L-left' ? built.R : 0),
   );
 
   return (

@@ -1,7 +1,7 @@
 // Where a tray piece can go (plan §8 "Add-piece tray"): every seam and seat
 // split of every run where addPiece succeeds, with the new piece's centre as
 // the pin / snap anchor. Pure; computed once per tray gesture.
-import { addPiece, buildHaven, isSeat, openEnd, runIds, type Config, type Facing, type Placement, type Pt } from '@/engine';
+import { addPiece, buildHaven, isSeat, openEnds, runIds, type Config, type Facing, type Placement, type Pt } from '@/engine';
 
 export type TrayKind = 'armless' | 'oneArmL' | 'oneArmR' | 'table' | 'ottoman' | 'coffeeTable';
 export type RunTrayKind = Exclude<TrayKind, 'ottoman' | 'coffeeTable'>;
@@ -24,24 +24,26 @@ export function placementTargets(config: Config, kind: RunTrayKind): PlacementTa
   const seen = new Set<string>();
   for (const run of runIds(config.shape)) {
     const ps = config.runs[run] ?? [];
-    const arm = openEnd(config.shape, run);
-    if (engineKind === 'oneArm' && !arm) continue; // arms only at an open end (G11)
+    // Arms only at an open end (G11); a straight sofa tries both ends.
+    const arms = engineKind === 'oneArm' ? openEnds(config.shape, run) : [null];
     const candidates: Placement[] = [];
     for (let seam = 0; seam <= ps.length; seam++) candidates.push({ run, at: 'seam', seam });
     for (const p of ps) if (isSeat(p)) candidates.push({ run, at: 'split', pieceId: p.id });
-    for (const placement of candidates) {
-      const r = addPiece(config, engineKind, placement, arm ? { arm } : {});
-      if (r.rejected) continue;
-      const b = buildHaven(r.config);
-      // addPiece allocates the new piece's id first (before any split halves).
-      const added = b.pieces.find((p) => p.id === `p${config.nextId}`);
-      if (!added) continue;
-      const facing = FACING[kind];
-      if (facing && added.arm?.facing !== facing) continue;
-      const key = JSON.stringify(r.config.runs);
-      if (seen.has(key)) continue;
-      seen.add(key);
-      out.push({ placement, anchor: [added.bbox.x + added.bbox.w / 2, added.bbox.y + added.bbox.h / 2], config: r.config });
+    for (const arm of arms) {
+      for (const placement of candidates) {
+        const r = addPiece(config, engineKind, placement, arm ? { arm } : {});
+        if (r.rejected) continue;
+        const b = buildHaven(r.config);
+        // addPiece allocates the new piece's id first (before any split halves).
+        const added = b.pieces.find((p) => p.id === `p${config.nextId}`);
+        if (!added) continue;
+        const facing = FACING[kind];
+        if (facing && added.arm?.facing !== facing) continue;
+        const key = JSON.stringify(r.config.runs);
+        if (seen.has(key)) continue;
+        seen.add(key);
+        out.push({ placement, anchor: [added.bbox.x + added.bbox.w / 2, added.bbox.y + added.bbox.h / 2], config: r.config });
+      }
     }
   }
   return out;

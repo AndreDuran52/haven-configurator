@@ -2,7 +2,7 @@
 import { expect } from 'vitest';
 import { buildHaven } from './buildHaven';
 import { blankConfig, standardL, standardU } from './defaults';
-import { available, openEnd, runIds, wedgeC } from './layout';
+import { available, openEnds, runIds, wedgeC } from './layout';
 import { ABSORB_FLOOR, cushionOf, isSeat } from './pieces';
 import { armInvariantOk, assertInvariants } from './rules';
 import * as raw from './index';
@@ -36,7 +36,7 @@ export function valid(c: Config): BuildResult {
   }
   for (const run of runIds(c.shape)) {
     const ps = c.runs[run]!;
-    expect(armInvariantOk(ps, openEnd(c.shape, run))).toBe(true);
+    expect(armInvariantOk(ps, openEnds(c.shape, run))).toBe(true);
     for (const p of ps) {
       expect(p.length).toBeGreaterThan(0);
       expect(Number.isInteger(p.length * 2)).toBe(true);

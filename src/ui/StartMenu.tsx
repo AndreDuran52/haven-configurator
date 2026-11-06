@@ -1,4 +1,4 @@
-// "Start from" (plan §8): Standard U · Standard L (left/right) · Blank (shape +
+// "Start from" (plan §8): Standard U · Standard L (left/right) · Straight sofa · Blank (shape +
 // W/L/R/D) · "Resume last layout (date)". Each is one undoable commit + a toast,
 // and sets ui.lastStart (what Reset returns to). Saved projects moved to the
 // Projects home (H6b).
@@ -33,12 +33,13 @@ export default function StartMenu({ open, onOpenChange }: { open: boolean; onOpe
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange} title="Start from" description="Each choice can be undone.">
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         <Button tone="primary" onClick={() => start({ kind: 'standardU' })}>
           Standard U
         </Button>
         <Button onClick={() => start({ kind: 'standardL', side: 'left' })}>Standard L left</Button>
         <Button onClick={() => start({ kind: 'standardL', side: 'right' })}>Standard L right</Button>
+        <Button onClick={() => start({ kind: 'standardStraight' })}>Straight sofa</Button>
       </div>
       {draft && (
         <Button onClick={() => load(draft.layout, 'Resumed the last layout')} data-testid="resume">

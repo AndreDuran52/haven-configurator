@@ -2,10 +2,10 @@
 import { buildHaven } from './buildHaven';
 import { isSeat } from './pieces';
 import { settle } from './absorb';
-import { endCapState, endIndex, openEnd, runIds, type Alloc } from './layout';
+import { endCapState, endIndex, openEnds, runIds, type Alloc } from './layout';
 import { insertPiece, takeTable } from './placement';
 import { edit, findPiece, noRoom, notAllowed, type Outcome } from './edit';
-import type { BuildResult, Config, EditResult, Placement, Pt, RunId } from './types';
+import type { BuildResult, Config, EditResult, Placement, Pt, RunEnd, RunId } from './types';
 
 /** Snap hysteresis: a new anchor must be this much nearer than the current one (§5.4). */
 export const SNAP_HYSTERESIS = 6;
@@ -52,9 +52,9 @@ const centre = (b: BuildResult, id: string): Pt | null => {
 };
 
 /** A point `dist` inches along the run from its open end (negative = beyond the end), mid-depth. */
-function alongFromOpenEnd(b: BuildResult, run: RunId, dist: number): Pt {
+function alongFromOpenEnd(b: BuildResult, run: RunId, end: RunEnd, dist: number): Pt {
   const r = b.runs.find((q) => q.id === run)!;
-  const s = r.openEnd === 'start' ? dist : r.available - dist;
+  const s = end === 'start' ? dist : r.available - dist;
   const inward = run === 'right' ? -1 : 1;
   const across = (r.axis === 'x' ? r.origin[1] : r.origin[0]) + (inward * b.D) / 2;
   return r.axis === 'x' ? [r.origin[0] + s, across] : [across, r.origin[1] + s];
@@ -76,12 +76,12 @@ export function anchoredTargets(config: Config, id: string): { placement: Placem
   for (const run of runIds(config.shape)) {
     // moveTable resolves placements in the source run against the table-less list (G1 merge applied).
     const ps = run === f.run ? takeListForSource(config, id) : config.runs[run]!;
-    const open = openEnd(config.shape, run);
-    const endIsArm = open !== null && ps.length > 0 && ps[endIndex(ps, open)]!.kind === 'oneArm';
-    const openSeam = open === 'end' ? ps.length : 0;
+    const opens = openEnds(config.shape, run);
+    const isArmAt = (e: RunEnd) => ps.length > 0 && ps[endIndex(ps, e)]!.kind === 'oneArm';
+    const armSeams = opens.filter(isArmAt).map((e) => (e === 'end' ? ps.length : 0));
     const candidates: Placement[] = [];
     for (let seam = 0; seam <= ps.length; seam++) {
-      if (!(endIsArm && seam === openSeam)) candidates.push({ run, at: 'seam', seam });
+      if (!armSeams.includes(seam)) candidates.push({ run, at: 'seam', seam });
     }
     for (const p of ps) if (isSeat(p)) candidates.push({ run, at: 'split', pieceId: p.id });
     for (const placement of candidates) {
@@ -90,13 +90,15 @@ export function anchoredTargets(config: Config, id: string): { placement: Placem
       const a = centre(buildHaven(r.config), id);
       if (a) out.push({ placement, anchor: a });
     }
-    if (!open) continue;
-    const state = endCapState(ps, open);
-    if (state === 'arm' && !moveTable(config, id, { run, at: 'replaceArm' }).rejected) {
-      out.push({ placement: { run, at: 'replaceArm' }, anchor: alongFromOpenEnd(postBuilt, run, config.dims.A / 2) });
-    }
-    if (endIsArm && !moveTable(config, id, { run, at: 'seam', seam: openSeam }).rejected) {
-      out.push({ placement: { run, at: 'seam', seam: openSeam }, anchor: alongFromOpenEnd(postBuilt, run, -w / 2) });
+    for (const open of opens) {
+      const openSeam = open === 'end' ? ps.length : 0;
+      const replace: Placement = opens.length > 1 ? { run, at: 'replaceArm', end: open } : { run, at: 'replaceArm' };
+      if (endCapState(ps, open) === 'arm' && !moveTable(config, id, replace).rejected) {
+        out.push({ placement: replace, anchor: alongFromOpenEnd(postBuilt, run, open, config.dims.A / 2) });
+      }
+      if (isArmAt(open) && !moveTable(config, id, { run, at: 'seam', seam: openSeam }).rejected) {
+        out.push({ placement: { run, at: 'seam', seam: openSeam }, anchor: alongFromOpenEnd(postBuilt, run, open, -w / 2) });
+      }
     }
   }
   return out;

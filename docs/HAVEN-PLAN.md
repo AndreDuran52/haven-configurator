@@ -1290,15 +1290,16 @@ Andre's answers (Q37–Q44):
    - the wedge slider in the corner's tap menu and the Size tab; the bottom bar removed, so the plan is taller;
    - obvious drags: seam handles as grips, a move handle on the selected seat (the long-press stays), a grip on tray chips;
    - iPad landscape: the panel on the right; portrait and phone: tabs under the plan.
-3. **Freeform engine** (pure, no UI):
+3. ~~**Freeform engine**~~ **Dropped 2026-11-06** (built in PR #15, closed unmerged; the code stays in history, commit 4ca4cd9). Andre: the Haven is a straight, L or U sofa with tables or not; anything custom (the T, odd shapes) goes to his CAD drawing and Blender renders. Stages 3–5 below are kept for the record only; see "Back to the Haven" below.
+   Was planned (pure, no UI):
    - `FreeLayout`: the shared fields plus `FreePiece = { id, kind (armless, oneArm, wedge, table), length, arm?, x, y, rot 0/90/180/270 }`, and loose pieces;
    - each piece is built in its own frame with today's piece geometry, then turned and moved (90° keeps every rect axis-aligned);
    - snap targets: the open end faces of seats and tables and both faces of a wedge, backs lined up, never an arm face; empty floor starts a group;
    - ops: add, move, turn, delete, set length; `toFree(layout)` converts a standard shape or a T (one-way, Undo goes back);
    - derived: groups, chains (straight rows between wedges and ends), seats per chain, warnings, overlap refusal, bounds;
    - **codec v4** (freeform links); every v1–v3 golden unchanged.
-4. **Freeform in the plan:** the "Move pieces freely" switch; "Blank floor" on the Projects home; drag with live snap, Turn, delete by dragging to the trash, width in the tap menu; dimensions per group and the gaps between groups; save, share, `?view`, the PDF plan.
-5. **3D for free layouts and the T:** world-placed parts, back cushions and pillows per chain, the T's shared frame shown once, camera fit, the PDF 3D views.
+4. ~~**Freeform in the plan:**~~ (dropped) the "Move pieces freely" switch; "Blank floor" on the Projects home; drag with live snap, Turn, delete by dragging to the trash, width in the tap menu; dimensions per group and the gaps between groups; save, share, `?view`, the PDF plan.
+5. ~~**3D for free layouts and the T:**~~ (dropped; the T stays plan-only) world-placed parts, back cushions and pillows per chain, the T's shared frame shown once, camera fit, the PDF 3D views.
 
 **Measured (Stage A):**
 - vitest:
@@ -1314,8 +1315,34 @@ Andre's answers (Q37–Q44):
 - vitest: T dimension labels for both back options and an uneven stem, no overlaps at three viewports and in print, the sheet's header, file name, scale and wrapped link.
 - e2e `e2e/shapes.mjs`: both back options built from the Projects home, the expected labels with 0 overlapping or clipped labels at 1180×820, 820×1180 and 390×844; edit the right half and Undo; a depth change reaches both halves; tap a half to edit it; a CDP touch seam drag in the right half is one undo step; save, reload, the `#c=3…` link in a fresh browser, `?view`; the PDF's file name, header, scale, labels and whole link. Screenshots light and dark at four sizes.
 
-### H6c: Room floor space (on hold; Andre, 2026-10-02)
-The client's room (W × D, the sofa's gap to the left and back walls) drawn in the plan, the PDF and as the 3D floor, with clearances to each wall and a `roomTooSmall` warning; Center and Fill the width. Carried in links (codec v5, written only when a room is set, so every older link stays byte-identical; v3 went to shapes 2026-10-26, v4 to freeform 2026-11-06).
+### Back to the Haven: balance seats, hide the T, the straight sofa (Andre, 2026-11-06)
+Andre, with his NICK_V2 drawing (a U 170 × 140, 55″ wedges, each leg 27 | table 20 | 26 + 12 arm) and four layouts from his site: "shapes to start, pieces to finish". Pick Straight, L left, L right or U, type the wall sizes (or build piece by piece with the lock off), then edit the pieces along each side. Freeform is dropped (above); the T is custom work.
+
+Andre's answers (Q45–Q49): close freeform; hide the T from the menus (saved T's and T links still open, edit, print and reset); balance the seats either side of a table; add a straight sofa; then the room floor (H6c), then the friendlier editor (UX Phases 3–6). On the table size Andre said "do what you think is best": always 20″ in the middle of a seat (his drawing and site photos), rather than the largest of 32/28/24/20 that keeps both seats ≥ 23″ (that would give Nick's leg 24 | 24½ + 24½).
+
+**Built (one PR, two commits):**
+- **Balance seats around a table** (`src/engine/balance.ts`):
+  - a new table dropped into a seat (tray tap or drag, no explicit width) starts at **20″** (`TABLE_MID`) and the seat's cushion is shared equally either side (the extra ½″ away from the arm, as G1). A table placed at a seam or at an end keeps 32″; a moved table keeps its width;
+  - resizing a table with a seat on each side (lock on) takes the change from both seats equally; refused if one would go under 6″. Lock off: the run grows as before;
+  - `evenTableSeats` ("Even seats"): the two seats share their cushions again, the run unchanged;
+  - an arm-width change keeps a pair that was even (within ½″) even;
+  - the table's tap menu: widths 20–40, a "Seats 19″ | 19″" line, **Even seats** (seats more than ½″ apart), **Try 10″ arms** (a seat under 23″, the table at 20″, arms over 10″; one undo step);
+  - the tray chip reads "Table"; the Size tab reads "14″ arms".
+  - e.g. a Standard U leg (72 = 58 + 14) + a table: 19 | 20 | 19; with 10″ arms 21 | 20 | 21. Nick's leg (140, 55″ wedge, 12″ arm): 26½ | 20 | 26½.
+- **The T hidden:** no "T shape…" on the Projects home or in Start, no T in the shape picker (an opened T shows "T" there; U or an L starts that shape fresh); `TeeForm` deleted. An opened T keeps its panel, plan, PDF and Reset (`startForOpened`).
+- **Straight sofa** (`Shape` `'straight'`): one run, the back, open at **both** ends, no wedges, no legs (L and R are kept but never drawn).
+  - Engine: `openEnds(shape, run)` (a list) replaces the single open end where it matters: the G11 arm rule (an arm at either end), the gap rule, end caps (`setEndCap(…, end)`, `replaceArm` with `end`), table drag targets at both ends, the tray's one-arm targets; a width change is shared by both ends (the start takes the extra ½″); the wedge slider and an in-place shape change are refused (the app starts the other shape fresh).
+  - `standardStraight()`: W 120, two one-arm 60s, arms out (Seats 3). Past 216″ the run splits into ≤ 108″ pieces, arms at both ends. Blank straight: W and D.
+  - App: "Straight sofa" on the Projects home and in Start, Straight in the shape picker and the Blank form; the Size tab hides L, R and the corner wedge; the plan shows the width chain and one 44″D callout, Seats under the sofa (clear of the grips); 3D, pillows at both arms, `?view`, the PDF ("Straight sofa · 212″ W · 44″ deep", file `Haven-Straight-212x44-….pdf`).
+  - **Link v4:** shape `i`, its arms always marked S|E; written only for a straight sofa, so every v1–v3 link is byte-identical. An older app reads a v4 link as "newer"; shape `i` in a v1–v3 link is damaged.
+- **Entry budget:** 318 kB raw / 104 kB gzip (was 314 / 102; measured 309.2 / 102.6; Andre allowed up to 115).
+
+**Measured:** vitest `tableBalance.test.ts` (11) and `straight.test.ts` (12, the v4 goldens, Andre's site photo 63 | 33 | 20 | 33 | 63), the property test with straight sofas and either end; e2e `h4.mjs` (tray table 19 | 20 | 19, Try 10″ arms, the 24″ chip, Even seats), `shapes.mjs` (T's opened by link, no T entry point), `straight.mjs` (start, plan, tray table, end-cap table, the v4 link in a fresh browser, 3D Top parity, PDF header and file name, labels at three sizes, light and dark).
+
+**Next:** H6c Room floor (link v5), then UX Phases 3–6 refocused on "friendly, like a game" (Phase 3: "Fit my room" / "Build piece by piece" in place of the lock switch, a result line after each edit).
+
+### H6c: Room floor space (next; Andre, 2026-10-02)
+The client's room (W × D, the sofa's gap to the left and back walls) drawn in the plan, the PDF and as the 3D floor, with clearances to each wall and a `roomTooSmall` warning; Center and Fill the width. Carried in links (codec v5, written only when a room is set, so every older link stays byte-identical; v3 went to shapes 2026-10-26, v4 to the straight sofa 2026-11-06).
 
 ### H7: Cloud saves + tracker hand-off (optional, later; Andre decides, do not start until told)
 The configurator is complete without H7. Options, in order of cost:
@@ -1485,6 +1512,11 @@ Answer in a word. **Q1 is answered (camera, spring-back orbit), and Q9, Q10, Q12
 | Q42 | Typed sizes with free pieces | **Answered:** two modes; "Move pieces freely" reads the sizes off the pieces |
 | Q43 | Side panel and wedge | **Answered:** tabs Size · Pieces · Look; the wedge slider in the corner's menu and the Size tab |
 | Q44 | Order, and the entry budget | **Answered:** B1 fixes, redesign, freeform; budget may rise to 115 kB gzip |
+| Q45 | Freeform (PR #15) | **Answered (2026-11-06):** dropped, closed unmerged; custom layouts go to CAD and Blender |
+| Q46 | The T | **Answered:** hidden from the menus; saved T's and T links still open, edit and print |
+| Q47 | A table dropped mid-seat | **Answered:** seats always even; the table starts at 20″ (Andre: "do what you think is best"); "Try 10″ arms" when 20″ is still tight |
+| Q48 | Shapes vs pieces | **Answered:** shapes to start (Straight, L, U), pieces to finish; a straight sofa added (link v4) |
+| Q49 | Order | **Answered:** balance + straight, then the room floor (H6c, link v5), then UX Phases 3–6 |
 
 ---
 

@@ -91,12 +91,15 @@ export default function ProjectsHome() {
 
         <section className="flex flex-col gap-2">
           <h2 className="text-xs font-semibold tracking-wide text-ink-muted uppercase">New Haven</h2>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
             <Button tone="primary" onClick={() => start({ kind: 'standardU' })} data-testid="new-standardU">
               Standard U
             </Button>
             <Button onClick={() => start({ kind: 'standardL', side: 'left' })}>Standard L left</Button>
             <Button onClick={() => start({ kind: 'standardL', side: 'right' })}>Standard L right</Button>
+            <Button onClick={() => start({ kind: 'standardStraight' })} data-testid="new-straight">
+              Straight sofa
+            </Button>
             <Button onClick={() => setForm(form === 'blank' ? null : 'blank')} aria-expanded={form === 'blank'}>
               Blank…
             </Button>

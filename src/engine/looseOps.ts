@@ -10,13 +10,15 @@ import type { Config, EditResult, LooseKind, Pt, Rect } from './types';
 /** The inside region a loose piece starts in (§5.4). */
 export function insideRegion(c: Config): Rect {
   const { W, L, R, D } = c;
+  // A straight sofa: the floor in front of it, 72″ deep (room for a coffee table and its clearances).
+  if (c.shape === 'straight') return { x: 0, y: D, w: W, h: 72 };
   if (c.shape === 'U') return { x: D, y: D, w: W - 2 * D, h: Math.min(L, R) - D };
   if (c.shape === 'L-right') return { x: 0, y: D, w: W - D, h: R - D };
   return { x: D, y: D, w: W - D, h: L - D };
 }
 
 /** Away from the sofa: out of the U's opening, or away from an L's corner. */
-const AWAY: Record<Config['shape'], Pt> = { U: [0, 1], 'L-right': [-1, 1], 'L-left': [1, 1] };
+const AWAY: Record<Config['shape'], Pt> = { U: [0, 1], straight: [0, 1], 'L-right': [-1, 1], 'L-left': [1, 1] };
 const MAX_PUSH_STEPS = 240;
 
 const overlaps = (a: Rect, b: Rect) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;

@@ -7,7 +7,7 @@ import {
   endIndex,
   evenTableSeats,
   fillGap,
-  openEnd,
+  openEnds,
   resizeLoose,
   resizePiece,
   SEAT_WARN,
@@ -17,6 +17,7 @@ import {
   tableSeats,
   type EditResult,
   type EndCap,
+  type RunEnd,
 } from '@/engine';
 import { fmtIn } from '@/plan/format';
 import { builtOf, useHavenStore } from '@/state/store';
@@ -113,10 +114,12 @@ export function MenuBody({ sel }: { sel: Selection }) {
   // Seats and tables: the run's open-end cap applies to the last two pieces at that end.
   const pieces = config.runs[sel.run]!;
   const piece = pieces[sel.index]!;
-  const open = openEnd(config.shape, sel.run);
+  // The open end nearest this piece (a straight sofa has one at each end).
+  const dist = (e: RunEnd) => Math.abs(sel.index - endIndex(pieces, e));
+  const open = openEnds(config.shape, sel.run).sort((a, b) => dist(a) - dist(b))[0] ?? null;
   const run = builtOf(config).runs.find((r) => r.id === sel.run)!;
-  const nearEnd = open !== null && Math.abs(sel.index - endIndex(pieces, open)) <= 1;
-  const capState = run.endCap;
+  const nearEnd = open !== null && dist(open) <= 1;
+  const capState = open ? run.endCaps[open] : null;
   const caps: { value: EndCap; label: string }[] = [
     { value: 'arm', label: 'Arm' },
     { value: 'table', label: 'Table' },
@@ -129,7 +132,7 @@ export function MenuBody({ sel }: { sel: Selection }) {
         label="End cap"
         value={(capState === 'armTable' ? 'table' : capState) as EndCap}
         options={caps}
-        onChange={(v) => apply(setEndCap(s().config, sel.run, v))}
+        onChange={(v) => apply(setEndCap(s().config, sel.run, v, open ?? undefined))}
       />
       {capState === 'armTable' && <p className="text-xs text-ink-muted">A table outside the arm</p>}
     </div>

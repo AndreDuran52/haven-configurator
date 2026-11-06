@@ -28,6 +28,8 @@ export function setMeasurements(config: Config, patch: Partial<Pick<Config, 'W' 
       return refuse('infeasible', `Depth must be ${D_MIN}–${D_MAX}″`);
     }
     if (![next.W, next.L, next.R].every(Number.isFinite)) return refuse('infeasible', 'Not a size');
+    // A straight sofa has no legs: L and R are kept as they are (never drawn).
+    if (d.shape === 'straight') [next.L, next.R] = [d.L, d.R];
     const dW = next.W - d.W;
     const dL = next.L - d.L;
     const dR = next.R - d.R;
@@ -48,6 +50,7 @@ export function setMeasurements(config: Config, patch: Partial<Pick<Config, 'W' 
  */
 export function setWedge(config: Config, C: number): EditResult {
   return edit(config, (d, alloc): Outcome => {
+    if (d.shape === 'straight') return refuse('notAllowed', 'A straight sofa has no corner');
     const cur = wedgeC(d);
     const target = clampWedge(Math.round(C), d.D);
     let to = target;

@@ -51,7 +51,7 @@ export function fitPlan(src: DimSource, box: Box): PlanFit {
 }
 
 export function sizesLine(b: BuildResult): string {
-  const legs = b.shape === 'U' ? ` x ${fmtIn(b.L)} L x ${fmtIn(b.R)} R` : b.shape === 'L-left' ? ` x ${fmtIn(b.L)} L` : ` x ${fmtIn(b.R)} R`;
+  const legs = b.shape === 'straight' ? '' : b.shape === 'U' ? ` x ${fmtIn(b.L)} L x ${fmtIn(b.R)} R` : b.shape === 'L-left' ? ` x ${fmtIn(b.L)} L` : ` x ${fmtIn(b.R)} R`;
   return `${fmtIn(b.W)} W${legs} · ${fmtIn(b.D)} deep · ${fmtFtIn(b.W)} wide`;
 }
 
@@ -59,7 +59,7 @@ export function sizesLine(b: BuildResult): string {
 /** The header's shape and sizes: one sofa, or a T ("T shape, shared back · 229" W x 110" stem · 44" deep"). */
 export function headerLine(layout: Layout, b: BuildResult): string {
   const t = teeOf(layout);
-  if (!t) return `${b.shape === 'U' ? 'U shape' : b.shape === 'L-left' ? 'L shape, left' : 'L shape, right'}  ·  ${sizesLine(b)}`;
+  if (!t) return `${b.shape === 'straight' ? 'Straight sofa' : b.shape === 'U' ? 'U shape' : b.shape === 'L-left' ? 'L shape, left' : 'L shape, right'}  ·  ${sizesLine(b)}`;
   const stem = t.stem[0] === t.stem[1] ? fmtIn(t.stem[0]) : `${fmtIn(t.stem[0])} / ${fmtIn(t.stem[1])}`;
   return `T shape, ${t.sharedBack ? 'shared back' : 'two backs'}  ·  ${fmtIn(t.total)} W x ${stem} stem · ${fmtIn(b.D)} deep · ${fmtFtIn(t.total)} wide`;
 }

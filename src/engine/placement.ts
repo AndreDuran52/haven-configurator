@@ -12,7 +12,7 @@ import {
   splitHalf,
 } from './pieces';
 import { settle, type Anchor } from './absorb';
-import { clearJoin, detach, endCapState, endIndex, openEnd, runSum, seat, type Alloc } from './layout';
+import { armEndFor, capEnd, clearJoin, detach, endCapState, endIndex, openEnds, runSum, seat, type Alloc } from './layout';
 import { noRoom, notAllowed, type Outcome } from './edit';
 import { ARM_MESSAGE, armInvariantOk } from './rules';
 import type { Config, Placement, RunId, RunPiece } from './types';
@@ -24,7 +24,7 @@ import type { Config, Placement, RunId, RunPiece } from './types';
 export function setArm(d: Config, run: RunId, idx: number, on: boolean, alloc: Alloc): Outcome {
   const pieces = d.runs[run]!;
   const p = pieces[idx];
-  const open = openEnd(d.shape, run);
+  const open = armEndFor(pieces, idx, openEnds(d.shape, run));
   if (!p || !isSeat(p)) return notAllowed('Only a seat can carry an arm');
   if ((p.kind === 'oneArm') === on) return null;
   if (on && !open) return notAllowed('Arms go at an open end');
@@ -75,7 +75,7 @@ export function insertPiece(d: Config, alloc: Alloc, piece: RunPiece, placement:
   const place = (at: number): Outcome => {
     pieces.splice(at, 0, piece);
     // G11 before room: an arm in the wrong place is refused as such.
-    if (!armInvariantOk(pieces, openEnd(d.shape, run))) return notAllowed(ARM_MESSAGE);
+    if (!armInvariantOk(pieces, openEnds(d.shape, run))) return notAllowed(ARM_MESSAGE);
     return settle(d, run, { piece: at }, -piece.length, alloc, exclude) ? true : noRoom();
   };
   if (placement.at === 'seam') {
@@ -84,7 +84,7 @@ export function insertPiece(d: Config, alloc: Alloc, piece: RunPiece, placement:
     return place(s);
   }
   if (placement.at === 'replaceArm') {
-    const open = openEnd(d.shape, run);
+    const open = capEnd(openEnds(d.shape, run), placement.end);
     if (piece.kind !== 'table' || !open) return notAllowed('Only a table can replace an arm, at an open end');
     const state = endCapState(pieces, open);
     if (state === 'table' || state === 'armTable') return notAllowed('This end already has a table');

@@ -84,7 +84,7 @@ export function collectWarnings(c: Config, C: number, clearances: Clearance[]): 
     }
   }
   const face = wedgeFace(C, c.D);
-  if (face > 0 && face < WEDGE_FACE_MIN) {
+  if (corners(c.shape).length && face > 0 && face < WEDGE_FACE_MIN) {
     w.push({ code: 'wedgeFaceUnder8', message: `Wedge angled face ${face.toFixed(1)}″ (under ${WEDGE_FACE_MIN})` });
   }
   const o = opening(c);

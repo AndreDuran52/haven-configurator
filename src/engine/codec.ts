@@ -7,7 +7,7 @@
 // Alphabet: RFC 3986 "unreserved" only (A-Z a-z 0-9 - . _ ~), so nothing is
 // percent-encoded, and the link always ENDS in an alphanumeric (the checksum).
 //
-// Header: shape (U | l = L-left | r = L-right), then letter+number fields:
+// Header: shape (U | l = L-left | r = L-right | i = straight, v4), then letter+number fields:
 //   W L R D (always) · C manual wedge · K lock off · S seat width (≠ 28)
 //   N snug width (≠ 24) · X<key><n> dims overrides · F fabric · T table finish
 //   Y table style (v2; ≠ standard)
@@ -21,7 +21,8 @@
 // and adds a decoder/migration.
 //
 // Versions: v1 (H1) · v2 adds Y (table style, 2026-09-26) · v3 adds joined
-// sections (`_P` tokens, the T shape, 2026-10-26; codecLayout.ts). A link is
+// sections (`_P` tokens, the T shape, 2026-10-26; codecLayout.ts) · v4 adds
+// the straight sofa (shape `i`, its arms always marked S|E; 2026-11-06). A link is
 // written at the LOWEST version that can express the layout, so every layout
 // that v1 could already share keeps its exact v1 link; an older app shown a
 // newer link says "newer" instead of "damaged". This file is the one-sofa
@@ -32,7 +33,7 @@ import { openEnd, runIds } from './layout';
 import { ARM_MAX, ARM_MIN, WEDGE_RANGE } from './pieces';
 import type { Config, HavenDims, LoosePiece, RunId, RunPiece, Runs, Shape, TableFinish, TableStyle } from './types';
 
-export const LINK_VERSION = 3;
+export const LINK_VERSION = 4;
 
 /** Append-only: a fabric's index is its link code. */
 /** Append-only: a fabric's index is its link code (every FABRICS key must be here). */
@@ -42,8 +43,8 @@ export const FINISH_CODES: readonly TableFinish[] = [DEFAULT_FINISH, 'darkWood']
 /** Append-only (v2): a table style's index is its link code. */
 export const TABLE_STYLE_CODES: readonly TableStyle[] = [DEFAULT_TABLE_STYLE, 'allWood'];
 
-const SHAPE: Record<Shape, string> = { U: 'U', 'L-left': 'l', 'L-right': 'r' };
-const SHAPE_INV: Record<string, Shape> = { U: 'U', l: 'L-left', r: 'L-right' };
+const SHAPE: Record<Shape, string> = { U: 'U', 'L-left': 'l', 'L-right': 'r', straight: 'i' };
+const SHAPE_INV: Record<string, Shape> = { U: 'U', l: 'L-left', r: 'L-right', i: 'straight' };
 const RUN_CODE: Record<RunId, string> = { back: 'b', left: 'l', right: 'r' };
 const RUN_INV: Record<string, RunId> = { b: 'back', l: 'left', r: 'right' };
 const DIM_KEYS: Record<string, keyof HavenDims> = {
@@ -102,7 +103,7 @@ export const shapeFromCode = (s: string): Shape | undefined => SHAPE_INV[s];
 /** The lowest version for one sofa, and its tokens (header first, no version digit). */
 export function encodeParts(c: Config): { version: number; parts: string[] } {
   const style = code(TABLE_STYLE_CODES, c.tableStyle, 'table style');
-  const version = style ? 2 : 1;
+  const version = c.shape === 'straight' ? 4 : style ? 2 : 1;
   let h = `${SHAPE[c.shape]}W${num(c.W)}L${num(c.L)}R${num(c.R)}D${num(c.D)}`;
   if (c.wedgeC !== null) h += `C${num(c.wedgeC)}`;
   if (!c.lockOutside) h += 'K';
@@ -148,8 +149,8 @@ export function decode(link: string): DecodeResult {
   const version = Number(m[1]);
   if (version > LINK_VERSION) return { error: 'newer' };
   if (checksum(`${m[1]}${m[2]}`) !== m[3]) return { error: 'damaged' };
-  if (version === 3 && /_P/.test(m[2]!)) return { error: 'newer' };
-  const decoders: Record<number, (b: string) => Config | null> = { 1: (b) => decodeBody(b, 1), 2: (b) => decodeBody(b, 2), 3: (b) => decodeBody(b, 3) };
+  if (version >= 3 && /_P/.test(m[2]!)) return { error: 'newer' };
+  const decoders: Record<number, (b: string) => Config | null> = { 1: (b) => decodeBody(b, 1), 2: (b) => decodeBody(b, 2), 3: (b) => decodeBody(b, 3), 4: (b) => decodeBody(b, 4) };
   const config = decoders[version]?.(m[2]!) ?? null;
   // Later versions: migrations[v](config), chained up to the current schema.
   if (!config || !inRange(config) || buildHaven(config).errors.length > 0) return { error: 'damaged' };
@@ -218,8 +219,8 @@ export function decodeRun(body: string, oe: 'start' | 'end' | null, id: () => st
 
 export function decodeBody(s: string, version: number): Config | null {
   const [head, ...rest] = s.split('_');
-  const hm = /^([Ulr])(.*)$/.exec(head!);
-  if (!hm) return null;
+  const hm = /^([Ulri])(.*)$/.exec(head!);
+  if (!hm || (hm[1] === 'i' && version < 4)) return null;
   const shape = SHAPE_INV[hm[1]!]!;
   const h = decodeHeader(hm[2]!, version);
   if (!h) return null;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { blankConfig, standardL, standardU } from './defaults';
+import { blankConfig, standardL, standardStraight, standardU } from './defaults';
 import { runIds } from './layout';
 import { deepFreeze, raw, valid } from './testing';
 import type { Config, EditResult, Placement } from './types';
@@ -29,6 +29,8 @@ describe('property', () => {
         () => standardL('right', m),
         () => blankConfig('U', m),
         () => blankConfig('L-right', m),
+        () => standardStraight({ W: m.W - 80, D: m.D }),
+        () => blankConfig('straight', { ...m, L: m.D, R: m.D }),
       ])();
       for (let step = 0; step < 20; step++) {
         const runs = runIds(c.shape);
@@ -41,6 +43,7 @@ describe('property', () => {
           pick([
             { run, at: 'seam' as const, seam: int(0, ps.length) },
             { run, at: 'replaceArm' as const },
+            { run, at: 'replaceArm' as const, end: pick(['start', 'end'] as const) },
             ...(any ? [{ run, at: 'split' as const, pieceId: any.id }] : []),
           ]);
         const loose = c.loose.length ? pick(c.loose) : undefined;
@@ -57,12 +60,12 @@ describe('property', () => {
           ['addPiece', true, () => raw.addPiece(c, pick(['armless', 'oneArm', 'table'] as const), placement())],
           ['deletePiece', true, () => raw.deletePiece(c, any?.id ?? 'x')],
           ['convertPiece', true, () => raw.convertPiece(c, any?.id ?? 'x')],
-          ['setEndCap', true, () => raw.setEndCap(c, run, pick(['arm', 'table', 'open'] as const))],
+          ['setEndCap', true, () => raw.setEndCap(c, run, pick(['arm', 'table', 'open'] as const), rnd() < 0.5 ? pick(['start', 'end'] as const) : undefined)],
           ['moveTable', true, () => raw.moveTable(c, tables.length ? pick(tables).id : 'x', placement())],
           ['snapTable', true, () => (tables.length ? raw.snapTable(c, pick(tables).id, [int(-20, 380), int(-20, 260)]).result : raw.setLock(c, c.lockOutside))],
           ['reorderPiece', true, () => raw.reorderPiece(c, any?.id ?? 'x', int(0, Math.max(0, ps.length - 1)))],
           ['fillGap', true, () => raw.fillGap(c, gaps.length ? pick(gaps).id : 'x', pick(['armless', 'oneArm', 'table'] as const))],
-          ['setShape', false, () => raw.setShape(c, pick(['U', 'L-left', 'L-right'] as const))],
+          ['setShape', false, () => raw.setShape(c, pick(['U', 'L-left', 'L-right', 'straight'] as const))],
           ['loose', true, () => (loose && rnd() < 0.5 ? raw.moveLoose(c, loose.id, int(0, 200), int(0, 200)) : raw.addLoose(c, pick(['ottoman', 'coffeeTable'] as const)))],
         ]);
         deepFreeze(c);

@@ -23,11 +23,12 @@ export function BlankForm({ onStart, onError }: { onStart: (c: StartChoice) => v
           { value: 'U', label: 'U' },
           { value: 'L-left', label: 'L left' },
           { value: 'L-right', label: 'L right' },
+          { value: 'straight', label: 'Straight' },
         ]}
         onChange={(shape) => setBlank({ ...blank, shape })}
       />
       <div className="grid grid-cols-4 gap-2">
-        {(['W', 'L', 'R', 'D'] as const).map((k) => (
+        {(blank.shape === 'straight' ? (['W', 'D'] as const) : (['W', 'L', 'R', 'D'] as const)).map((k) => (
           <label key={k} className="flex flex-col gap-1 text-xs font-semibold">
             {k}
             <input

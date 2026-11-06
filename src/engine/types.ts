@@ -6,7 +6,8 @@
 // (see edit.ts) that rebalances so each run still sums exactly to its space.
 // Config is plain JSON data: no classes, no Maps, no undefined-valued keys.
 
-export type Shape = 'U' | 'L-left' | 'L-right';
+/** 'straight' (Andre, 2026-11-06): one run, the back, open at both ends, no wedges. */
+export type Shape = 'U' | 'L-left' | 'L-right' | 'straight';
 export type RunId = 'back' | 'left' | 'right';
 export type CornerId = 'backLeft' | 'backRight';
 /** Run-local direction. Runs are ordered by increasing x (back) or y (legs). */
@@ -112,8 +113,8 @@ export type Placement =
   | { run: RunId; at: 'seam'; seam: number }
   /** Into the middle of a seat piece; its cushion is shared equally around the new piece. */
   | { run: RunId; at: 'split'; pieceId: string }
-  /** Tables only: at the run's open end, in place of its arm. */
-  | { run: RunId; at: 'replaceArm' };
+  /** Tables only: at the run's open end, in place of its arm. `end` picks one on a straight run (default: the only open end, else 'end'). */
+  | { run: RunId; at: 'replaceArm'; end?: RunEnd };
 
 export type EndCap = 'arm' | 'table' | 'open';
 /** Derived from the pieces; 'armTable' = table outside the arm. */
@@ -201,8 +202,12 @@ export interface BuiltRun {
   filled: number;
   unfilled: number;
   ends: { start: EndKind; end: EndKind };
+  /** The single open end (null with none, or two on a straight sofa: see openEnds). */
   openEnd: RunEnd | null;
   endCap: EndCapState | null;
+  /** Every open end of the run and its end cap (a straight sofa has two). */
+  openEnds: RunEnd[];
+  endCaps: Partial<Record<RunEnd, EndCapState>>;
   axis: 'x' | 'y';
   /** Run start on the outside edge (plan inches). */
   origin: Pt;

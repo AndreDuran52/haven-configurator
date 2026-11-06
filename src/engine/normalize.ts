@@ -1,7 +1,7 @@
 // Normalisation after every op: gaps, split groups, auto-split (G9) and G1
 // join tags. finalize() = normalise + derive W/L/R + assert the invariants.
 import { MAX_PIECE, isSeat, splitLengths } from './pieces';
-import { runIds, runSum, seat, wedgeC, type Alloc } from './layout';
+import { corners, runIds, runSum, seat, wedgeC, type Alloc } from './layout';
 import { assertInvariants } from './rules';
 import type { Config, RunPiece, Runs } from './types';
 
@@ -104,7 +104,7 @@ export function normalizeRun(input: RunPiece[], alloc: Alloc): RunPiece[] {
 export function deriveOutside(c: Config): void {
   const C = wedgeC(c);
   const back = runSum(c.runs.back ?? []);
-  c.W = c.shape === 'U' ? back + 2 * C : back + C;
+  c.W = back + corners(c.shape).length * C;
   if (c.runs.left) c.L = runSum(c.runs.left) + C;
   if (c.runs.right) c.R = runSum(c.runs.right) + C;
 }

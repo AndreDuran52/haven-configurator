@@ -26,8 +26,9 @@ export function SizeTab() {
   const locked = live.lockOutside;
   const was = (k: 'W' | 'L' | 'R') =>
     !locked && atUnlock && atUnlock[k] !== live[k] ? `from pieces · was ${atUnlock[k]}″` : !locked ? 'from pieces' : undefined;
-  const hasLeft = live.shape !== 'L-right';
-  const hasRight = live.shape !== 'L-left';
+  const straight = live.shape === 'straight';
+  const hasLeft = live.shape !== 'L-right' && !straight;
+  const hasRight = live.shape !== 'L-left' && !straight;
 
   return (
     <>
@@ -68,11 +69,13 @@ export function SizeTab() {
           ))}
         </div>
       </Section>
-      <Section title="Corner wedge">
-        <Suspense fallback={<div className="h-28" aria-hidden />}>
-          <WedgeSlider />
-        </Suspense>
-      </Section>
+      {!straight && (
+        <Section title="Corner wedge">
+          <Suspense fallback={<div className="h-28" aria-hidden />}>
+            <WedgeSlider />
+          </Suspense>
+        </Section>
+      )}
       <Section title="Seat width">
         <div className="flex items-center gap-2">
           <button type="button" className="stepper" aria-label="Seat width minus 1" onClick={() => commit(setSeatWidth(store.getState().config, live.seatWidth - 1), 'seatWidth')}>

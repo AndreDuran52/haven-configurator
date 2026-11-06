@@ -110,14 +110,14 @@ export function PlanView() {
           role="application"
           aria-label={
             lb.solo
-              ? `Plan: ${built.shape}, ${built.W} by ${Math.max(built.L, built.R)} inches, ${built.seats.label}`
+              ? `Plan: ${built.shape}, ${built.W} by ${built.shape === 'straight' ? built.D : Math.max(built.L, built.R)} inches, ${built.seats.label}`
               : `Plan: T shape, ${lb.overall.W} by ${lb.overall.depth} inches, ${lb.seats.label}`
           }
           {...(readOnly ? {} : { ...g.handlers, onPointerDown })}
         >
           <rect x={-1e4} y={-1e4} width={2e4} height={2e4} fill={theme.paper} />
           {lb.solo ? (
-            <PlanDrawing built={built} dims={dims} k={fit.k} theme={theme} showWarnings selectedId={selectedId} />
+            <PlanDrawing built={built} dims={dims} k={fit.k} theme={theme} showWarnings selectedId={selectedId} gripClear={120} />
           ) : (
             <>
               {/* The root last: with a shared back it owns the frame down the stem. */}
