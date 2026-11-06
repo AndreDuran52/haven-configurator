@@ -28,7 +28,11 @@ export function topParityIoU(page, { polys, fit }) {
         draw(g)
         const d = g.getImageData(0, 0, w, h).data
         const m = new Uint8Array(w * h)
-        for (let i = 0; i < m.length; i++) m[i] = d[i * 4] < 128 ? 1 : 0
+        // 1 = covered, 0 = not, 2 = undecidable. The 3D capture is 4× MSAA (edge greys 64 / 128 / 191):
+        // a pixel at exactly 128 has 2 of 4 samples in, so its true coverage is anywhere from 25 to 75 %
+        // and it may go either way against the plan's analytic AA; it is left out of the comparison
+        // (2026-11-06: on a phone at 1.47 px/in, 151 such pixels read as a parity loss).
+        for (let i = 0; i < m.length; i++) m[i] = d[i * 4] === 128 ? 2 : d[i * 4] < 128 ? 1 : 0
         return m
       }
       const a = mask((g) => g.drawImage(img, 0, 0, w, h))
@@ -45,6 +49,7 @@ export function topParityIoU(page, { polys, fit }) {
       let inter = 0
       let uni = 0
       for (let i = 0; i < a.length; i++) {
+        if (a[i] === 2 || b[i] === 2) continue
         inter += a[i] & b[i]
         uni += a[i] | b[i]
       }

@@ -33,7 +33,7 @@ export function LookSection() {
     else s.commit(r.config);
   };
   return (
-    <Section title="Look">
+    <Section title="Materials">
       <div role="radiogroup" aria-label="Fabric" className="flex flex-wrap gap-2" data-testid="fabrics">
         {FABRICS.map((f) => (
           <Swatch key={f.key} color={f.color} label={f.name} on={live.fabric === f.key} onClick={() => apply(setFabric(store.getState().config, f.key))} />

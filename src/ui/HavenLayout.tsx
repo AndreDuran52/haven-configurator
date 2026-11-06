@@ -1,10 +1,11 @@
 // The app shell (plan §4, §8): full screen, no page scroll, safe areas. Wide
 // screens (iPad landscape, laptop): plan on the left, controls on the right.
 // Narrow screens (iPad portrait, phones): plan on top, controls below it.
+// Since the editor redesign (2026-11-06) nothing sits under the plan: the tray
+// and the wedge slider are in the side panel's tabs, so the plan is taller.
 import { lazy, Suspense, useEffect } from 'react';
 import { PlanView } from '@/plan/PlanView';
 import { useHaven, useHavenStore } from '@/state/store';
-import { PieceTray } from './PieceTray';
 import { Sidebar } from './Sidebar';
 import { Toast } from './Toast';
 import { TopBar } from './TopBar';
@@ -17,9 +18,6 @@ import { useGlobalKeys } from './useGlobalKeys';
 const ThreeView = lazy(loadThreeView);
 // The tap menu (Radix Popover) loads on the first tap.
 const TapMenu = lazy(() => import('./TapMenu'));
-// The wedge slider (Radix Slider, ~7 kB gzip) loads right after the first paint,
-// into a placeholder of its exact height (112 px): nothing moves when it arrives.
-const WedgeSlider = lazy(() => import('./WedgeSlider').then((m) => ({ default: m.WedgeSlider })));
 // ?view only.
 const ViewSummary = lazy(() => import('./ViewSummary').then((m) => ({ default: m.ViewSummary })));
 
@@ -28,6 +26,7 @@ export function HavenLayout() {
   const view = useHaven((s) => (s.layout.sections.length > 1 ? 'plan' : s.ui.view));
   const selected = useHaven((s) => s.ui.selectedId !== null);
   const readOnly = useHaven((s) => s.ui.readOnly);
+  const tableDrag = useHaven((s) => s.ui.dragging === 'table');
   useEffect(() => warm3d(window), []);
   useGlobalKeys(useHavenStore());
   return (
@@ -47,16 +46,16 @@ export function HavenLayout() {
               )}
             </div>
             <ViewBar />
+            {/* A table dragged here is removed (the gesture hit-tests [data-trash]). */}
+            {tableDrag && (
+              <div
+                data-trash=""
+                className="pointer-events-none absolute inset-x-3 bottom-3 z-20 flex h-14 items-center justify-center rounded-lg border-2 border-dashed border-danger bg-panel/90 text-sm font-semibold text-danger"
+              >
+                Drop here to remove the table
+              </div>
+            )}
           </div>
-          {/* In both views: the plan and 3D boxes must stay the same size (parity hand-off). ?view: no editing. */}
-          {!readOnly && (
-            <div className="safe-x flex min-w-0 flex-col gap-2 border-t border-line bg-panel px-3 py-2">
-              <PieceTray />
-              <Suspense fallback={<div className="h-28" aria-hidden />}>
-                <WedgeSlider />
-              </Suspense>
-            </div>
-          )}
         </section>
         <aside className="haven-side safe-bottom safe-x min-h-0 overflow-y-auto overscroll-contain border-line bg-panel p-4">
           {readOnly ? (

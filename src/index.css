@@ -149,12 +149,7 @@ body {
   }
 }
 
-/* Tray chips are dragged into the plan (plan §8): no browser pan on them.
-   One row that scrolls sideways when narrow (hidden on phones). */
-.tray-row {
-  overflow-x: auto;
-  scrollbar-width: none;
-}
+/* Tray chips are dragged into the plan (plan §8): no browser pan on them. */
 .tray-chip {
   touch-action: none;
   -webkit-user-select: none;

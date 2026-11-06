@@ -1,9 +1,9 @@
 // Add-piece tray (plan §8): Armless 36, One-arm L/R, Table 32, Ottoman, Coffee
 // table. Tap to place (primary on iPad): "+" pins appear at every valid target.
 // Or drag a chip into the plan (through the plan's CTM): the nearest target
-// previews as a draft and the drop commits it (one undo step). During a table
-// drag the tray becomes the trash. Hidden on phones (view and share first,
-// plan §8): the plan keeps its height there; the tap menu still edits.
+// previews as a draft and the drop commits it (one undo step). Since the editor
+// redesign (2026-11-06) it lives in the Pieces tab, each chip with a grip, and
+// the trash for a table drag is a bar over the plan (TrashBar).
 import { useRef, useState } from 'react';
 import { addLooseInLayout, LOOSE_DEFAULTS, rootConfig, SNAP_HYSTERESIS, type Config, type Layout } from '@/engine';
 import { clientToLocal, planOffset, planSvg } from '@/plan/planScreen';
@@ -49,10 +49,18 @@ function looseAt(l: Layout, section: string, kind: 'ottoman' | 'coffeeTable', pt
 /** The newest loose piece of a layout (it lives in the root). */
 const newestLoose = (l: Layout) => rootConfig(l).loose[rootConfig(l).loose.length - 1]!.id;
 
+/** Six dots: this chip can be dragged. */
+function Grip() {
+  return (
+    <svg width="10" height="16" viewBox="0 0 10 16" aria-hidden className="shrink-0 opacity-60">
+      {[3, 8, 13].flatMap((y) => [2, 8].map((x) => <circle key={`${x}${y}`} cx={x} cy={y} r={1.5} fill="currentColor" />))}
+    </svg>
+  );
+}
+
 export function PieceTray() {
   const store = useHavenStore();
   const placing = useHaven((s) => s.ui.placing);
-  const dragging = useHaven((s) => s.ui.dragging);
   const drag = useRef<TrayDrag | null>(null);
   const [ghost, setGhost] = useState<{ x: number; y: number; label: string } | null>(null);
 
@@ -141,20 +149,8 @@ export function PieceTray() {
     else s.cancelDraft();
   };
 
-  if (dragging === 'table') {
-    return (
-      <div
-        data-trash=""
-        className="hidden min-h-12 items-center justify-center rounded-lg border-2 border-dashed border-danger text-sm font-semibold text-danger min-[600px]:flex"
-      >
-        Drop here to remove the table
-      </div>
-    );
-  }
-
   return (
-    <div className="tray-row hidden min-w-0 items-center gap-2 min-[600px]:flex" role="toolbar" aria-label="Add a piece" data-tray="">
-      <span className="shrink-0 text-xs font-semibold tracking-wide text-ink-muted uppercase">Add</span>
+    <div className="tray-grid grid min-w-0 grid-cols-2 gap-2" role="toolbar" aria-label="Add a piece" data-tray="">
       {ITEMS.map((it) => (
         <button
           key={it.kind}
@@ -166,14 +162,15 @@ export function PieceTray() {
           onPointerUp={finish(true)}
           onPointerCancel={finish(false)}
           onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), tap(it.kind))}
-          className={`tray-chip min-h-11 shrink-0 rounded-lg border px-3 text-sm font-medium whitespace-nowrap select-none ${
+          className={`tray-chip flex min-h-12 items-center gap-2 rounded-lg border px-2.5 text-left text-sm font-medium whitespace-nowrap select-none ${
             placing === it.kind ? 'border-accent bg-accent text-on-accent' : 'border-line bg-panel text-ink'
           }`}
         >
+          <Grip />
           {it.label}
         </button>
       ))}
-      {placing && <span className="shrink-0 text-xs text-ink-muted">Tap a + in the plan</span>}
+      {placing && <p className="col-span-2 text-sm text-ink-muted">Tap a + in the plan</p>}
       {ghost && (
         <div
           className="pointer-events-none fixed z-40 -translate-x-1/2 -translate-y-[130%] rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-on-accent shadow-lg"

@@ -7,7 +7,6 @@ import {
   endIndex,
   fillGap,
   openEnd,
-  resetWedge,
   resizeLoose,
   resizePiece,
   setEndCap,
@@ -20,6 +19,7 @@ import { builtOf, useHavenStore } from '@/state/store';
 import { Button, Segmented } from './controls';
 import { MeasureField } from './MeasureField';
 import type { Selection } from './selection';
+import { WedgeSlider } from './WedgeSlider';
 
 const TABLE_WIDTHS = [24, 28, 32, 36, 40];
 
@@ -40,17 +40,8 @@ export function MenuBody({ sel }: { sel: Selection }) {
   const config = s().config;
   const tryOp = (r: EditResult) => (r.rejected ? r.rejected.message : null);
 
-  if (sel.type === 'wedge') {
-    const manual = config.wedgeC !== null;
-    return (
-      <div className="flex flex-col gap-2 text-sm">
-        <p className="text-ink-muted">Size the corner with the wedge slider under the plan.</p>
-        <Button disabled={!manual} onClick={() => apply(resetWedge(s().config))}>
-          Reset wedge
-        </Button>
-      </div>
-    );
-  }
+  // Tap the corner to size it (Andre, 2026-11-06): the slider is right here.
+  if (sel.type === 'wedge') return <WedgeSlider variant="menu" />;
 
   if (sel.type === 'loose') {
     const lp = config.loose.find((q) => q.id === sel.id);

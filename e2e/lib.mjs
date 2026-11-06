@@ -22,6 +22,15 @@ export const seats = (page) => page.textContent('[data-testid=seats]')
 export const warnings = (page) => page.$$eval('[data-testid=warnings] li', (els) => els.map((e) => e.textContent))
 export const config = (page) => page.evaluate(() => window.__haven.getState().config)
 
+/** Open a side-panel tab: 'Size', 'Pieces' or 'Look' (editor redesign, 2026-11-06). */
+export async function panel(page, name) {
+  await page.getByRole('tab', { name: new RegExp(`^${name}`) }).click()
+  // Pieces and Look load on first open: wait for their content.
+  const content = { Size: '#m-D', Pieces: '[data-tray]', Look: '[data-testid=fabrics]' }[name]
+  await page.waitForSelector(content, { timeout: 10000 })
+  await page.waitForTimeout(50)
+}
+
 /** Type into a measurement field and commit with Enter (blur). */
 export async function setField(page, name, value) {
   const input = page.locator(`#m-${name}`)

@@ -4,7 +4,7 @@
 import { readdirSync, statSync, readFileSync } from 'node:fs'
 import { gzipSync } from 'node:zlib'
 import { VIEWPORTS } from './browser.mjs'
-import { config, openApp } from './lib.mjs'
+import { config, openApp, panel } from './lib.mjs'
 
 const SHOTS = 'test-results'
 // Andre's Blender models (H5c): whichever .glb files the build carries must be in use.
@@ -77,6 +77,7 @@ export async function h5(browser, base, check) {
     // Pillows toggle off: gone from the scene and from the fit.
     if (vName === 'ipadLandscape') {
       const n0 = await page.evaluate(() => window.__haven3d.points().length)
+      await panel(page, 'Look')
       await page.getByRole('switch', { name: 'Pillows in 3D' }).click()
       await page.waitForTimeout(300)
       const n1 = await page.evaluate(() => window.__haven3d.points().length)
@@ -91,6 +92,7 @@ export async function h5(browser, base, check) {
   // 2. Every fabric and finish: renders in 3D and round-trips through the link.
   {
     const { context, page } = await openApp(browser, base)
+    await panel(page, 'Look')
     const fabrics = await page.$$eval('[data-testid=fabrics] [role=radio]', (els) => els.map((e) => e.getAttribute('aria-label')))
     const finishes = await page.$$eval('[data-testid=finishes] [role=radio]', (els) => els.map((e) => e.getAttribute('aria-label')))
     await page.getByRole('radio', { name: '3D' }).click()
@@ -122,6 +124,7 @@ export async function h5(browser, base, check) {
   // 3. Sketch toggles the plan: white fill, black lines, cushion seams.
   {
     const { context, page } = await openApp(browser, base)
+    await panel(page, 'Look')
     await page.getByRole('radio', { name: 'Sketch' }).click()
     await page.waitForTimeout(100)
     const r = await page.evaluate(() => {

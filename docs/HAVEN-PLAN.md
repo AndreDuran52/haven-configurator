@@ -1282,7 +1282,8 @@ Andre's answers (Q37–Q44):
 
 **Stages** (one PR each, stop for Andre after each):
 1. **B1 QA fixes** (above), then Andre merges B1.
-2. **Editor redesign** (UX Phase 2, reshaped):
+2. **Editor redesign** (UX Phase 2, reshaped). **Built 2026-11-06 (waiting for Andre's review):** as below; the warnings badge sits on Size (every warning today is about sizes or pieces); the tray loads with the Pieces tab, so the entry chunk went down (101.7 kB gzip) and the budget stays 102; a press on the wedge thumb that ends where it began commits nothing (on the shorter track a press read as the next value).
+   Planned:
    - shape picker on top (U · L left · L right · T);
    - tabs: **Size** (W/L/R/D + presets, lock, seat and arm width, corner wedge, the T panel), **Pieces** (the tray chips, table style), **Look** (fabric, wood, pillows, CAD/Sketch);
    - warnings as a badge on their tab and listed under Size;

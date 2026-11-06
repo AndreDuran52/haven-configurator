@@ -1,7 +1,8 @@
 // Seam handles (plan §8): 44 pt grips 14 px outside the seat front, always
 // visible. The pointer side is handled by usePlanGestures (hit-testing, not the
 // DOM); each grip is also a keyboard slider: arrows ±0.5″, Shift ±6″,
-// coalesced by key within 800 ms (one undo step per burst).
+// coalesced by key within 800 ms (one undo step per burst). Drawn as a
+// splitter grip (a pill with two bars along the seam; redesign 2026-11-06).
 import { dragSeam, type BuildResult } from '@/engine';
 import { useHavenStore } from '@/state/store';
 import { GRIP_R, type Grip } from './hitTest';
@@ -43,9 +44,22 @@ export function GripsLayer({ grips, built, k }: { grips: Grip[]; built: BuildRes
             <line x1={g.axis === 'x' ? g.at : x} y1={g.axis === 'x' ? y : g.at} x2={x2} y2={y2} stroke={BLUE} strokeWidth={1.5 * k} />
             {/* invisible 44 pt target (hit-testing decides; this is for focus rings) */}
             <circle cx={x} cy={y} r={GRIP_R * k} fill="transparent" />
-            <circle cx={x} cy={y} r={11 * k} fill="#fff" stroke={BLUE} strokeWidth={2 * k} />
+            <rect
+              x={x - (g.axis === 'x' ? 11 : 16) * k}
+              y={y - (g.axis === 'x' ? 16 : 11) * k}
+              width={(g.axis === 'x' ? 22 : 32) * k}
+              height={(g.axis === 'x' ? 32 : 22) * k}
+              rx={11 * k}
+              fill="#fff"
+              stroke={BLUE}
+              strokeWidth={2 * k}
+            />
             <path
-              d={g.axis === 'x' ? `M${x - 5 * k} ${y}h${10 * k}` : `M${x} ${y - 5 * k}v${10 * k}`}
+              d={
+                g.axis === 'x'
+                  ? `M${x - 3 * k} ${y - 7 * k}v${14 * k}M${x + 3 * k} ${y - 7 * k}v${14 * k}`
+                  : `M${x - 7 * k} ${y - 3 * k}h${14 * k}M${x - 7 * k} ${y + 3 * k}h${14 * k}`
+              }
               stroke={BLUE}
               strokeWidth={2 * k}
               strokeLinecap="round"
@@ -53,6 +67,36 @@ export function GripsLayer({ grips, built, k }: { grips: Grip[]; built: BuildRes
           </g>
         );
       })}
+    </g>
+  );
+}
+
+/** The movable pieces: seats, tables and loose pieces (not wedges or gaps). */
+const MOVABLE = new Set(['armless', 'oneArm', 'table', 'ottoman', 'coffeeTable']);
+
+/**
+ * A move badge on the selected piece (redesign 2026-11-06): it says "this can be
+ * dragged". A selected seat drags right away, also by touch (no long-press);
+ * the badge itself is not a target (the piece is).
+ */
+export function MoveBadge({ built, selectedId, k }: { built: BuildResult; selectedId: string | null; k: number }) {
+  const p = selectedId ? built.pieces.find((q) => q.id === selectedId && MOVABLE.has(q.kind)) : null;
+  if (!p) return null;
+  const r = p.cushionRect ?? p.bbox;
+  const [x, y] = [r.x + r.w / 2, r.y + r.h / 2];
+  const a = 7 * k; // arm of the cross
+  const h = 3 * k; // arrow head
+  return (
+    <g data-move-badge={p.id} pointerEvents="none">
+      <circle cx={x} cy={y} r={15 * k} fill={BLUE} opacity={0.92} />
+      <path
+        d={`M${x - a} ${y}H${x + a}M${x} ${y - a}V${y + a}M${x - a + h} ${y - h}L${x - a} ${y}L${x - a + h} ${y + h}M${x + a - h} ${y - h}L${x + a} ${y}L${x + a - h} ${y + h}M${x - h} ${y - a + h}L${x} ${y - a}L${x + h} ${y - a + h}M${x - h} ${y + a - h}L${x} ${y + a}L${x + h} ${y + a - h}`}
+        stroke="#fff"
+        strokeWidth={1.6 * k}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
     </g>
   );
 }
