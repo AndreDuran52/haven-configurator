@@ -92,7 +92,7 @@ export function SizeTab() {
             −
           </button>
           <span className="flex-1 text-center text-sm tabular-nums" data-testid="arm-width">
-            {live.dims.A}″ arms (seats keep their size)
+            {live.dims.A}″ arms
           </span>
           <button type="button" className="stepper" aria-label="Arm width plus ½" disabled={live.dims.A >= ARM_MAX} onClick={() => commit(setArmWidth(store.getState().config, live.dims.A + 0.5), 'armWidth')}>
             +

@@ -1,14 +1,12 @@
 // The shape picker on top of the side panel (editor redesign, Andre
-// 2026-11-06): U · L left · L right · T. A single sofa changes shape in place
-// (setShape); T opens the T form under the picker; from a T, a standard shape
-// starts fresh at its default size. Every change is one undo step.
-import { lazy, Suspense, useState } from 'react';
+// 2026-11-06): U · L left · L right. A single sofa changes shape in place
+// (setShape). The T is custom work now (hidden 2026-11-06): an opened T shows
+// "T" here, and picking a standard shape from it starts that shape fresh at
+// its default size. Every change is one undo step.
 import { setShape, type Shape } from '@/engine';
 import { presetFor, startLabel, type StartChoice } from '@/state/start';
 import { useHavenStore, useLive, useLiveLayout } from '@/state/store';
 import { Section, Segmented } from './controls';
-
-const TeeForm = lazy(() => import('./TeeForm'));
 
 type Pick = Shape | 'T';
 
@@ -16,15 +14,14 @@ const SHAPES: { value: Pick; label: string }[] = [
   { value: 'U', label: 'U' },
   { value: 'L-left', label: 'L left' },
   { value: 'L-right', label: 'L right' },
-  { value: 'T', label: 'T' },
 ];
+
+const choiceFor = (v: Shape): StartChoice => (v === 'U' ? { kind: 'standardU' } : { kind: 'standardL', side: v === 'L-left' ? 'left' : 'right' });
 
 export function ShapePicker() {
   const store = useHavenStore();
   const live = useLive();
   const joined = useLiveLayout().sections.length > 1;
-  const [teeOpen, setTeeOpen] = useState(false);
-  const value: Pick = joined || teeOpen ? 'T' : live.shape;
 
   const start = (choice: StartChoice) => {
     const s = store.getState();
@@ -32,17 +29,12 @@ export function ShapePicker() {
     s.setSection('a');
     s.setUi({ lastStart: choice });
     s.toast(`Started a ${startLabel(choice)}`);
-    setTeeOpen(false);
   };
 
   const pick = (v: Pick) => {
+    if (v === 'T') return;
     const s = store.getState();
-    if (v === 'T') {
-      if (!joined) setTeeOpen(!teeOpen);
-      return;
-    }
-    setTeeOpen(false);
-    if (joined) return start(v === 'U' ? { kind: 'standardU' } : { kind: 'standardL', side: v === 'L-left' ? 'left' : 'right' });
+    if (joined) return start(choiceFor(v));
     const r = setShape(s.config, v);
     if (r.rejected) s.toast(r.rejected.message);
     else s.commit(r.config);
@@ -50,12 +42,7 @@ export function ShapePicker() {
 
   return (
     <Section title="Shape">
-      <Segmented label="Shape" value={value} options={SHAPES} onChange={pick} />
-      {teeOpen && !joined && (
-        <Suspense fallback={null}>
-          <TeeForm onStart={start} onError={(m) => store.getState().toast(m)} />
-        </Suspense>
-      )}
+      <Segmented label="Shape" value={joined ? 'T' : live.shape} options={joined ? [...SHAPES, { value: 'T', label: 'T' }] : SHAPES} onChange={pick} />
     </Section>
   );
 }

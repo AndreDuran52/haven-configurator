@@ -8,6 +8,7 @@ import { detach, endCapState, endIndex, openEnd, runSum } from './layout';
 import { blockOf, insertPiece, removeTable, resizeSide, setArm, sideRange } from './placement';
 import { edit, findPiece, noRoom, notAllowed, type Outcome } from './edit';
 import { moveTableIn } from './tableOps';
+import { TABLE_MID, resizeBetweenSeats } from './balance';
 import type { Config, EditResult, EndCap, Placement, RunEnd, RunId, RunPiece } from './types';
 
 export function resizePiece(config: Config, id: string, length: number): EditResult {
@@ -23,6 +24,10 @@ export function resizePiece(config: Config, id: string, length: number): EditRes
     if (f.piece.kind === 'table' && len > MAX_PIECE) return notAllowed(`Tables can't be over ${MAX_PIECE}″`);
     const delta = len - f.piece.length;
     if (delta === 0) return null;
+    if (f.piece.kind === 'table') {
+      const r = resizeBetweenSeats(d, d.runs[f.run]!, f.index, len);
+      if (r !== 'fallback') return r;
+    }
     detach(d.runs[f.run]!, f.piece);
     f.piece.length = len;
     return settle(d, f.run, { piece: f.index }, -delta, alloc, new Set([id])) || noRoom();
@@ -79,7 +84,8 @@ export function addPiece(
 ): EditResult {
   return edit(config, (d, alloc): Outcome => {
     const A = d.dims.A;
-    const length = half(opts.length ?? defaultLength(kind, A));
+    // A new table dropped into a seat starts at 20″ so the seats either side stay usable (balance.ts).
+    const length = half(opts.length ?? (kind === 'table' && placement.at === 'split' ? TABLE_MID : defaultLength(kind, A)));
     const piece: RunPiece = { id: alloc('p'), kind, length };
     if (kind === 'oneArm') piece.arm = opts.arm ?? openEnd(d.shape, placement.run) ?? 'end';
     if (!(length > 0)) return notAllowed('Length must be positive');

@@ -1,4 +1,4 @@
-// Add-piece tray (plan §8): Armless 36, One-arm L/R, Table 32, Ottoman, Coffee
+// Add-piece tray (plan §8): Armless 36, One-arm L/R, Table (20 in a seat, 32 at a seam), Ottoman, Coffee
 // table. Tap to place (primary on iPad): "+" pins appear at every valid target.
 // Or drag a chip into the plan (through the plan's CTM): the nearest target
 // previews as a draft and the drop commits it (one undo step). Since the editor
@@ -14,7 +14,7 @@ const ITEMS: { kind: TrayKind; label: string }[] = [
   { kind: 'armless', label: 'Armless 36″' },
   { kind: 'oneArmL', label: 'One-arm L' },
   { kind: 'oneArmR', label: 'One-arm R' },
-  { kind: 'table', label: 'Table 32″' },
+  { kind: 'table', label: 'Table' },
   { kind: 'ottoman', label: 'Ottoman' },
   { kind: 'coffeeTable', label: 'Coffee table' },
 ];

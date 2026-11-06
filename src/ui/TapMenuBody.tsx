@@ -5,12 +5,16 @@ import {
   deleteLoose,
   deletePiece,
   endIndex,
+  evenTableSeats,
   fillGap,
   openEnd,
   resizeLoose,
   resizePiece,
+  SEAT_WARN,
+  setArmWidth,
   setEndCap,
   setTableStyle,
+  tableSeats,
   type EditResult,
   type EndCap,
 } from '@/engine';
@@ -21,8 +25,7 @@ import { MeasureField } from './MeasureField';
 import type { Selection } from './selection';
 import { WedgeSlider } from './WedgeSlider';
 
-const TABLE_WIDTHS = [24, 28, 32, 36, 40];
-
+const TABLE_WIDTHS = [20, 24, 28, 32, 36, 40];
 
 function Row({ children }: { children: React.ReactNode }) {
   return <div className="flex flex-wrap items-center gap-2">{children}</div>;
@@ -138,8 +141,21 @@ export function MenuBody({ sel }: { sel: Selection }) {
   );
 
   if (sel.type === 'table') {
+    // Balance seats around a table (Andre, 2026-11-06): the seats either side, kept equal.
+    const seats = tableSeats(config, sel.id);
+    const uneven = !!seats && Math.abs(seats[0] - seats[1]) > 0.5;
+    const narrow = !!seats && Math.min(...seats) < SEAT_WARN && piece.length <= 20 && config.dims.A > 10;
     return (
       <div className="flex flex-col gap-3">
+        {seats && (
+          <Row>
+            <p data-testid="table-seats" className="mr-auto text-sm">
+              Seats {fmtIn(seats[0])} | {fmtIn(seats[1])}
+            </p>
+            {uneven && <Button onClick={() => apply(evenTableSeats(s().config, sel.id))}>Even seats</Button>}
+            {narrow && <Button onClick={() => apply(setArmWidth(s().config, 10))}>Try 10″ arms</Button>}
+          </Row>
+        )}
         <div className="flex flex-col gap-1">
           <p className="text-xs font-semibold tracking-wide text-ink-muted uppercase">Width</p>
           <Row>

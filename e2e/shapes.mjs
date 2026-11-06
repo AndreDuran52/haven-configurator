@@ -1,6 +1,6 @@
 // Shapes B1 checks (plan §10 "Shapes", Andre 2026-10-26): the client's T
-// (229 across, 110 stem, 44 deep) for both back options, built from the
-// Projects home; labels, editing a half (Undo, touch seam drag, tap to switch),
+// (229 across, 110 stem, 44 deep) for both back options. The T is hidden from
+// the menus since 2026-11-06 (custom work), so T's open from share links; labels, editing a half (Undo, touch seam drag, tap to switch),
 // save and reload, the share link in a fresh browser, ?view, the PDF plan.
 // Fresh browser contexts only. Screenshots light and dark at four sizes.
 import { VIEWPORTS } from './browser.mjs'
@@ -10,8 +10,8 @@ import { dimTexts, labelCheck, panel, setField } from './lib.mjs'
 const SHOTS = 'test-results'
 const LAPTOP = { width: 1440, height: 900 }
 const EXPECT = {
-  shared: { top: '14" | 45½" | 110" | 45½" | 14"', stem: '78"', line: 'Each half 119½″. Stem 78″ wide. Seats 6.', halves: [119.5, 119.5] },
-  two: { top: '14" | 40½" | 60" | 60" | 40½" | 14"', stem: '88"', line: 'Each half 114½″. Stem 88″ wide. Seats 6.', halves: [114.5, 114.5] },
+  shared: { top: '14" | 45½" | 110" | 45½" | 14"', stem: '78"', line: 'Halves 119½″ and 119½″. Stem 78″ wide.', halves: [119.5, 119.5] },
+  two: { top: '14" | 40½" | 60" | 60" | 40½" | 14"', stem: '88"', line: 'Halves 114½″ and 114½″. Stem 88″ wide.', halves: [114.5, 114.5] },
 }
 
 const state = (page) => page.evaluate(() => {
@@ -20,25 +20,24 @@ const state = (page) => page.evaluate(() => {
 })
 const code = (page) => page.evaluate(() => window.__plan.encode())
 
-/** A fresh context on the Projects home; builds the T from "T shape…". */
+/** Share links of the T's (v3 goldens, and a 340 × 160 T with two backs for the seam drag). */
+export const TEE_LINKS = {
+  shared: '3rW119.5L110R110D44_ba59.5_ra50_PglW119.5L110R110H_ba59.5_la50.7o',
+  two: '3rW114.5L110R110D44_ba54.5_ra50_PglW114.5L110R110_ba54.5_la50.y2',
+  big: '3rW170L160R160D44_ba55~s55_ra100_PglW170L160R160_bs55~a55_la100.o2',
+}
+
+/** A fresh context with the T opened from its share link. */
 async function buildTee(browser, base, back, viewport = VIEWPORTS.ipadLandscape, scheme = 'light', sizes = null) {
   const context = await browser.newContext({ viewport, hasTouch: true, colorScheme: scheme })
   const page = await context.newPage()
   const errors = []
   page.on('pageerror', (e) => errors.push(e.message))
   page.on('console', (m) => m.type() === 'error' && errors.push(m.text()))
-  await page.goto(base, { waitUntil: 'networkidle' })
-  await page.getByTestId('new-tee').click()
-  await page.waitForSelector('[data-testid=tee-form]')
-  if (back === 'two') await page.getByRole('radio', { name: 'Two backs' }).click()
-  if (sizes) {
-    await page.locator('[name=tee-total]').fill(String(sizes.total))
-    await page.locator('[name=tee-stem]').fill(String(sizes.stem))
-  }
-  const line = await page.textContent('[data-testid=tee-line]')
-  await page.getByTestId('tee-start').click()
+  await page.goto(`${base}#c=${sizes ? TEE_LINKS.big : TEE_LINKS[back]}`, { waitUntil: 'networkidle' })
   await page.waitForSelector('[data-plan-svg]')
   await page.waitForTimeout(200)
+  const line = (await page.locator('[data-testid=tee-info]').count()) ? await page.textContent('[data-testid=tee-info]') : null
   return { context, page, errors, line }
 }
 
@@ -51,13 +50,28 @@ const topChain = (page) =>
   })
 
 export async function shapes(browser, base, check) {
-  // 1. Both back options from the Projects home, at three sizes: the engine line, labels, no overlaps, no 3D.
+  // 0. The T is hidden (Andre, 2026-11-06): no T on the Projects home, in Start or in the shape picker.
+  {
+    const context = await browser.newContext({ viewport: VIEWPORTS.ipadLandscape })
+    const page = await context.newPage()
+    await page.goto(base, { waitUntil: 'networkidle' })
+    check((await page.getByRole('button', { name: /T shape/ }).count()) === 0, 'no "T shape" on the Projects home')
+    await page.getByTestId('new-standardU').click()
+    await page.waitForSelector('[data-plan-svg]')
+    check((await page.getByRole('radio', { name: 'T', exact: true }).count()) === 0, 'no T in the shape picker of a U')
+    await page.getByRole('button', { name: 'Start', exact: true }).click()
+    await page.waitForSelector('[role=dialog]')
+    check((await page.getByRole('button', { name: /T shape/ }).count()) === 0, 'no "T shape" in Start')
+    await context.close()
+  }
+
+  // 1. Both back options opened by link, at three sizes: the engine line, labels, no overlaps, no 3D.
   for (const back of ['shared', 'two']) {
     const want = EXPECT[back]
     for (const [vn, vp] of Object.entries(VIEWPORTS)) {
       const { context, page, errors, line } = await buildTee(browser, base, back, vp)
       if (vn === 'ipadLandscape') {
-        check(line === want.line, `${back}: the form says "${line}"`)
+        check(line === want.line, `${back}: the T panel says "${line}"`)
         const s = await state(page)
         check(s.n === 2 && s.W.join('/') === want.halves.join('/'), `${back}: two halves of ${s.W.join(' and ')}`)
         const texts = await dimTexts(page)

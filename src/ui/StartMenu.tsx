@@ -2,7 +2,7 @@
 // W/L/R/D) · "Resume last layout (date)". Each is one undoable commit + a toast,
 // and sets ui.lastStart (what Reset returns to). Saved projects moved to the
 // Projects home (H6b).
-import { lazy, Suspense, useState } from 'react';
+import { useState } from 'react';
 import type { Layout } from '@/engine';
 import { readDraft } from '@/state/draft';
 import { presetFor, startForOpened, startLabel, type StartChoice } from '@/state/start';
@@ -11,12 +11,9 @@ import { BlankForm } from './BlankForm';
 import { Button } from './controls';
 import { Dialog } from './Dialog';
 
-const TeeForm = lazy(() => import('./TeeForm'));
-
 export default function StartMenu({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const store = useHavenStore();
   const [error, setError] = useState<string | null>(null);
-  const [tee, setTee] = useState(false);
   const draft = open ? readDraft() : null;
 
   const load = (layout: Layout, text: string, lastStart?: StartChoice) => {
@@ -47,14 +44,6 @@ export default function StartMenu({ open, onOpenChange }: { open: boolean; onOpe
         <Button onClick={() => load(draft.layout, 'Resumed the last layout')} data-testid="resume">
           Resume last layout ({new Date(draft.savedAt).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })})
         </Button>
-      )}
-      <Button onClick={() => setTee(!tee)} aria-expanded={tee} data-testid="start-tee">
-        T shape…
-      </Button>
-      {tee && (
-        <Suspense fallback={null}>
-          <TeeForm onStart={start} onError={setError} />
-        </Suspense>
       )}
       <BlankForm onStart={start} onError={setError} />
       {error && <p className="text-sm text-danger">{error}</p>}
