@@ -5,7 +5,7 @@
 import { lazy, Suspense, useState } from 'react';
 import type { Layout } from '@/engine';
 import { readDraft } from '@/state/draft';
-import { presetFor, startLabel, type StartChoice } from '@/state/start';
+import { presetFor, startForOpened, startLabel, type StartChoice } from '@/state/start';
 import { useHavenStore } from '@/state/store';
 import { BlankForm } from './BlankForm';
 import { Button } from './controls';
@@ -22,7 +22,7 @@ export default function StartMenu({ open, onOpenChange }: { open: boolean; onOpe
   const load = (layout: Layout, text: string, lastStart?: StartChoice) => {
     const s = store.getState();
     s.commitLayout(layout, { key: 'start' });
-    if (lastStart) s.setUi({ lastStart });
+    s.setUi({ lastStart: lastStart ?? startForOpened(layout, s.ui.lastStart) });
     s.toast(text);
     onOpenChange(false);
   };

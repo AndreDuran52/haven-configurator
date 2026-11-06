@@ -6,6 +6,7 @@
 import type { BuildResult, BuiltPiece, Pt, Rect } from '@/engine';
 import type { DimLayout } from './dims';
 import { DimsLayer } from './DimsLayer';
+import { clearSeatsAt } from './seatsLabel';
 import { fmtIn } from './format';
 import { hatch, pts, woodGrain } from './geometry';
 import type { PlanTheme } from './theme';
@@ -83,12 +84,21 @@ export function PlanDrawing({ built, dims, k, theme, showWarnings, selectedId, s
   };
 
   // Seats label: centre of the U opening / inside corner of an L
-  const seatsAt: Pt =
+  const usualSeatsAt: Pt =
     built.shape === 'U'
       ? [built.W / 2, built.D + Math.max(built.opening?.depth ?? 0, 20) * 0.45]
       : built.shape === 'L-left'
         ? [built.D + (built.W - built.D) / 2, built.D + (built.L - built.D) / 2]
         : [(built.W - built.D) / 2, built.D + (built.R - built.D) / 2];
+  // ... moved off any ottoman or coffee table sitting there.
+  const seatsAt = clearSeatsAt(
+    usualSeatsAt,
+    built.pieces.filter((p) => p.kind === 'ottoman' || p.kind === 'coffeeTable').map((p) => p.bbox),
+    lw(seatsSize),
+    built.seats.label.length,
+    built.D,
+    Math.max(built.shape !== 'L-right' ? built.L : 0, built.shape !== 'L-left' ? built.R : 0),
+  );
 
   return (
     <g data-plan="">

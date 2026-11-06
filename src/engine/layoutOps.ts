@@ -4,10 +4,12 @@
 // every section by running the sibling's own engine op. A refusal anywhere
 // returns the SAME layout reference with the reason, naming the half (G6).
 import { wedgeRange } from './limits';
-import { layoutErrors, sectionLabel, sharedDiff } from './layoutBuild';
+import { layoutErrors, offsets, sectionLabel, sharedDiff } from './layoutBuild';
+import { addLoose, defaultLoosePosition, insideRegion } from './looseOps';
+import { half, LOOSE_DEFAULTS } from './pieces';
 import type { Layout, Section } from './layoutTypes';
 import { resetWedge, setArmWidth, setFabric, setLock, setMeasurements, setSeatWidth, setTableFinish, setTableStyle, setWedge } from './ops';
-import type { Config, EditResult, Rejection } from './types';
+import type { Config, EditResult, LooseKind, Rejection } from './types';
 
 export interface LayoutResult {
   layout: Layout;
@@ -107,4 +109,37 @@ export function layoutWedgeRange(l: Layout): { min: number; max: number } {
 export function setLayoutWedge(l: Layout, C: number): LayoutResult {
   const { min, max } = layoutWedgeRange(l);
   return editSection(l, l.sections[0]!.id, (c) => setWedge(c, Math.min(max, Math.max(min, C))));
+}
+
+/**
+ * Add an ottoman or coffee table from any section. Loose pieces live in the
+ * root, whose coordinates are the world's; by default the piece starts in the
+ * edited section's own inside region (a T's right bay for the right half),
+ * clear of the loose pieces already there. `at` is a world min corner. A
+ * one-section layout gives exactly addLoose on its config.
+ */
+export function addLooseInLayout(l: Layout, sectionId: string, kind: LooseKind, at?: { x: number; y: number }): LayoutResult {
+  const root = l.sections[0]!;
+  let pos = at;
+  if (!pos) {
+    const w = half(LOOSE_DEFAULTS[kind].w);
+    const d = kind === 'coffeeTable' ? w : half(LOOSE_DEFAULTS[kind].d);
+    const off = offsets(l);
+    /** The default spot in section `s` (world), and whether it is inside that section's region. */
+    const spotIn = (s: Section) => {
+      const [ox, oy] = off.get(s.id) ?? [0, 0];
+      const here: Config = { ...s.config, loose: root.config.loose.map((p) => ({ ...p, x: p.x - ox, y: p.y - oy })) };
+      const [x, y] = defaultLoosePosition(here, kind, w, d);
+      const r = insideRegion(s.config);
+      return { x: x + ox, y: y + oy, inside: x >= r.x && y >= r.y && x + w <= r.x + r.w && y + d <= r.y + r.h };
+    };
+    const first = sectionOf(l, sectionId) ?? root;
+    // The edited section first; when its region is full, another section's (a T's other bay).
+    const spots = [first, ...l.sections.filter((s) => s.id !== first.id)].map(spotIn);
+    const { x, y } = spots.find((p) => p.inside) ?? spots[0]!;
+    pos = { x, y };
+  }
+  const r = addLoose(root.config, kind, pos);
+  if (r.rejected) return refused(l, r.rejected);
+  return replaceSection(l, root.id, r.config);
 }

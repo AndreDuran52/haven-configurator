@@ -9,6 +9,7 @@
 import type { BuiltPiece, BuildResult, LayoutBuild, Pt } from '@/engine';
 import { teeOf } from '@/engine';
 import { fmtFtIn, fmtIn } from './format';
+import { clearSeatsAt } from './seatsLabel';
 import { soloSource, type DimProfile, type DimSource, type Group, type Seg } from './dims';
 
 type Span = { a: number; b: number; label: string; weight: 400 | 600; dashed: boolean };
@@ -108,14 +109,23 @@ export function layoutDimSource(lb: LayoutBuild): DimSource {
   if (lb.solo) return soloSource(lb.sections[0]!.built);
   const l = { schema: 1 as const, sections: lb.sections.map((s) => ({ id: s.id, config: s.config, join: s.join })) };
   if (!teeOf(l)) throw new Error('dims: only T layouts are supported');
+  // Loose pieces outside the sofa stay inside the frame, so they are in view and the dims go round them.
+  const loose = lb.sections[0]!.config.loose;
   return {
     groups: (p) => teeGroups(lb, p),
-    frame: { x0: 0, y0: 0, x1: lb.overall.W, y1: Math.max(lb.sections[0]!.config.R, lb.sections[1]!.config.L, lb.sections[0]!.config.D) },
+    frame: {
+      x0: Math.min(0, ...loose.map((q) => q.x)),
+      y0: 0,
+      x1: Math.max(lb.overall.W, ...loose.map((q) => q.x + q.w)),
+      y1: Math.max(lb.sections[0]!.config.R, lb.sections[1]!.config.L, lb.sections[0]!.config.D, ...loose.map((q) => q.y + q.d)),
+    },
   };
 }
 
-/** Where the one seat label of a layout goes (the left bay of a T). */
-export function layoutSeatsAt(lb: LayoutBuild): Pt {
+/** Where the one seat label of a layout goes (the left bay of a T, clear of loose pieces; `size` in plan inches). */
+export function layoutSeatsAt(lb: LayoutBuild, size = 0): Pt {
   const A = lb.sections[0]!.config;
-  return [(A.W - A.D) / 2, A.D + (A.R - A.D) / 2];
+  const at: Pt = [(A.W - A.D) / 2, A.D + (A.R - A.D) / 2];
+  const loose = A.loose.map((p) => ({ x: p.x, y: p.y, w: p.w, h: p.d }));
+  return size > 0 ? clearSeatsAt(at, loose, size, lb.seats.label.length, A.D, A.R) : at;
 }

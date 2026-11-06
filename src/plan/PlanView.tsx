@@ -128,7 +128,7 @@ export function PlanView() {
               ))}
               {dims && <DimsLayer dims={dims} theme={theme} />}
               <g data-seats="">
-                <text x={layoutSeatsAt(lb)[0]} y={layoutSeatsAt(lb)[1]} fontSize={+(16 * fit.k).toFixed(4)} fontFamily={theme.font} fontWeight={theme.bold} fill={theme.ink} textAnchor="middle">
+                <text x={layoutSeatsAt(lb, 16 * fit.k)[0]} y={layoutSeatsAt(lb, 16 * fit.k)[1]} fontSize={+(16 * fit.k).toFixed(4)} fontFamily={theme.font} fontWeight={theme.bold} fill={theme.ink} textAnchor="middle">
                   {lb.seats.label}
                 </text>
               </g>

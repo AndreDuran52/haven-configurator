@@ -108,7 +108,7 @@ export function Sheet(p: SheetProps) {
                   </g>
                 ))}
                 <DimsLayer dims={plan.dims} theme={theme} />
-                <text x={layoutSeatsAt(lb)[0]} y={layoutSeatsAt(lb)[1]} fontSize={+(10 / plan.S).toFixed(4)} fontFamily={theme.font} fontWeight={theme.bold} fill={theme.ink} textAnchor="middle">
+                <text x={layoutSeatsAt(lb, 10 / plan.S)[0]} y={layoutSeatsAt(lb, 10 / plan.S)[1]} fontSize={+(10 / plan.S).toFixed(4)} fontFamily={theme.font} fontWeight={theme.bold} fill={theme.ink} textAnchor="middle">
                   {lb.seats.label}
                 </text>
               </>

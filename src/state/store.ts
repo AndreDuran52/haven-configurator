@@ -12,7 +12,7 @@ import { buildHaven, buildLayout, encodeLayout, replaceSection, sectionConfig, s
 import { DEFAULT_PRESET, type PresetName } from '@/ortho/presets';
 import type { TrayKind } from '@/plan/placementTargets';
 import * as H from './history';
-import { DEFAULT_START, type StartChoice } from './start';
+import { DEFAULT_START, startForOpened, type StartChoice } from './start';
 
 /** The plan view's exact scale (CSS px per inch) and the plan point at its centre. */
 export interface PlanFit {
@@ -133,7 +133,7 @@ export function createHavenStore(initial: Layout | Config, ui: Partial<UiState> 
         selectedId: null,
         placing: null,
         dragging: null,
-        lastStart: DEFAULT_START,
+        lastStart: startForOpened(asLayout(initial), DEFAULT_START),
         readOnly: false,
         toast: null,
         screen: 'editor',
@@ -181,7 +181,7 @@ export function createHavenStore(initial: Layout | Config, ui: Partial<UiState> 
         const u = get().ui;
         set({
           ...fieldsOf(H.initHistory(asLayout(layout)), 'a'),
-          ui: { ...u, screen: 'editor', project: opts.project ?? null, lastStart: opts.lastStart ?? u.lastStart, selectedId: null, placing: null, dragging: null, readOnly: false, section: 'a' },
+          ui: { ...u, screen: 'editor', project: opts.project ?? null, lastStart: opts.lastStart ?? startForOpened(asLayout(layout), u.lastStart), selectedId: null, placing: null, dragging: null, readOnly: false, section: 'a' },
         });
       },
       goHome: () => set({ ui: { ...get().ui, screen: 'home', selectedId: null, placing: null, dragging: null } }),

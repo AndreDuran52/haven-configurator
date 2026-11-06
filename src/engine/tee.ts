@@ -93,13 +93,20 @@ export function setTeeWidth(l: Layout, total: number): LayoutResult {
   return setHalves(l, WA, WB, t.sharedBack, total);
 }
 
+/** A stem refusal in the stem's own words ("min 80″", not the leg letter R or L). */
+function stemRejection(r: Rejection, leg: 'R' | 'L', len: number): Rejection {
+  const min = r.min?.[leg];
+  if (min === undefined) return r;
+  return { code: r.code, message: len < min ? `min ${min}″` : r.message, min: r.min };
+}
+
 /** Type the stem length: both sides of the stem take it. */
 export function setTeeStem(l: Layout, len: number): LayoutResult {
   if (!teeOf(l)) return notTee(l);
   const ra = editSection(l, 'a', (c) => setMeasurements(c, { R: len }));
-  if (ra.rejected) return { layout: l, rejected: ra.rejected };
+  if (ra.rejected) return { layout: l, rejected: stemRejection(ra.rejected, 'R', len) };
   const rb = editSection(ra.layout, 'b', (c) => setMeasurements(c, { L: len }));
-  return rb.rejected ? { layout: l, rejected: rb.rejected } : rb;
+  return rb.rejected ? { layout: l, rejected: stemRejection(rb.rejected, 'L', len) } : rb;
 }
 
 /** Shared back / Two backs, keeping the total width (each half gains or loses B/2). */

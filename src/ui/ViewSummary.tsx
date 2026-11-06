@@ -45,7 +45,9 @@ export function ViewSummary() {
           ))}
         </dl>
       </Section>
-      <p className="text-xs text-ink-muted">A view-only layout. Switch between Plan and 3D above; tap "Edit a copy" to change it.</p>
+      <p className="text-xs text-ink-muted">
+        {t ? 'A view-only layout. Tap "Edit a copy" to change it.' : 'A view-only layout. Switch between Plan and 3D above; tap "Edit a copy" to change it.'}
+      </p>
     </div>
   );
 }

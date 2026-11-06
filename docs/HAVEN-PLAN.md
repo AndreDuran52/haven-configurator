@@ -1209,7 +1209,7 @@ As built in Phase 1:
 A client asked for a T: 229″ across the top, a 110″ stem, seating on each side of the stem. The back runs along the top and down the middle of the stem.
 
 Andre's decisions:
-- **Combine standard shapes.** Free placement of single pieces is out.
+- **Combine standard shapes.** Free placement of single pieces is out. *(Superseded 2026-11-06: see "Freeform pieces" below.)*
 - **Stem back:** offer both, per T:
   - **Shared back:** one 10″ frame with cushions on both sides; stem 2D − B, so 78″ at 44 deep.
   - **Two backs:** two standard L's pushed together; stem 2D = 88″.
@@ -1256,13 +1256,48 @@ The left half gets the extra 0.5″ when the width does not split evenly.
   - Seat pill, warnings (named by half), `?view` summary, Projects cards, save, share and reload all carry the whole T.
   - The PDF sheet is the plan alone for a T, to scale (229 × 110 prints at 3/8″ = 1′-0″); header "T shape, shared back · 229″ W x 110″ stem · 44″ deep"; file `Haven-T-229x110-<date>.pdf`; the footer link wraps.
   - The 3D view (and the sheet's 3D views) are hidden for T's until B2.
-- **B2:** the T in 3D, with the shared frame shown once.
-- **C1:** attach a shape by tapping or dragging it onto a "+" on a leg or a back.
-- **Then** UX Phases 2–6.
-- **Later:**
-  - C2: Straight shape;
-  - C3: 180° turns for back-to-back sofas;
-  - C4: S/Z and cross.
+- **B1 QA fixes (2026-11-06), on the same PR:**
+  - coffee table and ottoman work from either half (loose pieces live in the root; they start in the edited half's bay, or the other bay when it is full);
+  - a new loose piece never lands on another, and the seat label moves off loose pieces;
+  - the T's plan frame takes in loose pieces outside the sofa (in view, dims go round them);
+  - the stem refusal reads "min 80″";
+  - `?view` on a T does not mention 3D;
+  - an opened T (link, project, resumed draft) resets to the clean T at its own sizes.
+- **B2 and C1 are folded into Freeform** (Andre, 2026-11-06): the T in 3D is built with the free layouts' 3D (Freeform stage 5), and attaching shapes is done by moving pieces.
+
+### Freeform pieces and the editor redesign (Andre, 2026-11-06)
+Andre will sell with live configurations ("as easy and seamless as possible"). He asked to drag and drop pieces on, next to and around each other, for the side panel in tabs, and for the wedge slider to leave the bottom bar.
+
+Andre's answers (Q37–Q44):
+- **Free placement of single pieces**: for shapes the app can't make (S/Z, cross, straight, facing sofas, a chaise), rearranging live, building from a blank floor, and fine-tuning a standard shape.
+- **Snapping:** edge to edge, 90° turns only, backs lined up: every result is a buildable Haven with exact sizes.
+- **Corners:** only through a wedge (no square butt joints).
+- **Groups:** separate groups allowed; a piece dropped on empty floor starts a new sofa, and inside a sofa pieces always snap.
+- **Turning:** a Turn button in the piece's menu (R on the keyboard), and an automatic turn when dropped onto a face that needs it.
+- **Two modes:** standard shapes keep typed sizes as today; "Move pieces freely" unlocks the pieces, and from then on sizes are read off the pieces (each piece's width in its tap menu).
+- **Side panel:** tabs **Size · Pieces · Look** under the shape picker.
+- **Wedge:** tap the corner; its slider is in the corner's menu and in the Size tab; the bottom bar goes.
+- **Order:** the B1 fixes and merge, then the redesign, then freeform.
+- **Entry budget:** may rise from 102 to 115 kB gzip when a stage needs it.
+
+**Stages** (one PR each, stop for Andre after each):
+1. **B1 QA fixes** (above), then Andre merges B1.
+2. **Editor redesign** (UX Phase 2, reshaped):
+   - shape picker on top (U · L left · L right · T);
+   - tabs: **Size** (W/L/R/D + presets, lock, seat and arm width, corner wedge, the T panel), **Pieces** (the tray chips, table style), **Look** (fabric, wood, pillows, CAD/Sketch);
+   - warnings as a badge on their tab and listed under Size;
+   - the wedge slider in the corner's tap menu and the Size tab; the bottom bar removed, so the plan is taller;
+   - obvious drags: seam handles as grips, a move handle on the selected seat (the long-press stays), a grip on tray chips;
+   - iPad landscape: the panel on the right; portrait and phone: tabs under the plan.
+3. **Freeform engine** (pure, no UI):
+   - `FreeLayout`: the shared fields plus `FreePiece = { id, kind (armless, oneArm, wedge, table), length, arm?, x, y, rot 0/90/180/270 }`, and loose pieces;
+   - each piece is built in its own frame with today's piece geometry, then turned and moved (90° keeps every rect axis-aligned);
+   - snap targets: the open end faces of seats and tables and both faces of a wedge, backs lined up, never an arm face; empty floor starts a group;
+   - ops: add, move, turn, delete, set length; `toFree(layout)` converts a standard shape or a T (one-way, Undo goes back);
+   - derived: groups, chains (straight rows between wedges and ends), seats per chain, warnings, overlap refusal, bounds;
+   - **codec v4** (freeform links); every v1–v3 golden unchanged.
+4. **Freeform in the plan:** the "Move pieces freely" switch; "Blank floor" on the Projects home; drag with live snap, Turn, delete by dragging to the trash, width in the tap menu; dimensions per group and the gaps between groups; save, share, `?view`, the PDF plan.
+5. **3D for free layouts and the T:** world-placed parts, back cushions and pillows per chain, the T's shared frame shown once, camera fit, the PDF 3D views.
 
 **Measured (Stage A):**
 - vitest:
@@ -1278,8 +1313,8 @@ The left half gets the extra 0.5″ when the width does not split evenly.
 - vitest: T dimension labels for both back options and an uneven stem, no overlaps at three viewports and in print, the sheet's header, file name, scale and wrapped link.
 - e2e `e2e/shapes.mjs`: both back options built from the Projects home, the expected labels with 0 overlapping or clipped labels at 1180×820, 820×1180 and 390×844; edit the right half and Undo; a depth change reaches both halves; tap a half to edit it; a CDP touch seam drag in the right half is one undo step; save, reload, the `#c=3…` link in a fresh browser, `?view`; the PDF's file name, header, scale, labels and whole link. Screenshots light and dark at four sizes.
 
-### H6c: Room floor space (next; Andre, 2026-10-02)
-The client's room (W × D, the sofa's gap to the left and back walls) drawn in the plan, the PDF and as the 3D floor, with clearances to each wall and a `roomTooSmall` warning; Center and Fill the width. Carried in links (codec v4, written only when a room is set, so every older link stays byte-identical; v3 went to shapes, 2026-10-26).
+### H6c: Room floor space (on hold; Andre, 2026-10-02)
+The client's room (W × D, the sofa's gap to the left and back walls) drawn in the plan, the PDF and as the 3D floor, with clearances to each wall and a `roomTooSmall` warning; Center and Fill the width. Carried in links (codec v5, written only when a room is set, so every older link stays byte-identical; v3 went to shapes 2026-10-26, v4 to freeform 2026-11-06).
 
 ### H7: Cloud saves + tracker hand-off (optional, later; Andre decides, do not start until told)
 The configurator is complete without H7. Options, in order of cost:
@@ -1441,6 +1476,14 @@ Answer in a word. **Q1 is answered (camera, spring-back orbit), and Q9, Q10, Q12
 | Q34 | Default T sizes in the form | the client's 229 × 110 × 44 |
 | Q35 | May a T half be a U (an E-like shape)? | hidden until C1 |
 | Q36 | Names of the halves | "Left half / Right half" |
+| Q37 | Drag and drop: shapes together, single pieces, or the whole sofa? | **Answered 2026-11-06:** single pieces anywhere (freeform) |
+| Q38 | Freeform snapping | **Answered:** edge to edge, 90° turns, backs lined up |
+| Q39 | Freeform corners | **Answered:** only through a wedge |
+| Q40 | Pieces that don't touch (facing sofas, a separate chaise) | **Answered:** yes, separate groups; inside a group pieces always snap |
+| Q41 | Turning a piece | **Answered:** a Turn button in its menu (R on the keyboard), auto-turn on a drop |
+| Q42 | Typed sizes with free pieces | **Answered:** two modes; "Move pieces freely" reads the sizes off the pieces |
+| Q43 | Side panel and wedge | **Answered:** tabs Size · Pieces · Look; the wedge slider in the corner's menu and the Size tab |
+| Q44 | Order, and the entry budget | **Answered:** B1 fixes, redesign, freeform; budget may rise to 115 kB gzip |
 
 ---
 

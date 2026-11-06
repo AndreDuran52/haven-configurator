@@ -1,6 +1,6 @@
 // Shapes B1: the T's plan dimensions (client: 229 across, 110 stem, 44 deep).
 import { describe, expect, it } from 'vitest';
-import { buildLayout, setTeeStem, teeLayout } from '@/engine';
+import { addLooseInLayout, buildLayout, setTeeStem, teeLayout } from '@/engine';
 import { fitSource, layoutSource } from './dimLayout';
 import { PRINT, soloSource } from './dims';
 import { layoutDimSource } from './layoutDims';
@@ -59,5 +59,13 @@ describe('T dimensions', () => {
     const b = buildHaven(standardU());
     const lb = buildLayout(solo(standardU()), () => b);
     expect(fitSource(layoutDimSource(lb), 860, 700)).toEqual(fitSource(soloSource(b), 860, 700));
+  });
+});
+
+describe('loose pieces in a T (QA 2026-11-06)', () => {
+  it('a loose piece outside the sofa is inside the plan frame (in view, dims go round it)', () => {
+    const l = addLooseInLayout(teeLayout({ total: 229, stem: 110 }), 'a', 'ottoman', { x: 90, y: 130 }).layout;
+    const f = layoutDimSource(buildLayout(l)).frame;
+    expect(f.y1).toBe(166);
   });
 });

@@ -195,7 +195,64 @@ export async function shapes(browser, base, check) {
     await context.close()
   }
 
-  // 6. Screenshots: light and dark at iPad landscape/portrait, laptop and phone.
+  // 6. QA fixes (2026-11-06): loose pieces from the right half, no stacking, the stem error, ?view copy, Reset.
+  {
+    const { context, page, errors } = await buildTee(browser, base, 'shared')
+    await page.getByRole('radio', { name: 'Right half' }).click()
+    await page.getByRole('button', { name: 'Coffee table', exact: true }).click()
+    await page.waitForTimeout(150)
+    let s = await page.evaluate(() => {
+      const st = window.__haven.getState()
+      return { loose: st.layout.sections.map((x) => x.config.loose), toast: st.ui.toast?.text ?? null, section: st.ui.section, past: st.past.length }
+    })
+    const b = await page.evaluate(() => { const l = window.__haven.getState().layout; return { aW: l.sections[0].config.W, B: l.sections[0].config.dims.B } })
+    const t0 = s.loose[0][0]
+    check(s.loose[0].length === 1 && s.loose[1].length === 0 && !s.toast, `right half: Coffee table adds one piece to the layout (no toast: ${s.toast})`)
+    check(t0 && t0.x >= b.aW - b.B, `it starts in the right bay (x ${t0?.x})`)
+    await page.keyboard.press('Escape')
+    await page.getByRole('radio', { name: 'Right half' }).click()
+    await page.getByRole('button', { name: 'Ottoman', exact: true }).click({ force: true })
+    await page.waitForTimeout(150)
+    s = await page.evaluate(() => ({ loose: window.__haven.getState().layout.sections[0].config.loose }))
+    const [p, q] = s.loose
+    const apart = p && q && !(p.x < q.x + q.w && q.x < p.x + p.w && p.y < q.y + q.d && q.y < p.y + p.d)
+    check(s.loose.length === 2 && apart, 'the ottoman does not land on the coffee table')
+    const seat = await page.$eval('[data-seats] text', (e) => e.getBoundingClientRect())
+    const looseBoxes = await page.$$eval('[data-kind=coffeeTable], [data-kind=ottoman]', (els) => els.map((e) => e.getBoundingClientRect()))
+    const covered = looseBoxes.some((r) => seat.left < r.right && r.left < seat.right && seat.top < r.bottom && r.top < seat.bottom)
+    check(!covered, 'the seat label is clear of the loose pieces')
+    await page.keyboard.press('Escape')
+    await page.locator('#m-stem').fill('60')
+    await page.locator('#m-stem').press('Enter')
+    await page.waitForTimeout(100)
+    const err = await page.locator('[data-error=stem]').textContent()
+    check(/^min \d+″$/.test(err ?? ''), `stem 60: "${err}"`)
+    check(errors.length === 0, `no console errors ${errors.join('; ')}`)
+    await page.screenshot({ path: `${SHOTS}/shapes-loose.png` })
+    await context.close()
+
+    const fresh = await browser.newContext({ viewport: VIEWPORTS.ipadLandscape })
+    const p2 = await fresh.newPage()
+    const T = '3rW114.5L110R110D44_ba54.5_ra50_PglW114.5L110R110_ba54.5_la50.y2'
+    await p2.goto(`${base}#c=${T}`, { waitUntil: 'networkidle' })
+    await p2.waitForSelector('[data-plan-svg]')
+    await p2.locator('#m-total').fill('240')
+    await p2.locator('#m-total').press('Enter')
+    await p2.getByRole('button', { name: 'Reset', exact: true }).click()
+    const reset = await p2.locator('[role=dialog]').textContent()
+    check(reset.includes('Reset to the T shape?'), `an opened T resets to the T ("${reset.slice(0, 40)}")`)
+    await p2.getByRole('button', { name: 'Reset', exact: true }).last().click()
+    await p2.waitForTimeout(150)
+    check((await code(p2)) === T, 'Reset rebuilds the clean T at its sizes (two backs, 229 x 110)')
+    await p2.goto(`${base}?view#c=${T}`, { waitUntil: 'networkidle' })
+    await p2.reload({ waitUntil: 'networkidle' })
+    await p2.waitForSelector('[data-testid=view-summary]')
+    const note = await p2.textContent('[data-testid=view-summary]')
+    check(!note.includes('3D'), '?view on a T does not mention 3D')
+    await fresh.close()
+  }
+
+  // 7. Screenshots: light and dark at iPad landscape/portrait, laptop and phone.
   for (const scheme of ['light', 'dark']) {
     for (const [vn, vp] of [...Object.entries(VIEWPORTS), ['laptop', LAPTOP]]) {
       const { context, page } = await buildTee(browser, base, 'shared', vp, scheme)
