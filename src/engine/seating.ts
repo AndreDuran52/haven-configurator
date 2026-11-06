@@ -3,9 +3,9 @@ import { CLEARANCE_MIN, OPENING_MIN, SEAT_DEPTH_MIN, WEDGE_FACE_MIN } from './de
 import { BACK_CUSHION } from './profiles';
 import { corners, runIds } from './layout';
 import { MAX_PIECE, SEAT_WARN, TABLE_MAX, TABLE_MIN, cushionOf, isSeat } from './pieces';
-import type { Clearance, Config, RunPiece, SeatCount, Warning } from './types';
+import type { Clearance, Config, SeatCount, Warning } from './types';
 
-export const fmt = (n: number): string => String(Math.round(n * 10) / 10);
+const fmt = (n: number): string => String(Math.round(n * 10) / 10);
 
 /**
  * Straight stretches of seat cushion per run. A stretch is broken by a table,
@@ -13,39 +13,25 @@ export const fmt = (n: number): string => String(Math.round(n * 10) / 10);
  * (wedges); piece and split seams do not break it.
  */
 export function seatStretches(c: Config): number[] {
-  return runIds(c.shape).flatMap((run) => runStretches(c.runs[run] ?? [], c.dims.A));
-}
-
-/** The stretches of one straight row of pieces, in order along it (a run, or a freeform row). */
-export function runStretches(pieces: Pick<RunPiece, 'kind' | 'length' | 'arm'>[], A: number): number[] {
+  const A = c.dims.A;
   const out: number[] = [];
-  let acc = 0;
-  const flush = () => {
-    if (acc > 0) out.push(acc);
-    acc = 0;
-  };
-  for (const p of pieces) {
-    if (p.kind === 'armless') acc += p.length;
-    else if (p.kind === 'oneArm') {
-      if (p.arm === 'start') flush();
-      acc += p.length - A; // cushionOf: the one-arm seat minus its arm
-      if (p.arm === 'end') flush();
-    } else flush();
+  for (const run of runIds(c.shape)) {
+    let acc = 0;
+    const flush = () => {
+      if (acc > 0) out.push(acc);
+      acc = 0;
+    };
+    for (const p of c.runs[run] ?? []) {
+      if (p.kind === 'armless') acc += p.length;
+      else if (p.kind === 'oneArm') {
+        if (p.arm === 'start') flush();
+        acc += cushionOf(p, A);
+        if (p.arm === 'end') flush();
+      } else flush();
+    }
+    flush();
   }
-  flush();
   return out;
-}
-
-/** Comfortable and snug seats for some wedges and stretches (G8). */
-export function countSeats(wedges: number, stretches: number[], seatWidth: number, snugWidth: number): SeatCount {
-  const snug1 = Math.min(snugWidth, seatWidth);
-  let comfortable = wedges;
-  let snug = wedges;
-  for (const len of stretches) {
-    comfortable += Math.floor(len / seatWidth);
-    snug += Math.floor(len / snug1);
-  }
-  return { comfortable, snug, label: formatSeats(comfortable, snug) };
 }
 
 export function formatSeats(comfortable: number, snug: number): string {
@@ -54,7 +40,15 @@ export function formatSeats(comfortable: number, snug: number): string {
 
 /** Each wedge = 1; each stretch = floor(len / seatWidth) .. floor(len / min(snugWidth, seatWidth)) (G8). */
 export function seatCount(c: Config): SeatCount {
-  return countSeats(corners(c.shape).length, seatStretches(c), c.seatWidth, c.snugWidth);
+  const wedges = corners(c.shape).length;
+  const snugWidth = Math.min(c.snugWidth, c.seatWidth);
+  let comfortable = wedges;
+  let snug = wedges;
+  for (const len of seatStretches(c)) {
+    comfortable += Math.floor(len / c.seatWidth);
+    snug += Math.floor(len / snugWidth);
+  }
+  return { comfortable, snug, label: formatSeats(comfortable, snug) };
 }
 
 /** Inside opening, U only (§8). */

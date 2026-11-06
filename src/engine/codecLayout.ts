@@ -66,7 +66,6 @@ export function decodeLayout(link: string): LayoutDecode {
   const version = Number(m[1]);
   if (version > LINK_VERSION) return { error: 'newer' };
   if (checksum(`${m[1]}${m[2]}`) !== m[3]) return { error: 'damaged' };
-  if (version === 4) return { error: 'newer' }; // freeform pieces: a Layout can't hold them (decodeProject reads them)
   const tokens = m[2]!.split('_');
   const starts = tokens.map((t, i) => (t.startsWith('P') && i > 0 ? i : -1)).filter((i) => i >= 0);
   if (starts.length && version < 3) return { error: 'damaged' };

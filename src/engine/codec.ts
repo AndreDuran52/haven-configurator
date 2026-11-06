@@ -21,8 +21,7 @@
 // and adds a decoder/migration.
 //
 // Versions: v1 (H1) · v2 adds Y (table style, 2026-09-26) · v3 adds joined
-// sections (`_P` tokens, the T shape, 2026-10-26; codecLayout.ts) · v4 is
-// freeform pieces (2026-11-06; codecFree.ts). A link is
+// sections (`_P` tokens, the T shape, 2026-10-26; codecLayout.ts). A link is
 // written at the LOWEST version that can express the layout, so every layout
 // that v1 could already share keeps its exact v1 link; an older app shown a
 // newer link says "newer" instead of "damaged". This file is the one-sofa
@@ -33,7 +32,7 @@ import { openEnd, runIds } from './layout';
 import { ARM_MAX, ARM_MIN, WEDGE_RANGE } from './pieces';
 import type { Config, HavenDims, LoosePiece, RunId, RunPiece, Runs, Shape, TableFinish, TableStyle } from './types';
 
-export const LINK_VERSION = 4;
+export const LINK_VERSION = 3;
 
 /** Append-only: a fabric's index is its link code. */
 /** Append-only: a fabric's index is its link code (every FABRICS key must be here). */
@@ -100,15 +99,13 @@ export function runTokens(c: Config): string[] {
 export const SHAPE_CODE = (s: Shape): string => SHAPE[s];
 export const shapeFromCode = (s: string): Shape | undefined => SHAPE_INV[s];
 
-/** The header fields from D on (D, C, K, S, N, X…, F, T, Y): one sofa's, and the free format's (no lock). */
-export function fieldTokens(c: Pick<Config, 'D' | 'wedgeC' | 'seatWidth' | 'snugWidth' | 'dims' | 'fabric' | 'tableFinish' | 'tableStyle'> & { lockOutside?: boolean }): {
-  fields: string;
-  style: number;
-} {
+/** The lowest version for one sofa, and its tokens (header first, no version digit). */
+export function encodeParts(c: Config): { version: number; parts: string[] } {
   const style = code(TABLE_STYLE_CODES, c.tableStyle, 'table style');
-  let h = `D${num(c.D)}`;
+  const version = style ? 2 : 1;
+  let h = `${SHAPE[c.shape]}W${num(c.W)}L${num(c.L)}R${num(c.R)}D${num(c.D)}`;
   if (c.wedgeC !== null) h += `C${num(c.wedgeC)}`;
-  if (c.lockOutside === false) h += 'K';
+  if (!c.lockOutside) h += 'K';
   if (c.seatWidth !== SEAT_WIDTH_DEFAULT) h += `S${num(c.seatWidth)}`;
   if (c.snugWidth !== SNUG_SEAT_WIDTH) h += `N${num(c.snugWidth)}`;
   for (const k of Object.keys(DEFAULT_DIMS) as (keyof HavenDims)[]) {
@@ -119,17 +116,8 @@ export function fieldTokens(c: Pick<Config, 'D' | 'wedgeC' | 'seatWidth' | 'snug
   if (fabric) h += `F${fabric}`;
   if (finish) h += `T${finish}`;
   if (style) h += `Y${style}`;
-  return { fields: h, style };
-}
-
-export const looseToken = (l: LoosePiece): string => `${l.kind === 'ottoman' ? 'o' : 'c'}x${num(l.x)}y${num(l.y)}w${num(l.w)}d${num(l.d)}`;
-
-/** The lowest version for one sofa, and its tokens (header first, no version digit). */
-export function encodeParts(c: Config): { version: number; parts: string[] } {
-  const { fields, style } = fieldTokens(c);
-  const version = style ? 2 : 1;
-  const h = `${SHAPE[c.shape]}W${num(c.W)}L${num(c.L)}R${num(c.R)}${fields}`;
-  const parts = [h, ...runTokens(c), ...c.loose.map(looseToken)];
+  const parts = [h, ...runTokens(c)];
+  for (const l of c.loose) parts.push(`${l.kind === 'ottoman' ? 'o' : 'c'}x${num(l.x)}y${num(l.y)}w${num(l.w)}d${num(l.d)}`);
   return { version, parts };
 }
 
@@ -161,7 +149,6 @@ export function decode(link: string): DecodeResult {
   if (version > LINK_VERSION) return { error: 'newer' };
   if (checksum(`${m[1]}${m[2]}`) !== m[3]) return { error: 'damaged' };
   if (version === 3 && /_P/.test(m[2]!)) return { error: 'newer' };
-  if (version === 4) return { error: 'newer' }; // freeform pieces: decodeProject reads them
   const decoders: Record<number, (b: string) => Config | null> = { 1: (b) => decodeBody(b, 1), 2: (b) => decodeBody(b, 2), 3: (b) => decodeBody(b, 3) };
   const config = decoders[version]?.(m[2]!) ?? null;
   // Later versions: migrations[v](config), chained up to the current schema.
@@ -170,9 +157,9 @@ export function decode(link: string): DecodeResult {
 }
 
 export const NUM = '(\\d+(?:\\.5)?)';
-export const SNUM = '(-?\\d+(?:\\.5)?)'; // loose pieces may sit at negative coordinates
+const SNUM = '(-?\\d+(?:\\.5)?)'; // loose pieces may sit at negative coordinates
 
-export function decodeHeader(fields: string, version: number) {
+function decodeHeader(fields: string, version: number) {
   const vals: Record<string, number> = {};
   const dims: HavenDims = { ...DEFAULT_DIMS };
   let unlocked = false;

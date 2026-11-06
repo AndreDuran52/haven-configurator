@@ -1290,15 +1290,13 @@ Andre's answers (Q37–Q44):
    - the wedge slider in the corner's tap menu and the Size tab; the bottom bar removed, so the plan is taller;
    - obvious drags: seam handles as grips, a move handle on the selected seat (the long-press stays), a grip on tray chips;
    - iPad landscape: the panel on the right; portrait and phone: tabs under the plan.
-3. **Freeform engine** (pure, no UI). **Built 2026-11-06 (waiting for Andre's review).** Andre's answers that shaped it (Q45–Q48): back to back is allowed, with a shared frame or two backs per pair; pulling a seat out of a row closes the row up; growing a seat pushes the rest along (refused only if it would hit another sofa); Turn turns the whole sofa.
-   - **Positions are derived, not stored** (a change from "x, y, rot" per piece, as Stage A did for the T's halves): each sofa has one root with a pose `{x, y, rot}`; every other piece is `at: { to, face, offset?, sharedBack? }` on a face of another piece. So close-up, push-along and a depth change come from the layout itself.
-   - `FreeLayout = { schema 1, kind 'free', shared (D, corner, seat widths, fabric, finish, table style, dims; no lock), pieces (parents first), loose, nextId }`; `FreePiece = { id, kind (armless, oneArm, table, wedge), length? (a wedge's is the corner C), arm? (start = LAF), at }`.
-   - Local frame as the back run: s along, t from the back (0) to the front (D); world = turn (clockwise, y down) + move. The U is back 0°, right leg 90°, left leg 270°, wedges 0° and 90°.
-   - **Attach rule:** a child's start or end (a wedge's a or b) meets the parent's face back point to back point, normals opposed; exactly one face and turn fits, so a wedge on a seat end always turns toward the seat side (an S needs back-to-back pieces). An arm face takes nothing. A back attachment turns the child 180°, lined up by an offset, its frame on the parent's when shared.
-   - **Overlap rule:** no overlap, except frame on frame (both pieces' back strips): a shared back.
-   - Engine files: `freeTypes`, `freeGeom` (geometry and the attach rule), `freePose` (poses from the roots), `freeBuild` (pieces, sofas, rows, seats by the run rules, warnings as today's, errors), `freeSnap` (open faces, targets), `freeOps` (add, move, remove with close-up, turn, length, arm, shared back, shared fields), `freeConvert` (`toFree`: a U, an L or the T, same pieces in the same places), `codecFree`.
-   - **Link v4:** `4f` + the header fields from D on (no W/L/R, no lock), then one token per piece, parents first: `s|a|t|w`, the length (none for a wedge), `S|E` for an arm, then `x…y…r0-3` (a root) or `p<i><s|e|a|b|k>[o…][H]` (attached to piece i; `k` = its back, `o` offset, `H` shared frame); loose pieces as v1. E.g. a straight 3-seat sofa: `4fD44_a50Sx0y0r0_s36p1e_a50Ep2e.8w`. `decode()` and `decodeLayout()` read v4 as "newer" (the app can't show freeform until stage 4); `decodeProject()` reads every version. `LINK_VERSION` is 4.
-   - Small refactors with no change for today's layouts (every v1–v3 golden byte-identical): the wedge outline (`wedgePolygon`), seat stretches per row (`runStretches`, `countSeats`), the header fields (`fieldTokens`), clearances counting pieces with no run.
+3. **Freeform engine** (pure, no UI):
+   - `FreeLayout`: the shared fields plus `FreePiece = { id, kind (armless, oneArm, wedge, table), length, arm?, x, y, rot 0/90/180/270 }`, and loose pieces;
+   - each piece is built in its own frame with today's piece geometry, then turned and moved (90° keeps every rect axis-aligned);
+   - snap targets: the open end faces of seats and tables and both faces of a wedge, backs lined up, never an arm face; empty floor starts a group;
+   - ops: add, move, turn, delete, set length; `toFree(layout)` converts a standard shape or a T (one-way, Undo goes back);
+   - derived: groups, chains (straight rows between wedges and ends), seats per chain, warnings, overlap refusal, bounds;
+   - **codec v4** (freeform links); every v1–v3 golden unchanged.
 4. **Freeform in the plan:** the "Move pieces freely" switch; "Blank floor" on the Projects home; drag with live snap, Turn, delete by dragging to the trash, width in the tap menu; dimensions per group and the gaps between groups; save, share, `?view`, the PDF plan.
 5. **3D for free layouts and the T:** world-placed parts, back cushions and pillows per chain, the T's shared frame shown once, camera fit, the PDF 3D views.
 
@@ -1487,10 +1485,6 @@ Answer in a word. **Q1 is answered (camera, spring-back orbit), and Q9, Q10, Q12
 | Q42 | Typed sizes with free pieces | **Answered:** two modes; "Move pieces freely" reads the sizes off the pieces |
 | Q43 | Side panel and wedge | **Answered:** tabs Size · Pieces · Look; the wedge slider in the corner's menu and the Size tab |
 | Q44 | Order, and the entry budget | **Answered:** B1 fixes, redesign, freeform; budget may rise to 115 kB gzip |
-| Q45 | Freeform back to back (double-sided) | **Answered 2026-11-06:** yes, a shared frame or two backs per pair; a T converts as it is |
-| Q46 | Pulling a seat out of a row | **Answered:** the rest slides over and closes up |
-| Q47 | Turn on a piece that is part of a sofa | **Answered:** turns the whole sofa about its centre |
-| Q48 | Growing a seat in a row | **Answered:** pushes the rest along; refused only if it would hit another sofa |
 
 ---
 

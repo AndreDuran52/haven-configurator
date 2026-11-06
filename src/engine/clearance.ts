@@ -52,29 +52,20 @@ const regionOf = (p: BuiltPiece): Region | null => {
   return p.run;
 };
 
-/**
- * Clearances from one table rectangle to every sofa region. Freeform pieces
- * (no run or corner; stage 3) have no region: they count toward `min` and
- * `overlap` only. Pass sofa pieces only (never the loose ones).
- */
-export function clearanceFor(pieceId: string, table: Rect, pieces: BuiltPiece[], free = false): Clearance {
+/** Clearances from one table rectangle to every sofa region. */
+export function clearanceFor(pieceId: string, table: Rect, pieces: BuiltPiece[]): Clearance {
   const poly = rectPoly(table);
   const out: Record<Region, number | null> = { back: null, left: null, right: null, backLeft: null, backRight: null };
-  let other: number | null = null;
   let overlap = false;
   for (const p of pieces) {
     const region = regionOf(p);
-    if (!region && !free) continue;
+    if (!region) continue;
     if (convexOverlap(poly, p.polygon)) overlap = true;
     const dist = convexDistance(poly, p.polygon);
-    if (!region) {
-      other = other === null ? dist : Math.min(other, dist);
-      continue;
-    }
     const prev = out[region];
     out[region] = prev === null ? dist : Math.min(prev, dist);
   }
-  const values = [...Object.values(out), other].filter((v): v is number => v !== null);
+  const values = Object.values(out).filter((v): v is number => v !== null);
   return {
     pieceId,
     back: out.back === null ? null : round1(out.back),

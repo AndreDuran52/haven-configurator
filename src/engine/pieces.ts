@@ -1,5 +1,5 @@
 // Piece library (§4) and the per-piece size rules (§3, §8).
-import type { Pt, RunEnd, RunPiece, RunPieceKind } from './types';
+import type { RunEnd, RunPiece, RunPieceKind } from './types';
 
 /** Max single piece INCLUDING its arm (§3). Anything longer auto-splits. */
 export const MAX_PIECE = 108;
@@ -43,19 +43,6 @@ export const PIECE_LIBRARY = [
   { kind: 'ottoman', label: 'Ottoman (loose)', ...LOOSE_DEFAULTS.ottoman },
   { kind: 'coffeeTable', label: 'Coffee table (loose)', ...LOOSE_DEFAULTS.coffeeTable },
 ] as const;
-
-/**
- * The corner wedge in its own frame (the back-left corner, §8): (0,0) (C,0)
- * (C,D) (D,C) (0,C), the angled face from (C,D) to (D,C). A square when C = D
- * (the repeated point is dropped).
- */
-export function wedgePolygon(C: number, D: number): Pt[] {
-  const poly: Pt[] = [[0, 0], [C, 0], [C, D], [D, C], [0, C]];
-  return poly.filter((p, i) => {
-    const q = poly[(i + 1) % poly.length]!;
-    return p[0] !== q[0] || p[1] !== q[1];
-  });
-}
 
 /** Round to the 0.5" grid. `+ 0` normalises -0 so configs survive a JSON round trip. */
 export const half = (x: number): number => Math.round(x * 2) / 2 + 0;

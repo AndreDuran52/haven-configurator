@@ -196,7 +196,7 @@ describe('link v3', () => {
     ];
     for (const b of bad) expect(decodeLayout(resum(b)), b).toEqual({ error: 'damaged' });
     expect(decodeLayout(GOLDEN_V3.Tshared.slice(0, -4))).toEqual({ error: 'damaged' });
-    expect(decodeLayout(`5${GOLDEN_V3.Tshared.slice(1)}`)).toEqual({ error: 'newer' });
+    expect(decodeLayout(`4${GOLDEN_V3.Tshared.slice(1)}`)).toEqual({ error: 'newer' });
   });
 
   it('the one-sofa decoder calls a T "newer" and still reads a v3 link with no sections', async () => {
