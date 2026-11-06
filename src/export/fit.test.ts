@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { buildHaven, standardU } from '@/engine';
+import { soloSource } from '@/plan/dims';
 import { fitPlan } from './fit';
 import { SheetLayout } from './layout';
 
 describe('sheet scale (plan §9 "Scale")', () => {
   it('Standard U alone prints at 3/8" = 1\'-0"; W 300 at 1/4"', () => {
-    const plan = (c = standardU()) => fitPlan(buildHaven(c), new SheetLayout({ plan: true, views: [] }).plan!);
+    const plan = (c = standardU()) => fitPlan(soloSource(buildHaven(c)), new SheetLayout({ plan: true, views: [] }).plan!);
     expect(plan().label).toBe('SCALE 3/8" = 1\'-0"');
     expect(plan().S).toBe(2.25);
     expect(plan(standardU({ W: 300 })).label).toBe('SCALE 1/4" = 1\'-0"');
@@ -13,7 +14,7 @@ describe('sheet scale (plan §9 "Scale")', () => {
 
   it('beside 3D views the plan still gets a standard scale, and fits its box', () => {
     const L = new SheetLayout({ plan: true, views: ['threeQuarter', 'iso'] });
-    const f = fitPlan(buildHaven(standardU()), L.plan!);
+    const f = fitPlan(soloSource(buildHaven(standardU())), L.plan!);
     expect(f.label).toBe('SCALE 1/4" = 1\'-0"');
     const w = f.dims.bounds.w * f.S;
     expect(f.ox + f.dims.bounds.x * f.S).toBeGreaterThanOrEqual(L.plan!.x - 1e-9);

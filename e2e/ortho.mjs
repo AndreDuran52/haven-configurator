@@ -12,6 +12,21 @@ async function settle(page) {
   await page.waitForTimeout(150)
 }
 
+/**
+ * Resting AND unchanged over ~0.5 s. The first frames after opening 3D can
+ * report resting at the hand-off camera before the tween to the preset starts
+ * (seen under load, 2026-11-06: a baseline of 0.3° instead of the 3/4 preset).
+ */
+async function steady(page) {
+  let last = ''
+  for (let same = 0, i = 0; same < 3 && i < 100; i++) {
+    await settle(page)
+    const s = await page.evaluate(() => JSON.stringify(window.__haven3d.state()))
+    same = s === last ? same + 1 : 0
+    last = s
+  }
+}
+
 async function open3d(browser, base, viewport = VIEWPORTS.ipadLandscape, hash = '') {
   const app = await openApp(browser, base, hash, viewport)
   await app.page.getByRole('radio', { name: '3D' }).click()
@@ -222,7 +237,7 @@ export async function ortho(browser, base, check) {
     await page.getByRole('radio', { name: '3D' }).click()
     await page.waitForFunction(() => !!window.__haven3d, null, { timeout: 30000 })
     await page.waitForTimeout(600)
-    await settle(page)
+    await steady(page)
     const box = await page.locator('[data-testid=three-view] canvas').boundingBox()
     const cx = box.x + box.width / 2
     const cy = box.y + box.height / 2

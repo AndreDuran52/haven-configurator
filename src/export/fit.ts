@@ -1,8 +1,8 @@
 // The plan's paper scale (plan §9 "Scale"): the largest architectural scale
 // whose plan, with its dimensions, fits the box. Pure.
-import type { BuildResult } from '@/engine';
-import { layoutDims } from '@/plan/dimLayout';
-import { PRINT, type DimLayout } from '@/plan/dims';
+import { teeOf, type BuildResult, type Layout } from '@/engine';
+import { layoutSource } from '@/plan/dimLayout';
+import { PRINT, type DimLayout, type DimSource } from '@/plan/dims';
 import { fmtFtIn, fmtIn } from '@/plan/format';
 import type { Box } from './layout';
 
@@ -27,10 +27,10 @@ export interface PlanFit {
 }
 
 /** The largest architectural scale whose plan (with its dimensions) fits the box. */
-export function fitPlan(b: BuildResult, box: Box): PlanFit {
+export function fitPlan(src: DimSource, box: Box): PlanFit {
   const area = { ...box, y: box.y + LABEL_H, h: box.h - LABEL_H };
   const place = (S: number, label: string): PlanFit | null => {
-    const dims = layoutDims(b, { ...PRINT, k: 1 / S });
+    const dims = layoutSource(src, { ...PRINT, k: 1 / S });
     const w = dims.bounds.w * S;
     const h = dims.bounds.h * S;
     if (w > area.w || h > area.h) return null;
@@ -50,9 +50,16 @@ export function fitPlan(b: BuildResult, box: Box): PlanFit {
   return place(S, 'NOT TO SCALE (fit to page)')!;
 }
 
-
 export function sizesLine(b: BuildResult): string {
   const legs = b.shape === 'U' ? ` x ${fmtIn(b.L)} L x ${fmtIn(b.R)} R` : b.shape === 'L-left' ? ` x ${fmtIn(b.L)} L` : ` x ${fmtIn(b.R)} R`;
   return `${fmtIn(b.W)} W${legs} · ${fmtIn(b.D)} deep · ${fmtFtIn(b.W)} wide`;
 }
 
+
+/** The header's shape and sizes: one sofa, or a T ("T shape, shared back · 229" W x 110" stem · 44" deep"). */
+export function headerLine(layout: Layout, b: BuildResult): string {
+  const t = teeOf(layout);
+  if (!t) return `${b.shape === 'U' ? 'U shape' : b.shape === 'L-left' ? 'L shape, left' : 'L shape, right'}  ·  ${sizesLine(b)}`;
+  const stem = t.stem[0] === t.stem[1] ? fmtIn(t.stem[0]) : `${fmtIn(t.stem[0])} / ${fmtIn(t.stem[1])}`;
+  return `T shape, ${t.sharedBack ? 'shared back' : 'two backs'}  ·  ${fmtIn(t.total)} W x ${stem} stem · ${fmtIn(b.D)} deep · ${fmtFtIn(t.total)} wide`;
+}

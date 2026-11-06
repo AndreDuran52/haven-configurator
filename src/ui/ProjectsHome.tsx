@@ -4,8 +4,8 @@
 // backup file: projects live on this device only (no login, plan H7), so the
 // file is how they move between the iPad and the laptop or survive the browser
 // clearing its storage. Lazy-loaded.
-import { useRef, useState } from 'react';
-import { rootConfig, type Layout } from '@/engine';
+import { lazy, Suspense, useRef, useState } from 'react';
+import type { Layout } from '@/engine';
 import { readDraft } from '@/state/draft';
 import { projectFor } from '@/state/openProject';
 import { exportSaved, importSaved, listSaved, SAVED_CAP, savedDate } from '@/state/savedLayouts';
@@ -18,6 +18,8 @@ import { PlanThumb } from './PlanThumb';
 import { SavedList, type OpenProject } from './SavedList';
 import { UpdateChip } from './UpdateChip';
 
+const TeeForm = lazy(() => import('./TeeForm'));
+
 export default function ProjectsHome() {
   const store = useHavenStore();
   const [list, setList] = useState(listSaved);
@@ -25,7 +27,7 @@ export default function ProjectsHome() {
   const [recovered, setRecovered] = useState(recoveredNotice);
   const [draft] = useState(readDraft);
   const [draftProject] = useState(() => projectFor(draft?.projectId));
-  const [blank, setBlank] = useState(false);
+  const [form, setForm] = useState<'blank' | 'tee' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const file = useRef<HTMLInputElement>(null);
   const toast = (t: string) => store.getState().toast(t);
@@ -91,17 +93,25 @@ export default function ProjectsHome() {
 
         <section className="flex flex-col gap-2">
           <h2 className="text-xs font-semibold tracking-wide text-ink-muted uppercase">New Haven</h2>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
             <Button tone="primary" onClick={() => start({ kind: 'standardU' })} data-testid="new-standardU">
               Standard U
             </Button>
             <Button onClick={() => start({ kind: 'standardL', side: 'left' })}>Standard L left</Button>
             <Button onClick={() => start({ kind: 'standardL', side: 'right' })}>Standard L right</Button>
-            <Button onClick={() => setBlank(!blank)} aria-expanded={blank}>
+            <Button onClick={() => setForm(form === 'tee' ? null : 'tee')} aria-expanded={form === 'tee'} data-testid="new-tee">
+              T shape…
+            </Button>
+            <Button onClick={() => setForm(form === 'blank' ? null : 'blank')} aria-expanded={form === 'blank'}>
               Blank…
             </Button>
           </div>
-          {blank && <BlankForm onStart={start} onError={setError} />}
+          {form === 'blank' && <BlankForm onStart={start} onError={setError} />}
+          {form === 'tee' && (
+            <Suspense fallback={null}>
+              <TeeForm onStart={start} onError={setError} />
+            </Suspense>
+          )}
           {error && <p className="text-sm text-danger">{error}</p>}
         </section>
 
@@ -115,7 +125,7 @@ export default function ProjectsHome() {
               data-testid="continue"
             >
               <span className="h-20 w-32 shrink-0 rounded-lg bg-white p-1">
-                <PlanThumb config={rootConfig(draft.layout)} />
+                <PlanThumb layout={draft.layout} />
               </span>
               <span className="flex flex-col">
                 <span className="font-semibold">Continue last layout{draftProject ? ` (${draftProject.name})` : ''}</span>

@@ -201,6 +201,15 @@ export interface Frame {
   y1: number
 }
 
+/** What a dimension layout measures: its groups (built per profile) and the object frame. */
+export interface DimSource {
+  groups: (p: DimProfile) => Group[]
+  frame: Frame
+}
+
+/** One sofa (today's plan). */
+export const soloSource = (b: BuildResult): DimSource => ({ groups: (p) => requests(b, p), frame: planFrame(b) })
+
 export function planFrame(b: BuildResult): Frame {
   const maxLeg = Math.max(b.shape !== 'L-right' ? b.L : 0, b.shape !== 'L-left' ? b.R : 0, b.D)
   return { x0: 0, y0: 0, x1: b.W, y1: maxLeg }

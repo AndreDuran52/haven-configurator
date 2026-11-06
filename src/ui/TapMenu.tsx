@@ -5,7 +5,7 @@
 // Lazy-loaded (default export) so Radix Popover stays out of the entry chunk.
 import * as Popover from '@radix-ui/react-popover';
 import { useEffect, useState, type ReactNode } from 'react';
-import { planToClient } from '@/plan/planScreen';
+import { localToClient } from '@/plan/planScreen';
 import { builtOf, useHaven, useHavenStore, useLive } from '@/state/store';
 import { selectionOf } from './selection';
 import { MenuBody } from './TapMenuBody';
@@ -25,7 +25,7 @@ function useWide() {
 export default function TapMenu() {
   const store = useHavenStore();
   const selectedId = useHaven((s) => s.ui.selectedId);
-  const view = useHaven((s) => s.ui.view);
+  const view = useHaven((s) => (s.layout.sections.length > 1 ? 'plan' : s.ui.view));
   const live = useLive();
   const sel = selectionOf(live, selectedId);
   const wide = useWide();
@@ -55,8 +55,8 @@ export default function TapMenu() {
   // Anchor: the piece's box on screen.
   const b = builtOf(live);
   const box = sel.rect ?? b.pieces.find((p) => p.id === selectedId)?.bbox;
-  const p0 = box && planToClient(box.x, box.y);
-  const p1 = box && planToClient(box.x + box.w, box.y + box.h);
+  const p0 = box && localToClient(box.x, box.y);
+  const p1 = box && localToClient(box.x + box.w, box.y + box.h);
   if (!p0 || !p1) return null;
   return (
     <Popover.Root open onOpenChange={(o) => !o && close()}>

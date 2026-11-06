@@ -50,3 +50,17 @@ describe('store over layouts', () => {
     expect(isDirty(s.getState())).toBe(false);
   });
 });
+
+describe('Reset for an opened layout (QA 2026-11-06)', () => {
+  it('an opened T resets to the T at its own sizes; a single sofa after it does not', async () => {
+    const { startLabel } = await import('./start');
+    const t = teeLayout({ total: 229, stem: 110, sharedBack: false });
+    const s = createHavenStore(t);
+    expect(s.getState().ui.lastStart).toEqual({ kind: 'tee', total: 229, stem: 110, D: 44, sharedBack: false });
+    expect(startLabel(s.getState().ui.lastStart)).toBe('T shape');
+    s.getState().open(solo(standardU()));
+    expect(s.getState().ui.lastStart).toEqual({ kind: 'standardU' });
+    s.getState().open(t);
+    expect(s.getState().ui.lastStart.kind).toBe('tee');
+  });
+});

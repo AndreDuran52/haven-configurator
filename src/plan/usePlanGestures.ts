@@ -92,11 +92,14 @@ export function usePlanGestures({
   built,
   fit,
   grips,
+  offset = [0, 0],
 }: {
   svgRef: React.RefObject<SVGSVGElement | null>;
   built: BuildResult;
   fit: PlanFitResult | null;
   grips: Grip[];
+  /** World position of the edited section (shapes): pointer points are turned into its own inches. */
+  offset?: Pt;
 }) {
   const store = useHavenStore();
   const gesture = useRef<Gesture | null>(null);
@@ -108,7 +111,7 @@ export function usePlanGestures({
 
   const toPlan = (x: number, y: number, m: DOMMatrix): Pt => {
     const p = new DOMPoint(x, y).matrixTransform(m);
-    return [p.x, p.y];
+    return [p.x - offset[0], p.y - offset[1]];
   };
 
   const runFrame = useCallback(() => {

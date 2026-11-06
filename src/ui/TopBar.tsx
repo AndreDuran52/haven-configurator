@@ -3,7 +3,7 @@
 // top safe-area inset (status bar / notch) in the installed app.
 import { lazy, Suspense, useState } from 'react';
 import { presetFor, startLabel } from '@/state/start';
-import { builtOf, codeOf, isDirty, useHaven, useHavenStore, useLive } from '@/state/store';
+import { codeOf, isDirty, layoutBuiltOf, useHaven, useHavenStore, useLiveLayout } from '@/state/store';
 import { editUrl } from '@/state/url';
 import { Button } from './controls';
 
@@ -18,7 +18,7 @@ export function TopBar() {
   const canUndo = useHaven((s) => s.past.length > 0 && !s.draft);
   const canRedo = useHaven((s) => s.future.length > 0 && !s.draft);
   const lastStart = useHaven((s) => s.ui.lastStart);
-  const seats = builtOf(useLive()).seats.label;
+  const seats = layoutBuiltOf(useLiveLayout()).seats.label;
   const [startOpen, setStartOpen] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
   const [saveOpen, setSaveOpen] = useState<false | 'save' | 'leave'>(false);

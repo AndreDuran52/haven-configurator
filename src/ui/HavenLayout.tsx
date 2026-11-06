@@ -24,7 +24,8 @@ const WedgeSlider = lazy(() => import('./WedgeSlider').then((m) => ({ default: m
 const ViewSummary = lazy(() => import('./ViewSummary').then((m) => ({ default: m.ViewSummary })));
 
 export function HavenLayout() {
-  const view = useHaven((s) => s.ui.view);
+  // Shapes B1: a T has no 3D yet (B2), so it always shows the plan; ui.view is kept for later.
+  const view = useHaven((s) => (s.layout.sections.length > 1 ? 'plan' : s.ui.view));
   const selected = useHaven((s) => s.ui.selectedId !== null);
   const readOnly = useHaven((s) => s.ui.readOnly);
   useEffect(() => warm3d(window), []);

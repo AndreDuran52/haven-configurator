@@ -2,7 +2,7 @@
 // screen fit. Pure: requests (dims.ts) + profile -> primitives in plan inches.
 import type { BuildResult, Pt } from '@/engine'
 import { CAP_HEIGHT, textWidth } from './textMetrics'
-import { ROLE_ORDER, SCREEN, planFrame, relaxLabels, requests, type DimLayout, type DimProfile, type Frame, type Group, type Side } from './dims'
+import { ROLE_ORDER, SCREEN, relaxLabels, soloSource, type DimLayout, type DimProfile, type DimSource, type Frame, type Group, type Side } from './dims'
 
 interface Placed {
   group: Group
@@ -57,8 +57,10 @@ function tierHeight(pl: Omit<Placed, 'tier'>, p: DimProfile): number {
 }
 
 export function layoutDims(b: BuildResult, p: DimProfile): DimLayout {
-  return layoutGroups(requests(b, p), planFrame(b), p)
+  return layoutSource(soloSource(b), p)
 }
+
+export const layoutSource = (src: DimSource, p: DimProfile): DimLayout => layoutGroups(src.groups(p), src.frame, p)
 
 export function layoutGroups(groups: Group[], f: Frame, p: DimProfile): DimLayout {
   const sides: Side[] = ['top', 'bottom', 'left', 'right']
@@ -188,9 +190,14 @@ export function layoutGroups(groups: Group[], f: Frame, p: DimProfile): DimLayou
  * (through second label rows) weakly depend on k. Fixed-point, converges in 2–3 passes.
  */
 export function fitScreen(b: BuildResult, viewW: number, viewH: number, pad = 12, base = SCREEN): { k: number; layout: DimLayout } {
-  const maxLeg = Math.max(b.shape !== 'L-right' ? b.L : 0, b.shape !== 'L-left' ? b.R : 0, b.D)
-  let k = Math.max(b.W / viewW, maxLeg / viewH) * 1.6
-  let layout = layoutDims(b, { ...base, k })
+  return fitSource(soloSource(b), viewW, viewH, pad, base)
+}
+
+/** fitScreen for any dimension source (one sofa or a layout of sections). */
+export function fitSource(src: DimSource, viewW: number, viewH: number, pad = 12, base = SCREEN): { k: number; layout: DimLayout } {
+  const f = src.frame
+  let k = Math.max((f.x1 - f.x0) / viewW, (f.y1 - f.y0) / viewH) * 1.6
+  let layout = layoutSource(src, { ...base, k })
   for (let i = 0; i < 12; i++) {
     // text may stick out past the ends of the object along the axis; use bounds overhang too
     const kW = layout.bounds.w / (viewW - 2 * pad)
@@ -198,7 +205,7 @@ export function fitScreen(b: BuildResult, viewW: number, viewH: number, pad = 12
     const next = Math.max(kW, kH)
     if (Math.abs(next - k) / k < 0.002) break
     k = next
-    layout = layoutDims(b, { ...base, k })
+    layout = layoutSource(src, { ...base, k })
   }
   return { k, layout }
 }

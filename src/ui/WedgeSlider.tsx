@@ -2,7 +2,7 @@
 // ± steppers. Dragging drafts from the committed config; release commits (one
 // undo step). The part the runs can't absorb is shaded; the engine clamps (G3).
 import * as Slider from '@radix-ui/react-slider';
-import { WEDGE_RANGE, resetWedge, setWedge, wedgeC, wedgeRange } from '@/engine';
+import { WEDGE_RANGE, layoutWedgeRange, resetWedge, setWedge, wedgeC } from '@/engine';
 import { useMemo, useRef } from 'react';
 import { builtOf, useHaven, useHavenStore, useLive } from '@/state/store';
 import { Button, WarnChip } from './controls';
@@ -10,12 +10,14 @@ import { Button, WarnChip } from './controls';
 export function WedgeSlider() {
   const store = useHavenStore();
   const live = useLive();
+  // A T: the corner range both halves can take (the corner size is shared).
+  const layout = useHaven((s) => s.layout);
   const config = useHaven((s) => s.config);
   const built = builtOf(live);
   const C = wedgeC(live);
   const min = live.D;
   const max = live.D + WEDGE_RANGE;
-  const range = useMemo(() => wedgeRange(config), [config]);
+  const range = useMemo(() => layoutWedgeRange(layout), [layout]);
   const face = built.warnings.find((w) => w.code === 'wedgeFaceUnder8');
   const pct = (v: number) => ((v - min) / (max - min)) * 100;
 

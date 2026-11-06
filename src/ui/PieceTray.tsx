@@ -5,8 +5,8 @@
 // drag the tray becomes the trash. Hidden on phones (view and share first,
 // plan §8): the plan keeps its height there; the tap menu still edits.
 import { useRef, useState } from 'react';
-import { addLoose, LOOSE_DEFAULTS, SNAP_HYSTERESIS, type Config } from '@/engine';
-import { clientToPlan, planSvg } from '@/plan/planScreen';
+import { addLooseInLayout, LOOSE_DEFAULTS, rootConfig, SNAP_HYSTERESIS, type Config, type Layout } from '@/engine';
+import { clientToLocal, planOffset, planSvg } from '@/plan/planScreen';
 import { isLooseTray, nearestTarget, placementTargets, type PlacementTarget, type TrayKind } from '@/plan/placementTargets';
 import { useHaven, useHavenStore } from '@/state/store';
 
@@ -28,16 +28,26 @@ type TrayDrag = {
   start: [number, number];
   started: boolean;
   startConfig: Config;
+  startLayout: Layout;
+  section: string;
   targets: PlacementTarget[];
   current: PlacementTarget | null;
-  loose: Config | null;
+  loose: Layout | null;
 };
 
-/** A loose piece dropped at plan point `pt` (its centre under the finger). */
-function looseAt(c: Config, kind: 'ottoman' | 'coffeeTable', pt: [number, number]): Config {
+/**
+ * A loose piece dropped at plan point `pt` of the edited section (its centre
+ * under the finger). Loose pieces live in the root (world inches), so a T's
+ * right half adds its offset (QA 2026-11-06: they were refused there).
+ */
+function looseAt(l: Layout, section: string, kind: 'ottoman' | 'coffeeTable', pt: [number, number]): Layout {
   const { w, d } = LOOSE_DEFAULTS[kind];
-  return addLoose(c, kind, { x: pt[0] - w / 2, y: pt[1] - d / 2 }).config;
+  const [ox, oy] = planOffset();
+  return addLooseInLayout(l, section, kind, { x: pt[0] + ox - w / 2, y: pt[1] + oy - d / 2 }).layout;
 }
+
+/** The newest loose piece of a layout (it lives in the root). */
+const newestLoose = (l: Layout) => rootConfig(l).loose[rootConfig(l).loose.length - 1]!.id;
 
 export function PieceTray() {
   const store = useHavenStore();
@@ -50,10 +60,12 @@ export function PieceTray() {
     const s = store.getState();
     s.setView('plan'); // pieces are placed in the plan (a tap in 3D goes back to it)
     if (isLooseTray(kind)) {
-      const r = addLoose(s.config, kind);
+      const r = addLooseInLayout(s.layout, s.ui.section, kind);
       if (r.rejected) return s.toast(r.rejected.message);
-      s.commit(r.config);
-      s.setUi({ placing: null, selectedId: r.config.loose[r.config.loose.length - 1]!.id });
+      s.commitLayout(r.layout);
+      // The new piece is the root's: edit it there (a T's left half).
+      s.setSection(r.layout.sections[0]!.id);
+      s.setUi({ placing: null, selectedId: newestLoose(r.layout) });
       return;
     }
     const next = placing === kind ? null : kind;
@@ -70,6 +82,8 @@ export function PieceTray() {
       start: [e.clientX, e.clientY],
       started: false,
       startConfig: store.getState().config,
+      startLayout: store.getState().layout,
+      section: store.getState().ui.section,
       targets: [],
       current: null,
       loose: null,
@@ -90,7 +104,7 @@ export function PieceTray() {
     const svg = planSvg();
     const r = svg?.getBoundingClientRect();
     const inside = !!r && e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
-    const pt = inside ? clientToPlan(e.clientX, e.clientY) : null;
+    const pt = inside ? clientToLocal(e.clientX, e.clientY) : null;
     const s = store.getState();
     if (!pt) {
       d.current = null;
@@ -99,8 +113,8 @@ export function PieceTray() {
       return;
     }
     if (isLooseTray(d.kind)) {
-      d.loose = looseAt(d.startConfig, d.kind, pt);
-      s.setDraft(d.loose);
+      d.loose = looseAt(d.startLayout, d.section, d.kind, pt);
+      s.setLayoutDraft(d.loose);
       return;
     }
     d.current = nearestTarget(d.targets, pt, d.current, SNAP_HYSTERESIS, TRAY_SNAP_MAX);
@@ -119,11 +133,12 @@ export function PieceTray() {
       return;
     }
     s.setUi({ dragging: null });
-    const result = d.current?.config ?? d.loose;
-    if (commit && result) {
-      s.commit(result);
-      if (d.loose) s.setUi({ selectedId: result.loose[result.loose.length - 1]!.id });
-    } else s.cancelDraft();
+    if (commit && d.loose) {
+      s.commitLayout(d.loose);
+      s.setSection(d.loose.sections[0]!.id);
+      s.setUi({ selectedId: newestLoose(d.loose) });
+    } else if (commit && d.current) s.commit(d.current.config);
+    else s.cancelDraft();
   };
 
   if (dragging === 'table') {
