@@ -37,7 +37,7 @@ export interface UiState {
   selectedId: string | null;
   /** Tap-to-place (plan §8): a tray piece waiting for a "+" pin. */
   placing: TrayKind | null;
-  /** The running plan gesture, if any (the tray turns into the trash during a table drag). */
+  /** The running plan gesture, if any (a trash bar shows over the plan during a table drag). */
   dragging: 'seam' | 'table' | 'reorder' | 'loose' | 'tray' | null;
   /** The last Start-menu choice; Reset returns to its preset. */
   lastStart: StartChoice;
@@ -51,7 +51,11 @@ export interface UiState {
   project: { id: string; name: string; code: string } | null;
   /** The section being edited ('a' = the root; a T has 'a' left half and 'b' right half). UI only. */
   section: string;
+  /** The side panel's tab (editor redesign, Andre 2026-11-06). UI only. */
+  panel: PanelTab;
 }
+
+export type PanelTab = 'size' | 'pieces' | 'look';
 
 export interface CommitOpts extends H.CommitOptions {
   /** Which section `next` belongs to (default: ui.section). */
@@ -139,6 +143,7 @@ export function createHavenStore(initial: Layout | Config, ui: Partial<UiState> 
         screen: 'editor',
         project: null,
         section: 'a',
+        panel: 'size',
         ...ui,
       },
       setDraft: (next, section = get().ui.section) => {

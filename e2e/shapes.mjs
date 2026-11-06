@@ -5,7 +5,7 @@
 // Fresh browser contexts only. Screenshots light and dark at four sizes.
 import { VIEWPORTS } from './browser.mjs'
 import { pdfText } from './h6.mjs'
-import { dimTexts, labelCheck, setField } from './lib.mjs'
+import { dimTexts, labelCheck, panel, setField } from './lib.mjs'
 
 const SHOTS = 'test-results'
 const LAPTOP = { width: 1440, height: 900 }
@@ -109,7 +109,7 @@ export async function shapes(browser, base, check) {
     const cdp = await context.newCDPSession(page)
     const touch = (type, pts) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: pts })
     const grips = await page.$$eval('[data-grip]', (els) => els.map((e) => e.getAttribute('data-grip')))
-    const sel = `[data-grip="${grips[0]}"] circle:nth-of-type(2)`
+    const sel = `[data-grip="${grips[0]}"] rect`
     const g = await page.$eval(sel, (e) => {
       const r = e.getBoundingClientRect()
       return [r.left + r.width / 2, r.top + r.height / 2]
@@ -199,6 +199,7 @@ export async function shapes(browser, base, check) {
   {
     const { context, page, errors } = await buildTee(browser, base, 'shared')
     await page.getByRole('radio', { name: 'Right half' }).click()
+    await panel(page, 'Pieces')
     await page.getByRole('button', { name: 'Coffee table', exact: true }).click()
     await page.waitForTimeout(150)
     let s = await page.evaluate(() => {
@@ -210,7 +211,9 @@ export async function shapes(browser, base, check) {
     check(s.loose[0].length === 1 && s.loose[1].length === 0 && !s.toast, `right half: Coffee table adds one piece to the layout (no toast: ${s.toast})`)
     check(t0 && t0.x >= b.aW - b.B, `it starts in the right bay (x ${t0?.x})`)
     await page.keyboard.press('Escape')
+    await panel(page, 'Size')
     await page.getByRole('radio', { name: 'Right half' }).click()
+    await panel(page, 'Pieces')
     await page.getByRole('button', { name: 'Ottoman', exact: true }).click({ force: true })
     await page.waitForTimeout(150)
     s = await page.evaluate(() => ({ loose: window.__haven.getState().layout.sections[0].config.loose }))
@@ -222,6 +225,7 @@ export async function shapes(browser, base, check) {
     const covered = looseBoxes.some((r) => seat.left < r.right && r.left < seat.right && seat.top < r.bottom && r.top < seat.bottom)
     check(!covered, 'the seat label is clear of the loose pieces')
     await page.keyboard.press('Escape')
+    await panel(page, 'Size')
     await page.locator('#m-stem').fill('60')
     await page.locator('#m-stem').press('Enter')
     await page.waitForTimeout(100)

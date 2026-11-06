@@ -1,135 +1,57 @@
-// Measurements and settings (plan §8): shape picker, W/L/R/D with D chips, the
-// lock, seat width, warnings. A T (Shapes B1) swaps the shape picker and W/L/R
-// for its sections panel; the rest works on the edited half.
-import { lazy, Suspense, useState } from 'react';
+// The side panel (plan §8; editor redesign, Andre 2026-11-06): the shape
+// picker on top, then three tabs: Size (measurements, the corner wedge, seat
+// and arm width, warnings), Pieces (the add-piece tray, table style) and Look
+// (fabric, wood, pillows, plan style). Pieces and Look load on first open.
+import { lazy, Suspense } from 'react';
 import { buildInfo } from '@/buildInfo';
-import { ARM_MAX, ARM_MIN, DEPTH_PRESETS, setArmWidth, setLock, setMeasurements, setSeatWidth, setShape, setTableStyle, type Shape, type TableStyle } from '@/engine';
-import { useHavenStore, useLive, useLiveLayout } from '@/state/store';
-import { Button, Section, Segmented, Switch } from './controls';
-import { MeasureField } from './MeasureField';
-import { WarningsList } from './WarningsList';
+import { layoutBuiltOf, useHaven, useHavenStore, useLiveLayout, type PanelTab } from '@/state/store';
+import { ShapePicker } from './ShapePicker';
+import { SizeTab } from './SizeTab';
 
-// Look (swatches, pillows, plan style) loads after the first paint: it keeps the entry chunk in budget.
+const PiecesTab = lazy(() => import('./PiecesTab'));
 const LookSection = lazy(() => import('./LookSection').then((m) => ({ default: m.LookSection })));
-const SectionsPanel = lazy(() => import('./SectionsPanel'));
 
-const TABLE_STYLES: { value: TableStyle; label: string }[] = [
-  { value: 'standard', label: 'Wood top' },
-  { value: 'allWood', label: 'All wood' },
-];
-
-const SHAPES: { value: Shape; label: string }[] = [
-  { value: 'U', label: 'U' },
-  { value: 'L-left', label: 'L left' },
-  { value: 'L-right', label: 'L right' },
+const TABS: { value: PanelTab; label: string }[] = [
+  { value: 'size', label: 'Size' },
+  { value: 'pieces', label: 'Pieces' },
+  { value: 'look', label: 'Look' },
 ];
 
 export function Sidebar() {
   const store = useHavenStore();
-  const live = useLive();
-  const joined = useLiveLayout().sections.length > 1;
-  /** W/L/R at the moment of unlocking, shown as a reference (UI state, not config). */
-  const [atUnlock, setAtUnlock] = useState<{ W: number; L: number; R: number } | null>(null);
-  const commit = (r: ReturnType<typeof setShape>, key?: string) => {
-    const s = store.getState();
-    if (r.rejected) s.toast(r.rejected.message);
-    else s.commit(r.config, key ? { key } : undefined);
-  };
-  const locked = live.lockOutside;
-  const was = (k: 'W' | 'L' | 'R') =>
-    !locked && atUnlock && atUnlock[k] !== live[k] ? `from pieces · was ${atUnlock[k]}″` : !locked ? 'from pieces' : undefined;
-  const hasLeft = live.shape !== 'L-right';
-  const hasRight = live.shape !== 'L-left';
-  const hasTable = Object.values(live.runs).some((ps) => ps?.some((p) => p.kind === 'table'));
-
+  const tab = useHaven((s) => s.ui.panel);
+  const warnings = layoutBuiltOf(useLiveLayout()).warnings.length;
   return (
     <div className="flex min-w-0 flex-col gap-5">
-      {joined ? (
+      <ShapePicker />
+      <div role="tablist" aria-label="Panel" className="flex border-b border-line" data-testid="panel-tabs">
+        {TABS.map((t) => (
+          <button
+            key={t.value}
+            type="button"
+            role="tab"
+            id={`tab-${t.value}`}
+            aria-selected={tab === t.value}
+            aria-controls={`panel-${t.value}`}
+            onClick={() => store.getState().setUi({ panel: t.value })}
+            className={`-mb-px flex min-h-11 flex-1 items-center justify-center gap-1.5 border-b-2 text-sm font-semibold ${tab === t.value ? 'border-accent text-ink' : 'border-transparent text-ink-muted'}`}
+          >
+            {t.label}
+            {t.value === 'size' && warnings > 0 && (
+              <span className="rounded-full bg-warn-bg px-1.5 text-xs leading-5 font-semibold text-warn-ink tabular-nums" aria-label={`${warnings} warning${warnings > 1 ? 's' : ''}`} data-testid="warn-badge">
+                {warnings}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+      <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} className="flex min-w-0 flex-col gap-5">
+        {tab === 'size' && <SizeTab />}
         <Suspense fallback={null}>
-          <SectionsPanel />
+          {tab === 'pieces' && <PiecesTab />}
+          {tab === 'look' && <LookSection />}
         </Suspense>
-      ) : (
-        <Section title="Shape">
-          <Segmented label="Shape" value={live.shape} options={SHAPES} onChange={(v) => commit(setShape(store.getState().config, v))} />
-        </Section>
-      )}
-      <Section
-        title="Room"
-        aside={
-          <Switch
-            label="Lock outside size"
-            checked={locked}
-            onChange={(on) => {
-              const c = store.getState().config;
-              setAtUnlock(on ? null : { W: c.W, L: c.L, R: c.R });
-              commit(setLock(c, on));
-            }}
-          />
-        }
-      >
-        {!joined && <MeasureField name="W" label="W" value={live.W} apply={(c, v) => setMeasurements(c, { W: v })} hint={was('W')} />}
-        {!joined && hasLeft && <MeasureField name="L" label="L" value={live.L} apply={(c, v) => setMeasurements(c, { L: v })} hint={was('L')} />}
-        {!joined && hasRight && <MeasureField name="R" label="R" value={live.R} apply={(c, v) => setMeasurements(c, { R: v })} hint={was('R')} />}
-        <MeasureField name="D" label="D" value={live.D} apply={(c, v) => setMeasurements(c, { D: v })} />
-        <div className="flex gap-2 pl-8" role="group" aria-label="Depth presets">
-          {DEPTH_PRESETS.map((d) => (
-            <Button
-              key={d}
-              tone={live.D === d ? 'primary' : 'plain'}
-              className="flex-1"
-              aria-pressed={live.D === d}
-              onClick={() => commit(setMeasurements(store.getState().config, { D: d }))}
-            >
-              {d}″D
-            </Button>
-          ))}
-        </div>
-      </Section>
-      <Section title="Seat width">
-        <div className="flex items-center gap-2">
-          <button type="button" className="stepper" aria-label="Seat width minus 1" onClick={() => commit(setSeatWidth(store.getState().config, live.seatWidth - 1), 'seatWidth')}>
-            −
-          </button>
-          <span className="flex-1 text-center text-sm tabular-nums" data-testid="seat-width">
-            {live.seatWidth}″ per seat (snug {Math.min(live.snugWidth, live.seatWidth)}″)
-          </span>
-          <button type="button" className="stepper" aria-label="Seat width plus 1" onClick={() => commit(setSeatWidth(store.getState().config, live.seatWidth + 1), 'seatWidth')}>
-            +
-          </button>
-        </div>
-      </Section>
-      <Section title="Arm width">
-        <div className="flex items-center gap-2">
-          <button type="button" className="stepper" aria-label="Arm width minus ½" disabled={live.dims.A <= ARM_MIN} onClick={() => commit(setArmWidth(store.getState().config, live.dims.A - 0.5), 'armWidth')}>
-            −
-          </button>
-          <span className="flex-1 text-center text-sm tabular-nums" data-testid="arm-width">
-            {live.dims.A}″ arms (seats keep their size)
-          </span>
-          <button type="button" className="stepper" aria-label="Arm width plus ½" disabled={live.dims.A >= ARM_MAX} onClick={() => commit(setArmWidth(store.getState().config, live.dims.A + 0.5), 'armWidth')}>
-            +
-          </button>
-        </div>
-      </Section>
-      {hasTable && (
-        <Section title="Tables">
-          <Segmented
-            label="Table style"
-            value={live.tableStyle}
-            options={TABLE_STYLES}
-            onChange={(v) => commit(setTableStyle(store.getState().config, v))}
-          />
-          <p className="text-xs text-ink-muted">
-            {live.tableStyle === 'standard' ? '2″ wood top on a fabric base' : 'Solid wood, top to floor'}
-          </p>
-        </Section>
-      )}
-      <Suspense fallback={null}>
-        <LookSection />
-      </Suspense>
-      <Section title="Warnings">
-        <WarningsList />
-      </Section>
+      </div>
       <p className="mt-auto text-xs text-ink-muted" data-testid="build">
         Haven Configurator · build <span className="font-mono">{buildInfo.commit}</span>
       </p>

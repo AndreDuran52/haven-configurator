@@ -12,7 +12,7 @@ import { DimsLayer } from './DimsLayer';
 import { gripPoints, hitTest, inPoly, lineTolPx } from './hitTest';
 import { layoutDimSource, layoutSeatsAt } from './layoutDims';
 import { ClearanceLayer } from './ClearanceLayer';
-import { GripsLayer } from './GripsLayer';
+import { GripsLayer, MoveBadge } from './GripsLayer';
 import { PLAN_PAD_PX, planFitSource } from './planFit';
 import { PlacementPins } from './PlacementPins';
 import { PlanDrawing } from './PlanDrawing';
@@ -140,6 +140,7 @@ export function PlanView() {
             ))}
             {placing && <PlacementPins kind={placing} k={fit.k} />}
             {!placing && !readOnly && <GripsLayer grips={grips} built={built} k={fit.k} />}
+            {!placing && !readOnly && !dragging && <MoveBadge built={built} selectedId={selectedId} k={fit.k} />}
           </g>
         </svg>
       )}

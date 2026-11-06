@@ -1,13 +1,17 @@
 // Wedge size C (plan §8): a Radix slider over [D, D + 30], step 1, 44 px thumb,
 // ± steppers. Dragging drafts from the committed config; release commits (one
 // undo step). The part the runs can't absorb is shaded; the engine clamps (G3).
+// Since the editor redesign (2026-11-06) it is in the Size tab ("panel") and in
+// the corner's tap menu ("menu": named "Corner wedge…", the menu title reads the size).
 import * as Slider from '@radix-ui/react-slider';
 import { WEDGE_RANGE, layoutWedgeRange, resetWedge, setWedge, wedgeC } from '@/engine';
 import { useMemo, useRef } from 'react';
 import { builtOf, useHaven, useHavenStore, useLive } from '@/state/store';
 import { Button, WarnChip } from './controls';
 
-export function WedgeSlider() {
+export function WedgeSlider({ variant = 'panel' }: { variant?: 'panel' | 'menu' }) {
+  const menu = variant === 'menu';
+  const name = menu ? 'Corner wedge' : 'Wedge';
   const store = useHavenStore();
   const live = useLive();
   // A T: the corner range both halves can take (the corner size is shared).
@@ -26,26 +30,37 @@ export function WedgeSlider() {
   // its commit; a drag that ends where it began commits nothing; a cancelled
   // touch commits nothing. The pointer's end clears any draft left over.
   const sliding = useRef(false);
+  // Where the pointer went down and where it is now (client x): on a short track
+  // (the side panel, the corner menu) a press on the thumb maps to a value next
+  // to the shown one, so "ends where it began" is judged by the pointer.
+  const pointer = useRef({ start: 0, last: 0, thumb: false });
   const draft = (v: number) => {
     if (!sliding.current) return;
     const r = setWedge(store.getState().config, v);
     if (!r.rejected) store.getState().setDraft(r.config);
     else store.getState().cancelDraft();
   };
-  const startSlide = () => {
+  const startSlide = (e: React.PointerEvent) => {
     sliding.current = true;
+    // A tap on the track still jumps there; only a press on the thumb is judged by the pointer.
+    pointer.current = { start: e.clientX, last: e.clientX, thumb: !!(e.target as Element).closest('[role=slider]') };
+    const move = (m: PointerEvent) => (pointer.current.last = m.clientX);
     const end = () => {
+      window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', end);
       window.removeEventListener('pointercancel', end);
       sliding.current = false;
       // After Radix's own pointerup (which commits a changed value): drop what's left.
       window.setTimeout(() => store.getState().cancelDraft(), 0);
     };
+    window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', end);
     window.addEventListener('pointercancel', end);
   };
   const commitAt = (v: number) => {
     const s = store.getState();
+    const p = pointer.current;
+    if (sliding.current && p.thumb && Math.abs(p.last - p.start) < 4) return s.cancelDraft();
     const r = setWedge(s.config, v);
     if (r.rejected) {
       s.cancelDraft();
@@ -60,18 +75,20 @@ export function WedgeSlider() {
   };
 
   return (
-    <div className="flex flex-col gap-1" data-testid="wedge">
+    <div className="flex flex-col gap-1" data-testid={menu ? 'wedge-menu' : 'wedge'}>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-        <span className="font-semibold" data-testid="wedge-readout">
-          {built.wedge.readout}
-        </span>
+        {!menu && (
+          <span className="font-semibold" data-testid="wedge-readout">
+            {built.wedge.readout}
+          </span>
+        )}
         {face && <WarnChip>angled face {built.wedge.face.toFixed(1)}″</WarnChip>}
         <Button tone="quiet" className="ml-auto" disabled={config.wedgeC === null} onClick={reset}>
           Reset wedge
         </Button>
       </div>
       <div className="flex items-center gap-2">
-        <button type="button" className="stepper" aria-label="Wedge minus 1" onClick={() => commitAt(C - 1)}>
+        <button type="button" className="stepper" aria-label={`${name} minus 1`} onClick={() => commitAt(C - 1)}>
           −
         </button>
         <Slider.Root
@@ -83,7 +100,7 @@ export function WedgeSlider() {
           onPointerDown={startSlide}
           onValueChange={([v]) => v !== undefined && draft(v)}
           onValueCommit={([v]) => v !== undefined && commitAt(v)}
-          aria-label="Wedge size C"
+          aria-label={`${name} size C`}
         >
           <Slider.Track className="relative h-2 flex-1 overflow-hidden rounded-full bg-line">
             <span
@@ -95,10 +112,10 @@ export function WedgeSlider() {
           </Slider.Track>
           <Slider.Thumb
             className="block h-11 w-11 rounded-full border-2 border-accent bg-white shadow-md focus-visible:outline-2 focus-visible:outline-accent"
-            aria-label={`Wedge ${C} inches`}
+            aria-label={`${name} ${C} inches`}
           />
         </Slider.Root>
-        <button type="button" className="stepper" aria-label="Wedge plus 1" onClick={() => commitAt(C + 1)}>
+        <button type="button" className="stepper" aria-label={`${name} plus 1`} onClick={() => commitAt(C + 1)}>
           +
         </button>
       </div>

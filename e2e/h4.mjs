@@ -2,7 +2,7 @@
 // DPR 2, and judged by outcome: the committed config (as its share code), the
 // undo stack, the DOM.
 import { enterEditor, VIEWPORTS } from './browser.mjs'
-import { config, warnings } from './lib.mjs'
+import { config, panel, warnings } from './lib.mjs'
 import { planShapes, topParityIoU } from './parity.mjs'
 
 const SHOTS = 'test-results'
@@ -63,7 +63,7 @@ export async function h4(browser, base, check) {
   // 1. Seam drag by touch: one undo step, live readout 40" | 28"; touchCancel leaves no trace.
   {
     const { context, page, errors, drag } = await open(browser, base)
-    const g = await centreOf(page, '[data-grip="back:1"] circle:nth-of-type(2)')
+    const g = await centreOf(page, '[data-grip="back:1"] rect')
     const k = await page.evaluate(() => window.__plan.k())
     const d0 = await undoDepth(page)
     let pill = ''
@@ -120,15 +120,15 @@ export async function h4(browser, base, check) {
     await drag(line(t4, svgOut, 10))
     check((await code(page)) === T3A, 'a table dropped outside the plan snaps back')
     await page.screenshot({ path: `${SHOTS}/h4-3a.png` })
-    // Trash: drag the table onto the tray.
+    // Trash: drag the table onto the trash bar (over the bottom of the plan since the redesign).
     const d1 = await undoDepth(page)
-    const trashAt = await page.$eval('[data-tray]', (e) => {
+    const trashAt = await page.$eval('[data-plan-svg]', (e) => {
       const r = e.getBoundingClientRect()
-      return [r.left + r.width / 2, r.top + r.height / 2]
+      return [r.left + r.width / 2, r.bottom - 40]
     })
     await drag(line(t4, trashAt, 16))
     const ct = await config(page)
-    check(!Object.values(ct.runs).some((ps) => ps.some((p) => p.kind === 'table')) && (await undoDepth(page)) === d1 + 1, 'dropping a table on the tray (trash) removes it in one step')
+    check(!Object.values(ct.runs).some((ps) => ps.some((p) => p.kind === 'table')) && (await undoDepth(page)) === d1 + 1, 'dropping a table on the trash bar removes it in one step')
     check(errors.length === 0, `no console errors (${errors.join(' | ')})`)
     await context.close()
   }
@@ -179,6 +179,7 @@ export async function h4(browser, base, check) {
   {
     const { context, page, errors, drag, tap } = await open(browser, base)
     const d0 = await undoDepth(page)
+    await panel(page, 'Pieces')
     await tap(...(await centreOf(page, '[data-tray-item=armless]')))
     const pins = Number(await page.getAttribute('[data-pins]', 'data-count'))
     check(pins > 0, `tap-to-place shows + pins (${pins})`)
@@ -206,6 +207,14 @@ export async function h4(browser, base, check) {
     const s2 = await centreOf(page, `[data-piece="${rb[0].id}"]`)
     await drag(line(s2, [s2[0] + 80, s2[1]], 6))
     check((await config(page)).runs.back[0].kind === 'armless', 'a quick touch swipe on a seat does not reorder')
+    // Redesign (2026-11-06): a selected seat shows a move badge and drags at once by touch.
+    const d2 = await undoDepth(page)
+    await tap(...s2)
+    check((await page.locator(`[data-move-badge="${rb[0].id}"]`).count()) === 1, 'a selected seat shows its move badge')
+    const t2 = await centreOf(page, `[data-piece="${rb[1].id}"]`)
+    await drag(line(s2, [t2[0] + 30, s2[1]], 6))
+    const rs = (await config(page)).runs.back
+    check(rs.map((p) => p.kind).join(',') === 'table,armless' && (await undoDepth(page)) === d2 + 1, `the selected seat drags without a long-press: back [${rs.map((p) => p.kind + p.length).join(', ')}] in one step`)
     check(errors.length === 0, `no console errors (${errors.join(' | ')})`)
     await context.close()
   }
@@ -213,6 +222,7 @@ export async function h4(browser, base, check) {
   // 5. Loose pieces: coffee table from the tray, drag with live clearances; 3D Top parity and framing.
   {
     const { context, page, errors, drag, tap } = await open(browser, base)
+    await panel(page, 'Pieces')
     await tap(...(await centreOf(page, '[data-tray-item=coffeeTable]')))
     const c = await config(page)
     const ct = c.loose[0]

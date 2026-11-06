@@ -50,6 +50,8 @@ type Gesture =
       startConfig: Config;
       t0: number;
       touch: boolean;
+      /** The piece was already selected (its move badge showing): a touch drag moves it at once. */
+      selected: boolean;
       timer: number;
     }
   | { kind: 'table'; pointerId: number; id: string; startConfig: Config; targets: Target[]; current: Target | null; trash: boolean }
@@ -239,9 +241,10 @@ export function usePlanGestures({
       startConfig,
       t0: e.timeStamp,
       touch,
+      selected: s.ui.selectedId === id,
       timer: 0,
     };
-    // Touch reorders seats and gaps after a still long-press (plan §8).
+    // Touch reorders seats and gaps after a still long-press (plan §8), or at once when already selected.
     if (touch && (pieceKind === 'armless' || pieceKind === 'oneArm' || pieceKind === 'gap')) {
       g.timer = window.setTimeout(() => {
         if (gesture.current !== g) return;
@@ -262,7 +265,7 @@ export function usePlanGestures({
       const k = g.pieceKind;
       if (k === 'table') promote(g, 'table');
       else if (k === 'ottoman' || k === 'coffeeTable') promote(g, 'loose');
-      else if ((k === 'armless' || k === 'oneArm' || k === 'gap') && !g.touch) promote(g, 'reorder');
+      else if ((k === 'armless' || k === 'oneArm' || k === 'gap') && (!g.touch || g.selected)) promote(g, 'reorder');
       else promote(g, 'dead'); // touch moved before the long-press, or a wedge
       if (gesture.current?.kind === 'dead') return;
     }
