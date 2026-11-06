@@ -1,7 +1,7 @@
 // config -> pieces[] (pure, no React). Lays out and VALIDATES only: it never
 // rebalances or splits (the ops already stored the final lengths).
 import { available, corners, endCapState, openEnd, runEnds, runIds, wedgeC } from './layout';
-import { MAX_PIECE, cushionOf, half, isSeat } from './pieces';
+import { MAX_PIECE, cushionOf, half, isSeat, wedgePolygon } from './pieces';
 import { coffeeClearances, rectPoly } from './clearance';
 import { ruleViolation } from './rules';
 import { BACK_CUSHION } from './profiles';
@@ -59,11 +59,8 @@ function frameRect(f: Frame, a0: number, a1: number, d0: number, d1: number): Re
 function wedgePiece(c: Config, corner: CornerId, C: number): BuiltPiece {
   const { D, W } = c;
   const B = c.dims.B;
-  // §8: (0,0) (C,0) (C,D) (D,C) (0,C); mirrored (and re-wound) for back-right.
-  let polygon: Pt[] =
-    corner === 'backLeft'
-      ? [[0, 0], [C, 0], [C, D], [D, C], [0, C]]
-      : [[W, 0], [W, C], [W - D, C], [W - C, D], [W - C, 0]];
+  // §8: (0,0) (C,0) (C,D) (D,C) (0,C) (wedgePolygon); mirrored (and re-wound) for back-right.
+  let polygon: Pt[] = corner === 'backLeft' ? wedgePolygon(C, D) : [[W, 0], [W, C], [W - D, C], [W - C, D], [W - C, 0]];
   polygon = polygon.filter((p, i) => {
     const q = polygon[(i + 1) % polygon.length]!;
     return p[0] !== q[0] || p[1] !== q[1];
