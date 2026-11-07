@@ -38,8 +38,8 @@ const slug = (s: string) =>
 export function fileName(layout: Layout, title: string, date: Date, ext: string): string {
   const b = buildHaven(rootConfig(layout));
   const t = teeOf(layout);
-  const shape = t ? 'T' : b.shape === 'U' ? 'U' : b.shape === 'L-left' ? 'L-left' : 'L-right';
-  const size = t ? `${t.total}x${Math.max(...t.stem)}` : b.shape === 'U' ? `${b.W}x${b.L}x${b.R}` : `${b.W}x${b.shape === 'L-left' ? b.L : b.R}`;
+  const shape = t ? 'T' : b.shape === 'straight' ? 'Straight' : b.shape === 'U' ? 'U' : b.shape === 'L-left' ? 'L-left' : 'L-right';
+  const size = t ? `${t.total}x${Math.max(...t.stem)}` : b.shape === 'straight' ? `${b.W}x${b.D}` : b.shape === 'U' ? `${b.W}x${b.L}x${b.R}` : `${b.W}x${b.shape === 'L-left' ? b.L : b.R}`;
   const day = date.toISOString().slice(0, 10);
   return [title ? slug(title) : 'Haven', shape, size, day].filter(Boolean).join('-') + `.${ext}`;
 }

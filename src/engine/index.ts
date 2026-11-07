@@ -19,6 +19,7 @@ export * from './ops';
 export * from './shape';
 export * from './pieceOps';
 export * from './tableOps';
+export * from './balance';
 export * from './looseOps';
 export * from './codec';
 export * from './softBox';

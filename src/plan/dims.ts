@@ -93,8 +93,9 @@ export interface Group {
 export function requests(b: BuildResult, p: DimProfile): Group[] {
   const { W, L, R, D, shape } = b
   const groups: Group[] = []
-  const hasLeft = shape !== 'L-right'
-  const hasRight = shape !== 'L-left'
+  const straight = shape === 'straight'
+  const hasLeft = shape !== 'L-right' && !straight
+  const hasRight = shape !== 'L-left' && !straight
 
   type Span = { a: number; b: number; label: string; weight: 400 | 600; dashed: boolean }
   const spans: Record<'top' | 'left' | 'right', Span[]> = { top: [], left: [], right: [] }
@@ -149,7 +150,8 @@ export function requests(b: BuildResult, p: DimProfile): Group[] {
   if (hasRight) {
     chain('right', spans.right)
     overall('right', R)
-  } else {
+  } else if (!straight) {
+    // (A straight sofa calls its depth out once, on the left.)
     groups.push({ side: 'right', role: 'callout', edgeU: 0, segs: [{ s0: 0, s1: D, label: `${fmtIn(D)}D`, weight: 600, dashed: false }] })
   }
   // The 44"D callout across the end of a leg (left leg if there is one).
@@ -211,6 +213,7 @@ export interface DimSource {
 export const soloSource = (b: BuildResult): DimSource => ({ groups: (p) => requests(b, p), frame: planFrame(b) })
 
 export function planFrame(b: BuildResult): Frame {
-  const maxLeg = Math.max(b.shape !== 'L-right' ? b.L : 0, b.shape !== 'L-left' ? b.R : 0, b.D)
+  const legs = b.shape !== 'straight'
+  const maxLeg = Math.max(legs && b.shape !== 'L-right' ? b.L : 0, legs && b.shape !== 'L-left' ? b.R : 0, b.D)
   return { x0: 0, y0: 0, x1: b.W, y1: maxLeg }
 }

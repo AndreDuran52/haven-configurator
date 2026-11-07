@@ -20,10 +20,10 @@ export function ViewSummary() {
         ['Stem width', fmtIn(t.stemWidth)],
       ]
     : [
-        ['Shape', b.shape === 'U' ? 'U' : b.shape === 'L-left' ? 'L, left' : 'L, right'],
+        ['Shape', b.shape === 'straight' ? 'Straight' : b.shape === 'U' ? 'U' : b.shape === 'L-left' ? 'L, left' : 'L, right'],
         ['Width', `${fmtIn(b.W)} (${fmtFtIn(b.W)})`],
-        ...(b.shape !== 'L-right' ? [['Left', fmtIn(b.L)] as [string, string]] : []),
-        ...(b.shape !== 'L-left' ? [['Right', fmtIn(b.R)] as [string, string]] : []),
+        ...(b.shape !== 'L-right' && b.shape !== 'straight' ? [['Left', fmtIn(b.L)] as [string, string]] : []),
+        ...(b.shape !== 'L-left' && b.shape !== 'straight' ? [['Right', fmtIn(b.R)] as [string, string]] : []),
       ];
   const rows: [string, string][] = [
     ...shape,

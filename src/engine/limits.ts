@@ -1,7 +1,7 @@
 // G6 minimum outside sizes and the G3 wedge-slider range.
 import { ABSORB_FLOOR, WEDGE_RANGE, isSeat, toH, toIn } from './pieces';
 import { reshapeRuns } from './absorb';
-import { makeAlloc, runIds, wedgeC } from './layout';
+import { corners, makeAlloc, runIds, wedgeC } from './layout';
 import type { Config, RunPiece } from './types';
 
 /** Smallest run that holds these pieces: tables + arms + a 6" cushion per seat unit (gaps shrink to 0). */
@@ -26,7 +26,7 @@ export function limits(c: Config): { W: number; L?: number; R?: number } {
   const C = wedgeC(c);
   const A = c.dims.A;
   const out: { W: number; L?: number; R?: number } = {
-    W: minRun(c.runs.back ?? [], A) + (c.shape === 'U' ? 2 * C : C),
+    W: minRun(c.runs.back ?? [], A) + corners(c.shape).length * C,
   };
   for (const run of runIds(c.shape)) {
     if (run === 'left') out.L = minRun(c.runs.left ?? [], A) + C;

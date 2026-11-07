@@ -194,8 +194,37 @@ export async function h4(browser, base, check) {
     const rp = await centreOf(page, `[data-piece="${r.id}"]`)
     await drag(line(chip, rp, 16))
     const rc = await config(page)
-    check(rc.runs.right.some((p) => p.kind === 'table') && (await undoDepth(page)) === d0 + 1, `dragging "Table 32″" from the tray places it in the right leg (${rc.runs.right.map((p) => p.kind + p.length).join(' ')})`)
-    await page.getByRole('button', { name: 'Undo' }).click()
+    const legLine = rc.runs.right.map((p) => p.kind + p.length).join(' ')
+    check(legLine === 'armless19 table20 oneArm33' && (await undoDepth(page)) === d0 + 1, `dragging "Table" from the tray into the right leg: a 20″ table, seats 19 | 19 (${legLine})`)
+    // Balance (Andre, 2026-11-06): the menu shows the seats, a chip keeps them equal, Even seats after a hand resize.
+    const bt = rc.runs.right.find((p) => p.kind === 'table').id
+    await tap(...(await centreOf(page, `[data-piece="${bt}"]`)))
+    await page.waitForSelector('[data-tap-menu]')
+    check((await page.textContent('[data-testid=table-seats]')) === 'Seats 19" | 19"', `the table menu shows "${await page.textContent('[data-testid=table-seats]')}"`)
+    check((await page.getByRole('button', { name: 'Try 10″ arms' }).count()) === 1, 'seats under 23″ with a 20″ table offer "Try 10″ arms"')
+    await page.screenshot({ path: `${SHOTS}/h4-balance-menu.png` })
+    const legs = (c) => c.runs.right.map((p) => p.kind + p.length).join(' ')
+    await page.locator('[data-tap-menu]').getByRole('button', { name: 'Try 10″ arms' }).click()
+    check(legs(await config(page)) === 'armless21 table20 oneArm31' && (await config(page)).dims.A === 10, `"Try 10″ arms": 10″ arms, seats 21 | 21 (${legs(await config(page))})`)
+    await page.locator('[data-tap-menu]').getByRole('button', { name: '24″' }).click()
+    check(legs(await config(page)) === 'armless19 table24 oneArm29', `the 24″ chip keeps the seats equal (${legs(await config(page))})`)
+    await page.keyboard.press('Escape')
+    await page.evaluate((id) => {
+      const s = window.__haven.getState()
+      const c = structuredClone(s.config)
+      const r = c.runs.right
+      const i = r.findIndex((p) => p.id === id)
+      r[i - 1].length += 4
+      r[i + 1].length -= 4
+      s.commit(c)
+    }, bt)
+    await tap(...(await centreOf(page, `[data-piece="${bt}"]`)))
+    await page.waitForSelector('[data-tap-menu]')
+    await page.locator('[data-tap-menu]').getByRole('button', { name: 'Even seats' }).click()
+    check(legs(await config(page)) === 'armless19 table24 oneArm29', `Even seats shares 23 | 15 back to 19 | 19 (${legs(await config(page))})`)
+    check((await page.getByRole('button', { name: 'Even seats' }).count()) === 0, 'Even seats hides once the seats are equal')
+    await page.keyboard.press('Escape')
+    for (let i = 0; i < 5; i++) await page.getByRole('button', { name: 'Undo' }).click()
     // Long-press reorder: the back seat moves before the table.
     const back = (await config(page)).runs.back
     const s = await centreOf(page, `[data-piece="${back[1].id}"]`)

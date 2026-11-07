@@ -4,7 +4,7 @@
 // backup file: projects live on this device only (no login, plan H7), so the
 // file is how they move between the iPad and the laptop or survive the browser
 // clearing its storage. Lazy-loaded.
-import { lazy, Suspense, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import type { Layout } from '@/engine';
 import { readDraft } from '@/state/draft';
 import { projectFor } from '@/state/openProject';
@@ -18,8 +18,6 @@ import { PlanThumb } from './PlanThumb';
 import { SavedList, type OpenProject } from './SavedList';
 import { UpdateChip } from './UpdateChip';
 
-const TeeForm = lazy(() => import('./TeeForm'));
-
 export default function ProjectsHome() {
   const store = useHavenStore();
   const [list, setList] = useState(listSaved);
@@ -27,7 +25,7 @@ export default function ProjectsHome() {
   const [recovered, setRecovered] = useState(recoveredNotice);
   const [draft] = useState(readDraft);
   const [draftProject] = useState(() => projectFor(draft?.projectId));
-  const [form, setForm] = useState<'blank' | 'tee' | null>(null);
+  const [form, setForm] = useState<'blank' | null>(null);
   const [error, setError] = useState<string | null>(null);
   const file = useRef<HTMLInputElement>(null);
   const toast = (t: string) => store.getState().toast(t);
@@ -99,19 +97,14 @@ export default function ProjectsHome() {
             </Button>
             <Button onClick={() => start({ kind: 'standardL', side: 'left' })}>Standard L left</Button>
             <Button onClick={() => start({ kind: 'standardL', side: 'right' })}>Standard L right</Button>
-            <Button onClick={() => setForm(form === 'tee' ? null : 'tee')} aria-expanded={form === 'tee'} data-testid="new-tee">
-              T shape…
+            <Button onClick={() => start({ kind: 'standardStraight' })} data-testid="new-straight">
+              Straight sofa
             </Button>
             <Button onClick={() => setForm(form === 'blank' ? null : 'blank')} aria-expanded={form === 'blank'}>
               Blank…
             </Button>
           </div>
           {form === 'blank' && <BlankForm onStart={start} onError={setError} />}
-          {form === 'tee' && (
-            <Suspense fallback={null}>
-              <TeeForm onStart={start} onError={setError} />
-            </Suspense>
-          )}
           {error && <p className="text-sm text-danger">{error}</p>}
         </section>
 

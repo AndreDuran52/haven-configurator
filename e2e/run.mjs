@@ -13,6 +13,7 @@ import { reporter } from './lib.mjs'
 import { ortho } from './ortho.mjs'
 import { shapes } from './shapes.mjs'
 import { smoke } from './smoke.mjs'
+import { straight } from './straight.mjs'
 
 const PORT = 4179
 const BASE = `http://127.0.0.1:${PORT}/`
@@ -31,6 +32,7 @@ try {
   await h6b(browser, BASE, check)
   await phase1(browser, BASE, check)
   await shapes(browser, BASE, check)
+  await straight(browser, BASE, check)
 } finally {
   await browser.close()
   await server.close()

@@ -26,7 +26,7 @@ function uToL(d: Config, shape: Shape, alloc: (p: 'p' | 'g') => string): Outcome
   const back = d.runs.back!;
   const open = openEnd(shape, 'back')!;
   const anchor = open === 'end' ? { seam: back.length } : { seam: 0 };
-  absorb(back, anchor, C, d.dims.A, alloc, { mode: 'measure', open });
+  absorb(back, anchor, C, d.dims.A, alloc, { mode: 'measure', opens: [open] });
   const edge = back[endIndex(back, open)];
   if (edge?.kind === 'armless' && cushionOf(edge, d.dims.A) - d.dims.A >= ABSORB_FLOOR) {
     edge.kind = 'oneArm';
@@ -54,20 +54,22 @@ function lToU(d: Config, alloc: (p: 'p' | 'g') => string, config: Config): Outco
   d.shape = 'U';
   const anchor = wasOpen === 'end' ? { seam: back.length } : { seam: 0 };
   const legLen = available(d, newLeg);
-  if (!absorb(back, anchor, -C, d.dims.A, alloc, { mode: 'measure', open: null }) || legLen < 0) {
+  if (!absorb(back, anchor, -C, d.dims.A, alloc, { mode: 'measure', opens: [] }) || legLen < 0) {
     const runs = { back, left: [] as RunPiece[], right: [] as RunPiece[], ...config.runs, [newLeg]: [] as RunPiece[] };
     runs.back = back;
     const min = shortfall({ ...config, shape: 'U', runs });
     return refuse('infeasible', minMessage(min), min);
   }
   d.runs = { back, left: d.runs.left, right: d.runs.right };
-  d.runs[newLeg] = defaultFill(legLen, 'end', d.dims.A, alloc);
+  d.runs[newLeg] = defaultFill(legLen, ['end'], d.dims.A, alloc);
   return true;
 }
 
 export function setShape(config: Config, shape: Shape): EditResult {
   return edit(config, (d, alloc) => {
     if (d.shape === shape) return null;
+    // A straight sofa has no corners to keep: the app starts the other shape fresh.
+    if (d.shape === 'straight' || shape === 'straight') return refuse('notAllowed', 'Start a new sofa for that shape');
     if (d.shape === 'U') return uToL(d, shape, alloc);
     if (shape === 'U') return lToU(d, alloc, config);
     return mirror(d, shape);

@@ -1,9 +1,11 @@
 // "Start from" choices (plan §8 Start menu) and the preset Reset returns to.
-import { blankConfig, solo, standardL, standardU, teeLayout, teeOf, type Layout, type Shape } from '@/engine';
+import { blankConfig, solo, standardL, standardStraight, standardU, teeLayout, teeOf, type Layout, type Shape } from '@/engine';
 
 export type StartChoice =
   | { kind: 'standardU' }
   | { kind: 'standardL'; side: 'left' | 'right' }
+  /** Straight sofa (Andre, 2026-11-06): W 120, arms both ends. */
+  | { kind: 'standardStraight' }
   | { kind: 'blank'; shape: Shape; W: number; L: number; R: number; D: number }
   /** Shapes B1: the T sectional (two L's, legs back to back down the stem). */
   | { kind: 'tee'; total: number; stem: number; D: number; sharedBack: boolean };
@@ -14,6 +16,9 @@ export const DEFAULT_START: StartChoice = { kind: 'standardU' };
 export function presetFor(s: StartChoice): Layout {
   if (s.kind === 'standardU') return solo(standardU());
   if (s.kind === 'standardL') return solo(standardL(s.side));
+  if (s.kind === 'standardStraight') return solo(standardStraight());
+  // A blank straight sofa has no legs: L and R hold its depth.
+  if (s.kind === 'blank' && s.shape === 'straight') return solo(blankConfig('straight', { W: s.W, L: s.D, R: s.D, D: s.D }));
   if (s.kind === 'tee') return teeLayout(s);
   return solo(blankConfig(s.shape, { W: s.W, L: s.L, R: s.R, D: s.D }));
 }
@@ -21,8 +26,9 @@ export function presetFor(s: StartChoice): Layout {
 export function startLabel(s: StartChoice): string {
   if (s.kind === 'standardU') return 'Standard U';
   if (s.kind === 'standardL') return `Standard L (${s.side})`;
+  if (s.kind === 'standardStraight') return 'Straight sofa';
   if (s.kind === 'tee') return 'T shape';
-  return `Blank ${s.shape}`;
+  return `Blank ${s.shape === 'straight' ? 'straight' : s.shape}`;
 }
 
 /**

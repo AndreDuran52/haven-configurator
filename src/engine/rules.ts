@@ -2,20 +2,21 @@
 // cushion floor). ruleViolation() turns a user-caused break into a refusal;
 // assertInvariants() throws, because anything it catches is an engine bug.
 import { ABSORB_FLOOR, MAX_PIECE, cushionOf, half, isSeat, toH } from './pieces';
-import { available, openEnd, runIds, runSum, wedgeC } from './layout';
+import { available, openEnds, runIds, runSum, wedgeC } from './layout';
 import type { Config, Rejection, RunEnd, RunPiece } from './types';
 
 export const ARM_MESSAGE = 'Remove the arm first (end cap Open)';
 
 /**
  * G11: each one-arm piece's arm faces the run's open end, with nothing but at
- * most one table between it and that end. Runs with no open end hold no arms.
+ * most one table between it and that end. Runs with no open end hold no arms;
+ * a straight run may hold one arm at each end.
  */
-export function armInvariantOk(pieces: RunPiece[], open: RunEnd | null): boolean {
+export function armInvariantOk(pieces: RunPiece[], opens: RunEnd[]): boolean {
   return pieces.every((p, i) => {
     if (p.kind !== 'oneArm') return true;
-    if (!open || p.arm !== open) return false;
-    const between = open === 'end' ? pieces.slice(i + 1) : pieces.slice(0, i);
+    if (!p.arm || !opens.includes(p.arm)) return false;
+    const between = p.arm === 'end' ? pieces.slice(i + 1) : pieces.slice(0, i);
     return between.length === 0 || (between.length === 1 && between[0]!.kind === 'table');
   });
 }
@@ -25,7 +26,7 @@ export function ruleViolation(d: Config): Rejection | null {
   const A = d.dims.A;
   for (const run of runIds(d.shape)) {
     const pieces = d.runs[run] ?? [];
-    if (!armInvariantOk(pieces, openEnd(d.shape, run))) return { code: 'notAllowed', message: ARM_MESSAGE };
+    if (!armInvariantOk(pieces, openEnds(d.shape, run))) return { code: 'notAllowed', message: ARM_MESSAGE };
     for (const p of pieces) {
       if (isSeat(p) && cushionOf(p, A) < ABSORB_FLOOR) {
         return { code: 'noRoom', message: `A seat cushion would be under ${ABSORB_FLOOR}″` };

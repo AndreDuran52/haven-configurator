@@ -7,6 +7,7 @@ import { edit, noRoom, refuse, type Outcome } from './edit';
 import { minMessage, shortfall, wedgeFits } from './limits';
 import { FABRICS, FINISHES } from './fabrics';
 import type { Config, EditResult, TableFinish, TableStyle } from './types';
+import { evenPairs, reEven } from './balance';
 
 export const D_MIN = 30;
 export const D_MAX = 48;
@@ -27,6 +28,8 @@ export function setMeasurements(config: Config, patch: Partial<Pick<Config, 'W' 
       return refuse('infeasible', `Depth must be ${D_MIN}–${D_MAX}″`);
     }
     if (![next.W, next.L, next.R].every(Number.isFinite)) return refuse('infeasible', 'Not a size');
+    // A straight sofa has no legs: L and R are kept as they are (never drawn).
+    if (d.shape === 'straight') [next.L, next.R] = [d.L, d.R];
     const dW = next.W - d.W;
     const dL = next.L - d.L;
     const dR = next.R - d.R;
@@ -47,6 +50,7 @@ export function setMeasurements(config: Config, patch: Partial<Pick<Config, 'W' 
  */
 export function setWedge(config: Config, C: number): EditResult {
   return edit(config, (d, alloc): Outcome => {
+    if (d.shape === 'straight') return refuse('notAllowed', 'A straight sofa has no corner');
     const cur = wedgeC(d);
     const target = clampWedge(Math.round(C), d.D);
     let to = target;
@@ -98,6 +102,7 @@ export function setArmWidth(config: Config, width: number): EditResult {
     if (!(a >= ARM_MIN && a <= ARM_MAX)) return refuse('infeasible', `Arm width must be ${ARM_MIN}–${ARM_MAX}″`);
     const dA = a - d.dims.A;
     if (!dA) return null;
+    const even = evenPairs(d);
     d.dims.A = a;
     for (const run of runIds(d.shape)) {
       const pieces = d.runs[run]!;
@@ -110,7 +115,8 @@ export function setArmWidth(config: Config, width: number): EditResult {
         if (!settle(d, run, { piece: i }, -dA, alloc, new Set([id]))) return noRoom('Not enough room for a wider arm');
       }
     }
-    return true;
+    // Seats that were even around a table stay even.
+    return reEven(d, even) || noRoom('Not enough room for a wider arm');
   });
 }
 

@@ -4,10 +4,11 @@
 // refused by edit() after the op body runs.
 import { ABSORB_FLOOR, MAX_PIECE, defaultLength, half, isSeat } from './pieces';
 import { settle } from './absorb';
-import { detach, endCapState, endIndex, openEnd, runSum } from './layout';
+import { armEndFor, capEnd, detach, endCapState, endIndex, openEnds, runSum } from './layout';
 import { blockOf, insertPiece, removeTable, resizeSide, setArm, sideRange } from './placement';
 import { edit, findPiece, noRoom, notAllowed, type Outcome } from './edit';
 import { moveTableIn } from './tableOps';
+import { TABLE_MID, resizeBetweenSeats } from './balance';
 import type { Config, EditResult, EndCap, Placement, RunEnd, RunId, RunPiece } from './types';
 
 export function resizePiece(config: Config, id: string, length: number): EditResult {
@@ -23,6 +24,10 @@ export function resizePiece(config: Config, id: string, length: number): EditRes
     if (f.piece.kind === 'table' && len > MAX_PIECE) return notAllowed(`Tables can't be over ${MAX_PIECE}″`);
     const delta = len - f.piece.length;
     if (delta === 0) return null;
+    if (f.piece.kind === 'table') {
+      const r = resizeBetweenSeats(d, d.runs[f.run]!, f.index, len);
+      if (r !== 'fallback') return r;
+    }
     detach(d.runs[f.run]!, f.piece);
     f.piece.length = len;
     return settle(d, f.run, { piece: f.index }, -delta, alloc, new Set([id])) || noRoom();
@@ -79,9 +84,10 @@ export function addPiece(
 ): EditResult {
   return edit(config, (d, alloc): Outcome => {
     const A = d.dims.A;
-    const length = half(opts.length ?? defaultLength(kind, A));
+    // A new table dropped into a seat starts at 20″ so the seats either side stay usable (balance.ts).
+    const length = half(opts.length ?? (kind === 'table' && placement.at === 'split' ? TABLE_MID : defaultLength(kind, A)));
     const piece: RunPiece = { id: alloc('p'), kind, length };
-    if (kind === 'oneArm') piece.arm = opts.arm ?? openEnd(d.shape, placement.run) ?? 'end';
+    if (kind === 'oneArm') piece.arm = opts.arm ?? capEnd(openEnds(d.shape, placement.run)) ?? 'end';
     if (!(length > 0)) return notAllowed('Length must be positive');
     if (kind !== 'table' && length - (kind === 'oneArm' ? A : 0) < ABSORB_FLOOR) {
       return noRoom(`A seat cushion can't be under ${ABSORB_FLOOR}″`);
@@ -120,17 +126,17 @@ export function convertPiece(config: Config, id: string, arm?: RunEnd): EditResu
   return edit(config, (d, alloc): Outcome => {
     const f = findPiece(d, id);
     if (!f || !isSeat(f.piece)) return notAllowed('Only seats can be converted');
-    const open = openEnd(d.shape, f.run);
-    if (f.piece.kind === 'armless' && arm && arm !== open) return notAllowed('Arms go at the open end');
+    const opens = openEnds(d.shape, f.run);
+    if (f.piece.kind === 'armless' && arm && arm !== armEndFor(d.runs[f.run]!, f.index, opens)) return notAllowed('Arms go at the open end');
     return setArm(d, f.run, f.index, f.piece.kind === 'armless', alloc);
   });
 }
 
-/** Tap menu: end cap of a run's open end (arm / table in place of the arm / open). */
-export function setEndCap(config: Config, run: RunId, cap: EndCap): EditResult {
+/** Tap menu: end cap of a run's open end (arm / table in place of the arm / open). `end` picks one on a straight run. */
+export function setEndCap(config: Config, run: RunId, cap: EndCap, end?: RunEnd): EditResult {
   return edit(config, (d, alloc): Outcome => {
     const pieces = d.runs[run];
-    const open = openEnd(d.shape, run);
+    const open = capEnd(openEnds(d.shape, run), end);
     if (!pieces || !open) return notAllowed('This run has no open end');
     const state = endCapState(pieces, open);
     if (state === 'unfilled') return notAllowed('Fill the gap first');
@@ -151,7 +157,7 @@ export function setEndCap(config: Config, run: RunId, cap: EndCap): EditResult {
     // cap === 'table'
     if (state === 'armTable') return setArm(d, run, open === 'end' ? pieces.length - 2 : 1, false, alloc);
     const table: RunPiece = { id: alloc('p'), kind: 'table', length: defaultLength('table', d.dims.A) };
-    return insertPiece(d, alloc, table, { run, at: 'replaceArm' });
+    return insertPiece(d, alloc, table, { run, at: 'replaceArm', end: open });
   });
 }
 
@@ -192,7 +198,7 @@ export function fillGap(config: Config, gapId: string, kind: 'armless' | 'oneArm
     }
     if (p.length < ABSORB_FLOOR) return noRoom(`Too small for a seat (under ${ABSORB_FLOOR}″)`);
     const pieces = d.runs[f.run]!;
-    const open = openEnd(d.shape, f.run);
+    const open = armEndFor(pieces, f.index, openEnds(d.shape, f.run));
     const touches = open !== null && f.index === endIndex(pieces, open);
     if (kind === 'oneArm' && touches && p.length - d.dims.A >= ABSORB_FLOOR) {
       p.kind = 'oneArm';

@@ -1,6 +1,6 @@
 // config -> pieces[] (pure, no React). Lays out and VALIDATES only: it never
 // rebalances or splits (the ops already stored the final lengths).
-import { available, corners, endCapState, openEnd, runEnds, runIds, wedgeC } from './layout';
+import { available, corners, endCapState, openEnd, openEnds, runEnds, runIds, wedgeC } from './layout';
 import { MAX_PIECE, cushionOf, half, isSeat } from './pieces';
 import { coffeeClearances, rectPoly } from './clearance';
 import { ruleViolation } from './rules';
@@ -42,7 +42,7 @@ interface Frame {
 const pieceTop = (c: Config): number => c.dims.backHeight + BACK_CUSHION.rise;
 
 function frameOf(c: Config, run: RunId, C: number): Frame {
-  if (run === 'back') return { axis: 'x', start: c.shape === 'L-right' ? 0 : C, outside: 0, inward: 1 };
+  if (run === 'back') return { axis: 'x', start: c.shape === 'L-right' || c.shape === 'straight' ? 0 : C, outside: 0, inward: 1 };
   if (run === 'left') return { axis: 'y', start: C, outside: 0, inward: 1 };
   return { axis: 'y', start: C, outside: c.W, inward: -1 };
 }
@@ -163,6 +163,7 @@ export function buildHaven(config: Config): BuildResult {
     if (s !== av) errors.push(`run ${run}: pieces sum to ${s}" but ${av}" is available`);
     const gapSum = stored.filter((p) => p.kind === 'gap').reduce((t, p) => t + p.length, 0);
     const open = openEnd(c.shape, run);
+    const opens = openEnds(c.shape, run);
     const origin = frameRect(f, 0, 0, 0, 0);
     runs.push({
       id: run,
@@ -173,6 +174,8 @@ export function buildHaven(config: Config): BuildResult {
       ends: runEnds(c.shape, run),
       openEnd: open,
       endCap: open ? endCapState(stored, open) : null,
+      openEnds: opens,
+      endCaps: Object.fromEntries(opens.map((e) => [e, endCapState(stored, e)])),
       axis: f.axis,
       origin: [origin.x, origin.y],
       pieceIds: stored.map((p) => p.id),

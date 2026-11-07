@@ -5,14 +5,19 @@ import {
   deleteLoose,
   deletePiece,
   endIndex,
+  evenTableSeats,
   fillGap,
-  openEnd,
+  openEnds,
   resizeLoose,
   resizePiece,
+  SEAT_WARN,
+  setArmWidth,
   setEndCap,
   setTableStyle,
+  tableSeats,
   type EditResult,
   type EndCap,
+  type RunEnd,
 } from '@/engine';
 import { fmtIn } from '@/plan/format';
 import { builtOf, useHavenStore } from '@/state/store';
@@ -21,8 +26,7 @@ import { MeasureField } from './MeasureField';
 import type { Selection } from './selection';
 import { WedgeSlider } from './WedgeSlider';
 
-const TABLE_WIDTHS = [24, 28, 32, 36, 40];
-
+const TABLE_WIDTHS = [20, 24, 28, 32, 36, 40];
 
 function Row({ children }: { children: React.ReactNode }) {
   return <div className="flex flex-wrap items-center gap-2">{children}</div>;
@@ -110,10 +114,12 @@ export function MenuBody({ sel }: { sel: Selection }) {
   // Seats and tables: the run's open-end cap applies to the last two pieces at that end.
   const pieces = config.runs[sel.run]!;
   const piece = pieces[sel.index]!;
-  const open = openEnd(config.shape, sel.run);
+  // The open end nearest this piece (a straight sofa has one at each end).
+  const dist = (e: RunEnd) => Math.abs(sel.index - endIndex(pieces, e));
+  const open = openEnds(config.shape, sel.run).sort((a, b) => dist(a) - dist(b))[0] ?? null;
   const run = builtOf(config).runs.find((r) => r.id === sel.run)!;
-  const nearEnd = open !== null && Math.abs(sel.index - endIndex(pieces, open)) <= 1;
-  const capState = run.endCap;
+  const nearEnd = open !== null && dist(open) <= 1;
+  const capState = open ? run.endCaps[open] : null;
   const caps: { value: EndCap; label: string }[] = [
     { value: 'arm', label: 'Arm' },
     { value: 'table', label: 'Table' },
@@ -126,7 +132,7 @@ export function MenuBody({ sel }: { sel: Selection }) {
         label="End cap"
         value={(capState === 'armTable' ? 'table' : capState) as EndCap}
         options={caps}
-        onChange={(v) => apply(setEndCap(s().config, sel.run, v))}
+        onChange={(v) => apply(setEndCap(s().config, sel.run, v, open ?? undefined))}
       />
       {capState === 'armTable' && <p className="text-xs text-ink-muted">A table outside the arm</p>}
     </div>
@@ -138,8 +144,21 @@ export function MenuBody({ sel }: { sel: Selection }) {
   );
 
   if (sel.type === 'table') {
+    // Balance seats around a table (Andre, 2026-11-06): the seats either side, kept equal.
+    const seats = tableSeats(config, sel.id);
+    const uneven = !!seats && Math.abs(seats[0] - seats[1]) > 0.5;
+    const narrow = !!seats && Math.min(...seats) < SEAT_WARN && piece.length <= 20 && config.dims.A > 10;
     return (
       <div className="flex flex-col gap-3">
+        {seats && (
+          <Row>
+            <p data-testid="table-seats" className="mr-auto text-sm">
+              Seats {fmtIn(seats[0])} | {fmtIn(seats[1])}
+            </p>
+            {uneven && <Button onClick={() => apply(evenTableSeats(s().config, sel.id))}>Even seats</Button>}
+            {narrow && <Button onClick={() => apply(setArmWidth(s().config, 10))}>Try 10″ arms</Button>}
+          </Row>
+        )}
         <div className="flex flex-col gap-1">
           <p className="text-xs font-semibold tracking-wide text-ink-muted uppercase">Width</p>
           <Row>

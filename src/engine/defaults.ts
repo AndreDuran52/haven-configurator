@@ -1,6 +1,6 @@
 // §2 / §3: real Haven dimensions and the "Start from" presets (§5.4 "Presets").
 import { ABSORB_FLOOR, TABLE_DEFAULT, half } from './pieces';
-import { available, clampWedge, defaultFill, makeAlloc, openEnd, runIds, seat } from './layout';
+import { available, clampWedge, defaultFill, makeAlloc, openEnds, runIds, seat } from './layout';
 import { finalize } from './normalize';
 import type { Config, HavenDims, Shape, TableFinish, TableStyle } from './types';
 
@@ -96,7 +96,7 @@ function build(shape: Shape, o: PresetOptions, fill: 'standardU' | 'default' | '
         seat(alloc('p'), len - TABLE_DEFAULT, null),
       ];
     } else {
-      draft.runs[run] = defaultFill(len, openEnd(shape, run), A, alloc);
+      draft.runs[run] = defaultFill(len, openEnds(shape, run), A, alloc);
     }
   }
   return finalize(draft, alloc);
@@ -111,6 +111,15 @@ export const standardU = (o: PresetOptions = {}): Config => build('U', o, 'stand
  */
 export const standardL = (side: 'left' | 'right', o: PresetOptions = {}): Config =>
   build(side === 'left' ? 'L-left' : 'L-right', o, 'default', 132);
+
+/**
+ * Standard straight sofa (Andre, 2026-11-06): W 120, two equal one-arm seats,
+ * arms out, no table. It has no legs: L and R start at the depth and are never drawn.
+ */
+export const standardStraight = (o: PresetOptions = {}): Config => {
+  const D = Math.round(o.D ?? DEFAULT_MEASURES.D);
+  return build('straight', { ...o, L: D, R: D }, 'default', 120);
+};
 
 /** §2 Blank: wedges come with the shape; every run starts as one gap. */
 export const blankConfig = (shape: Shape, o: PresetOptions = {}): Config =>
