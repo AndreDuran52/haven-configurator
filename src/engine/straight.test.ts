@@ -128,8 +128,8 @@ describe('straight sofa: balance and arms', () => {
 });
 
 describe('link v4', () => {
-  it('is the current version; the goldens decode and re-encode exactly', () => {
-    expect(LINK_VERSION).toBe(4);
+  it('the goldens decode and re-encode exactly', () => {
+    expect(LINK_VERSION).toBe(5); // v5 added the room (H6c); v4 straight links are unchanged
     const made: Record<string, Config> = { standard: standardStraight(), midTable: photo(), endTable: setEndCap(standardStraight({ W: 150 }), 'back', 'table', 'start').config };
     for (const [name, c] of Object.entries(made)) {
       valid(c);
@@ -149,9 +149,9 @@ describe('link v4', () => {
     expect(b.seats.label).toBe('Seats 4–6');
   });
 
-  it('shape i in a v1–v3 link is damaged; a v5 link is newer', () => {
+  it('shape i in a v1–v3 link is damaged; a v6 link is newer', () => {
     const body = GOLDEN_V4.standard!.slice(1, -3);
     for (const v of [1, 2, 3]) expect(decode(`${v}${body}.${checksum(`${v}${body}`)}`)).toEqual({ error: 'damaged' });
-    expect(decode(`5${GOLDEN_V4.standard!.slice(1)}`)).toEqual({ error: 'newer' });
+    expect(decode(`6${GOLDEN_V4.standard!.slice(1)}`)).toEqual({ error: 'newer' });
   });
 });

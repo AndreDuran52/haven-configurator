@@ -11,11 +11,17 @@
 // A section joins the one before it. Shared fields (D, corner, lock, seat
 // widths, dims, look) are never repeated: a later app that lets them differ
 // writes a newer version, which an older app reads as "newer", not "damaged".
+//
+// v5 (H6c, 2026-11-07) adds the client's room as a last token, written only
+// when a room is set (so every older link stays byte for byte):
+//   M w<width> d<depth> [B = back wall | x<x> y<y> = placed by its gaps]
+// (no letter = centred on the sofa).
 import { buildHaven } from './buildHaven';
 import { checksum, decodeBody, decodeRun, encode, encodeParts, inRange, LINK_VERSION, num, NUM, runTokens, SHAPE_CODE, shapeFromCode } from './codec';
 import { openEnd, runIds } from './layout';
 import { layoutErrors } from './layoutBuild';
-import type { Layout, Section } from './layoutTypes';
+import type { Layout, Room, RoomAt, Section } from './layoutTypes';
+import { ROOM_MAX, ROOM_MIN } from './roomFit';
 import type { Config, RunId, Runs } from './types';
 
 export type LayoutDecode = { layout: Layout } | { error: 'damaged' | 'newer' };
@@ -25,8 +31,9 @@ const JOIN_CODE = { legs: 'g' } as const;
 export function encodeLayout(l: Layout): string {
   const [root, ...rest] = l.sections;
   if (!root) throw new Error('codec: empty layout');
-  if (!rest.length) return encode(root.config);
-  const parts = [...encodeParts(root.config).parts];
+  if (!rest.length && !l.room) return encode(root.config);
+  const head = encodeParts(root.config);
+  const parts = [...head.parts];
   rest.forEach((s, i) => {
     const prev = l.sections[i]!;
     if (!s.join || s.join.to !== prev.id) throw new Error('codec: a section must join the one before it');
@@ -34,8 +41,27 @@ export function encodeLayout(l: Layout): string {
     const c = s.config;
     parts.push(`P${JOIN_CODE[s.join.kind]}${SHAPE_CODE(c.shape)}W${num(c.W)}L${num(c.L)}R${num(c.R)}${s.join.sharedBack ? 'H' : ''}`, ...runTokens(c));
   });
-  const body = `3${parts.join('_')}`;
+  if (l.room) parts.push(roomToken(l.room));
+  const version = l.room ? 5 : Math.max(3, head.version);
+  const body = `${version}${parts.join('_')}`;
   return `${body}.${checksum(body)}`;
+}
+
+function roomToken(r: Room): string {
+  const at = r.at.mode === 'backWall' ? 'B' : r.at.mode === 'free' ? `x${num(r.at.x)}y${num(r.at.y)}` : '';
+  return `Mw${num(r.w)}d${num(r.d)}${at}`;
+}
+
+const SN = '(-?\\d+(?:\\.5)?)';
+
+function decodeRoom(tok: string): Room | null {
+  const m = new RegExp(`^Mw${NUM}d${NUM}(?:(B)|x${SN}y${SN})?$`).exec(tok);
+  if (!m) return null;
+  const w = +m[1]!;
+  const d = +m[2]!;
+  if (w < ROOM_MIN || d < ROOM_MIN || w > ROOM_MAX || d > ROOM_MAX) return null;
+  const at: RoomAt = m[3] ? { mode: 'backWall' } : m[4] !== undefined ? { mode: 'free', x: +m[4]!, y: +m[5]! } : { mode: 'center' };
+  return { w, d, at };
 }
 
 const RUN_INV: Record<string, RunId> = { b: 'back', l: 'left', r: 'right' };
@@ -66,7 +92,13 @@ export function decodeLayout(link: string): LayoutDecode {
   const version = Number(m[1]);
   if (version > LINK_VERSION) return { error: 'newer' };
   if (checksum(`${m[1]}${m[2]}`) !== m[3]) return { error: 'damaged' };
-  const tokens = m[2]!.split('_');
+  const all = m[2]!.split('_');
+  // v5: the room, always last.
+  const roomTok = all.length > 1 && all[all.length - 1]!.startsWith('M') ? all[all.length - 1]! : null;
+  if (roomTok && version < 5) return { error: 'damaged' };
+  const room = roomTok ? decodeRoom(roomTok) : null;
+  if (roomTok && !room) return { error: 'damaged' };
+  const tokens = roomTok ? all.slice(0, -1) : all;
   const starts = tokens.map((t, i) => (t.startsWith('P') && i > 0 ? i : -1)).filter((i) => i >= 0);
   if (starts.length && version < 3) return { error: 'damaged' };
   const rootEnd = starts[0] ?? tokens.length;
@@ -82,7 +114,7 @@ export function decodeLayout(link: string): LayoutDecode {
     const id = String.fromCharCode(98 + k); // 'b', 'c', …
     sections.push({ id, config: s.config, join: { ...s.join!, to: sections[sections.length - 1]!.id } });
   }
-  const layout: Layout = { schema: 1, sections };
+  const layout: Layout = room ? { schema: 1, sections, room } : { schema: 1, sections };
   if (sections.some((s) => !inRange(s.config) || buildHaven(s.config).errors.length > 0)) return { error: 'damaged' };
   if (layoutErrors(layout).length) return { error: 'damaged' };
   return { layout };

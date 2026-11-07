@@ -1339,10 +1339,25 @@ Andre's answers (Q45–Q49): close freeform; hide the T from the menus (saved T'
 
 **Measured:** vitest `tableBalance.test.ts` (11) and `straight.test.ts` (12, the v4 goldens, Andre's site photo 63 | 33 | 20 | 33 | 63), the property test with straight sofas and either end; e2e `h4.mjs` (tray table 19 | 20 | 19, Try 10″ arms, the 24″ chip, Even seats), `shapes.mjs` (T's opened by link, no T entry point), `straight.mjs` (start, plan, tray table, end-cap table, the v4 link in a fresh browser, 3D Top parity, PDF header and file name, labels at three sizes, light and dark).
 
-**Next:** H6c Room floor (link v5), then UX Phases 3–6 refocused on "friendly, like a game" (Phase 3: "Fit my room" / "Build piece by piece" in place of the lock switch, a result line after each edit).
+**Next:** H6c Room floor (link v5, built 2026-11-07, below), then UX Phases 3–6 refocused on "friendly, like a game" (Phase 3: "Fit my room" / "Build piece by piece" in place of the lock switch, a result line after each edit).
 
-### H6c: Room floor space (next; Andre, 2026-10-02)
-The client's room (W × D, the sofa's gap to the left and back walls) drawn in the plan, the PDF and as the 3D floor, with clearances to each wall and a `roomTooSmall` warning; Center and Fill the width. Carried in links (codec v5, written only when a room is set, so every older link stays byte-identical; v3 went to shapes 2026-10-26, v4 to the straight sofa 2026-11-06).
+### H6c: Room floor space (Andre, 2026-10-02; built 2026-11-07)
+The client's room, drawn to scale around the sofa, so the salesperson can ask "what space do you have?" and show the sofa in it.
+
+Andre's answers (Q50–Q53): a rectangle only (width × depth, no doors or windows); the sofa centred by default, with a choice of **Center** or **Back wall**; **Fill the width** grows or shrinks the sofa (like typing a new W); warn when the sofa doesn't fit and when a walkway is under 30″.
+
+**As built:**
+- **Model:** `Layout.room = { w, d, at }`, an optional key (absent when none). Only the size and how it sits are stored: `at` is Center (the sofa in the middle), Back wall (the sofa's back on the back wall, centred across) or Free (`x`, `y`: the room's back-left corner, set by a typed gap). Center and Back wall follow the sofa as it changes; the room's rectangle, the gaps and the warnings are derived (`roomFit.ts`) in `buildLayout` (`LayoutBuild.room`).
+- **Ops** (`room.ts`, layout-level, one undo step each, the same reference when refused): `setRoom` (24–1200″ on the half inch; the first room is centred), `placeRoom` (Center / Back wall), `setRoomGap` (left or back, ≥ 0; the room becomes Free), `clearRoom`, `fillRoomWidth` (one sofa: W = room width − 2 × the left gap, 0 when past the wall; refused on a T).
+- **Warnings:** `roomTooSmall` ("The sofa is 4″ past the left wall", the worst overshoot of the sofa or a loose piece) and `walkwayUnder30` ("Walkway 26″ between the sofa and the left wall (under 30)"), for the side and front walls only, the sofa and coffee tables, never at 0″ (touching is meant) and never behind the sofa.
+- **Plan:** the room floor and walls under the sofa; a dashed gap to each wall (amber under 30″ at the sides and front, red past a wall, not drawn at 0); the frame is the room, so the sofa's dimensions sit outside it and the room's width and depth ("Room 240″ (20'-0″)") are the outermost dimensions (bottom, right). The Seats label, grips and drags are unchanged.
+- **Size tab:** "Room" became **Sofa size**; a lazy **Room** section: "Add the room" (the sofa plus 3 ft each side and 8 ft in front, to the next foot), W and D, Center | Back wall (| Placed after a typed gap), Left gap and Back gap, Fill the width (one sofa), Remove.
+- **PDF:** the room and the gaps on the plan at scale; the header ends "· Room 240″ x 200″". **3D:** the floor is the room. **`?view`:** a Room row. **Projects cards:** the room outline. The shape picker keeps the room when it starts another shape.
+- **Link v5:** a last token `_Mw240d200` (+ `B` for Back wall, or `x…y…` when placed), written only when a room is set, so every v1–v4 link is byte-identical. An older app reads it as "newer"; a room token in an older version, or a size out of range, is damaged.
+- **Entry budget:** 322 kB raw / 106 kB gzip (measured 315.6 / 104.8; Andre allows up to 115).
+- **Also fixed:** a straight sofa's overall depth after a depth change (the layout's outer box read its unused L/R).
+
+**Measured:** vitest `room.test.ts` (15: placing for a U, a straight sofa and a T, modes following the sofa, refusals with the same reference, walkway edges at 30″ and 0″, past-a-wall messages for the sofa and a coffee table, Fill the width, the v5 goldens, damaged and newer links); e2e `room.mjs` (add, size, Back wall, a typed gap, Fill the width as one undo step, the v5 link in a fresh browser, the warnings, 3D Top parity with the room floor, the PDF header and room dims, Remove back to the v1 link, labels at three sizes light and dark).
 
 ### H7: Cloud saves + tracker hand-off (optional, later; Andre decides, do not start until told)
 The configurator is complete without H7. Options, in order of cost:
@@ -1517,6 +1532,10 @@ Answer in a word. **Q1 is answered (camera, spring-back orbit), and Q9, Q10, Q12
 | Q47 | A table dropped mid-seat | **Answered:** seats always even; the table starts at 20″ (Andre: "do what you think is best"); "Try 10″ arms" when 20″ is still tight |
 | Q48 | Shapes vs pieces | **Answered:** shapes to start (Straight, L, U), pieces to finish; a straight sofa added (link v4) |
 | Q49 | Order | **Answered:** balance + straight, then the room floor (H6c, link v5), then UX Phases 3–6 |
+| Q50 | Room shape | **Answered (2026-11-07):** a rectangle, width × depth; no doors or windows |
+| Q51 | Where the sofa sits | **Answered:** centred by default; Center or Back wall (a typed gap places it) |
+| Q52 | Fill the width | **Answered:** the sofa grows or shrinks to the room less the side gaps |
+| Q53 | Room warnings | **Answered:** doesn't fit the room; walkway under 30″ |
 
 ---
 

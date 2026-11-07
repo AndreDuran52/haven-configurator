@@ -3,6 +3,7 @@
 // layout itself (nothing extra is stored). A T draws both halves in place.
 import type { Layout } from '@/engine';
 import { PlanDrawing } from '@/plan/PlanDrawing';
+import { RoomFloor } from '@/plan/RoomLayer';
 import { LIGHT } from '@/plan/theme';
 import { layoutBuiltOf } from '@/state/store';
 
@@ -11,6 +12,9 @@ const PAD = 6; // inches
 export function PlanThumb({ layout, width = 240, height = 150 }: { layout: Layout; width?: number; height?: number }) {
   const lb = layoutBuiltOf(layout);
   const pts = lb.sections.flatMap((s) => s.built.pieces.flatMap((p) => p.polygon.map((q) => [q[0] + s.offset[0], q[1] + s.offset[1]] as const)));
+  // H6c: the room's corners too, so the whole floor is in the card.
+  const r = lb.room?.rect;
+  if (r) pts.push([r.x, r.y], [r.x + r.w, r.y + r.h]);
   const xs = pts.map((q) => q[0]);
   const ys = pts.map((q) => q[1]);
   const x0 = Math.min(0, ...xs) - PAD;
@@ -20,6 +24,7 @@ export function PlanThumb({ layout, width = 240, height = 150 }: { layout: Layou
   const k = Math.max(w / width, h / height);
   return (
     <svg viewBox={`${x0} ${y0} ${w} ${h}`} width="100%" height="100%" className="block" aria-hidden data-thumb="">
+      {lb.room && <RoomFloor room={lb.room} k={k} theme={LIGHT} />}
       {[...lb.sections].reverse().map((s) => (
         <g key={s.id} transform={lb.solo ? undefined : `translate(${s.offset[0]} ${s.offset[1]})`}>
           <PlanDrawing built={s.built} dims={null} k={k} theme={LIGHT} showWarnings={false} seatsSize={0} gapLabelSize={0} />

@@ -59,7 +59,9 @@ export function sizesLine(b: BuildResult): string {
 /** The header's shape and sizes: one sofa, or a T ("T shape, shared back · 229" W x 110" stem · 44" deep"). */
 export function headerLine(layout: Layout, b: BuildResult): string {
   const t = teeOf(layout);
-  if (!t) return `${b.shape === 'straight' ? 'Straight sofa' : b.shape === 'U' ? 'U shape' : b.shape === 'L-left' ? 'L shape, left' : 'L shape, right'}  ·  ${sizesLine(b)}`;
+  // H6c: the client's room, when set.
+  const room = layout.room ? `  ·  Room ${fmtIn(layout.room.w)} x ${fmtIn(layout.room.d)}` : '';
+  if (!t) return `${b.shape === 'straight' ? 'Straight sofa' : b.shape === 'U' ? 'U shape' : b.shape === 'L-left' ? 'L shape, left' : 'L shape, right'}  ·  ${sizesLine(b)}${room}`;
   const stem = t.stem[0] === t.stem[1] ? fmtIn(t.stem[0]) : `${fmtIn(t.stem[0])} / ${fmtIn(t.stem[1])}`;
-  return `T shape, ${t.sharedBack ? 'shared back' : 'two backs'}  ·  ${fmtIn(t.total)} W x ${stem} stem · ${fmtIn(b.D)} deep · ${fmtFtIn(t.total)} wide`;
+  return `T shape, ${t.sharedBack ? 'shared back' : 'two backs'}  ·  ${fmtIn(t.total)} W x ${stem} stem · ${fmtIn(b.D)} deep · ${fmtFtIn(t.total)} wide${room}`;
 }
