@@ -13,6 +13,7 @@ import { reporter } from './lib.mjs'
 import { ortho } from './ortho.mjs'
 import { shapes } from './shapes.mjs'
 import { smoke } from './smoke.mjs'
+import { room } from './room.mjs'
 import { straight } from './straight.mjs'
 
 const PORT = 4179
@@ -33,6 +34,7 @@ try {
   await phase1(browser, BASE, check)
   await shapes(browser, BASE, check)
   await straight(browser, BASE, check)
+  await room(browser, BASE, check)
 } finally {
   await browser.close()
   await server.close()

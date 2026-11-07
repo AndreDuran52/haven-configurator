@@ -27,7 +27,10 @@ export function ShapePicker() {
 
   const start = (choice: StartChoice) => {
     const s = store.getState();
-    s.commitLayout(presetFor(choice), { key: 'start' });
+    // The client's room stays when the shape changes (H6c).
+    const room = s.layout.room;
+    const next = presetFor(choice);
+    s.commitLayout(room ? { ...next, room } : next, { key: 'start' });
     s.setSection('a');
     s.setUi({ lastStart: choice });
     s.toast(`Started a ${startLabel(choice)}`);

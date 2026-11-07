@@ -11,6 +11,8 @@ import { fitSource } from './dimLayout';
 import { DimsLayer } from './DimsLayer';
 import { gripPoints, hitTest, inPoly, lineTolPx } from './hitTest';
 import { layoutDimSource, layoutSeatsAt } from './layoutDims';
+import { RoomFloor, RoomGaps } from './RoomLayer';
+import { frontXOf, withRoom } from './roomDims';
 import { ClearanceLayer } from './ClearanceLayer';
 import { GripsLayer, MoveBadge } from './GripsLayer';
 import { PLAN_PAD_PX, planFitSource } from './planFit';
@@ -32,7 +34,7 @@ export function PlanView() {
   const readOnly = useHaven((s) => s.ui.readOnly);
   const theme = useHaven((s) => (s.ui.look === 'sketch' ? SKETCH : LIGHT));
   const built = active.built;
-  const src = useMemo(() => layoutDimSource(lb), [lb]);
+  const src = useMemo(() => withRoom(layoutDimSource(lb), lb.room), [lb]);
   const wrap = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
@@ -116,6 +118,7 @@ export function PlanView() {
           {...(readOnly ? {} : { ...g.handlers, onPointerDown })}
         >
           <rect x={-1e4} y={-1e4} width={2e4} height={2e4} fill={theme.paper} />
+          {lb.room && <RoomFloor room={lb.room} k={fit.k} theme={theme} />}
           {lb.solo ? (
             <PlanDrawing built={built} dims={dims} k={fit.k} theme={theme} showWarnings selectedId={selectedId} gripClear={120} />
           ) : (
@@ -134,6 +137,7 @@ export function PlanView() {
               </g>
             </>
           )}
+          {lb.room && <RoomGaps room={lb.room} k={fit.k} theme={theme} frontX={frontXOf(lb.sections)} />}
           <g transform={lb.solo ? undefined : `translate(${offset[0]} ${offset[1]})`}>
             {coffee.map((p) => (
               <ClearanceLayer key={p.id} built={built} id={p.id} k={fit.k} />

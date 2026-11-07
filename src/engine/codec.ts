@@ -22,7 +22,8 @@
 //
 // Versions: v1 (H1) · v2 adds Y (table style, 2026-09-26) · v3 adds joined
 // sections (`_P` tokens, the T shape, 2026-10-26; codecLayout.ts) · v4 adds
-// the straight sofa (shape `i`, its arms always marked S|E; 2026-11-06). A link is
+// the straight sofa (shape `i`, its arms always marked S|E; 2026-11-06) · v5
+// adds the room (an `M` token, codecLayout.ts; 2026-11-07). A link is
 // written at the LOWEST version that can express the layout, so every layout
 // that v1 could already share keeps its exact v1 link; an older app shown a
 // newer link says "newer" instead of "damaged". This file is the one-sofa
@@ -33,7 +34,7 @@ import { openEnd, runIds } from './layout';
 import { ARM_MAX, ARM_MIN, WEDGE_RANGE } from './pieces';
 import type { Config, HavenDims, LoosePiece, RunId, RunPiece, Runs, Shape, TableFinish, TableStyle } from './types';
 
-export const LINK_VERSION = 4;
+export const LINK_VERSION = 5;
 
 /** Append-only: a fabric's index is its link code. */
 /** Append-only: a fabric's index is its link code (every FABRICS key must be here). */
@@ -150,7 +151,9 @@ export function decode(link: string): DecodeResult {
   if (version > LINK_VERSION) return { error: 'newer' };
   if (checksum(`${m[1]}${m[2]}`) !== m[3]) return { error: 'damaged' };
   if (version >= 3 && /_P/.test(m[2]!)) return { error: 'newer' };
-  const decoders: Record<number, (b: string) => Config | null> = { 1: (b) => decodeBody(b, 1), 2: (b) => decodeBody(b, 2), 3: (b) => decodeBody(b, 3), 4: (b) => decodeBody(b, 4) };
+  // A room (v5) belongs to the layout: decodeLayout reads it.
+  if (version >= 5 && /_M/.test(m[2]!)) return { error: 'newer' };
+  const decoders: Record<number, (b: string) => Config | null> = { 1: (b) => decodeBody(b, 1), 2: (b) => decodeBody(b, 2), 3: (b) => decodeBody(b, 3), 4: (b) => decodeBody(b, 4), 5: (b) => decodeBody(b, 5) };
   const config = decoders[version]?.(m[2]!) ?? null;
   // Later versions: migrations[v](config), chained up to the current schema.
   if (!config || !inRange(config) || buildHaven(config).errors.length > 0) return { error: 'damaged' };

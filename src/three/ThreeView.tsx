@@ -8,7 +8,7 @@ import { ContactShadows } from '@react-three/drei';
 import { BACK_CUSHION, pillowAnchors, planCentre, type BuildResult } from '@/engine';
 import { fitPoints, FLOOR_THICKNESS, FLOOR_TOP } from '@/ortho/fitPoints';
 import { isElevation } from '@/ortho/presets';
-import { builtOf, useHaven, useHavenStore, useLive } from '@/state/store';
+import { builtOf, layoutBuiltOf, useHaven, useHavenStore, useLive, useLiveLayout } from '@/state/store';
 import { aimKeyLight } from './keyLight';
 import { FLOOR_MARGIN, makeMaterials } from './materials';
 import { Overlay } from './Overlay';
@@ -38,6 +38,7 @@ function worldBounds(built: BuildResult): { box: Box3; offset: [number, number];
 export default function ThreeView() {
   const store = useHavenStore();
   const live = useLive();
+  const liveLayout = useLiveLayout();
   const preset = useHaven((s) => s.ui.preset);
   const handoff = useHaven((s) => s.ui.handoff);
   const showLooseUi = useHaven((s) => s.ui.showLoose);
@@ -77,9 +78,14 @@ export default function ThreeView() {
   }, []);
   const floorW = world.size[0] + FLOOR_MARGIN;
   const floorD = world.size[1] + FLOOR_MARGIN;
+  // H6c: with a room, the floor is the room (plan inches -> world, like the sofa).
+  const room = layoutBuiltOf(liveLayout).room?.rect ?? null;
+  const floor = room
+    ? { w: room.w, d: room.h, at: [room.x + room.w / 2 + world.offset[0], room.y + room.h / 2 + world.offset[1]] as const }
+    : { w: floorW, d: floorD, at: [0, 0] as const };
   useEffect(() => {
-    (mats.floor as unknown as { map: Texture }).map.repeat.set(floorW / 24, floorD / 24);
-  }, [mats, floorW, floorD]);
+    (mats.floor as unknown as { map: Texture }).map.repeat.set(floor.w / 24, floor.d / 24);
+  }, [mats, floor.w, floor.d]);
 
   // iOS Safari: block page pinch-zoom that starts on the 3D view (plan §7.5).
   useEffect(() => {
@@ -115,8 +121,8 @@ export default function ThreeView() {
           <SofaModel parts={parts} mats={mats} showLoose={showLoose} />
           <Pillows anchors={pillows} mats={mats.pillow} models={models} />
         </group>
-        <mesh name="floor" position={[0, FLOOR_TOP - FLOOR_THICKNESS / 2, 0]} material={mats.floor}>
-          <boxGeometry args={[floorW, FLOOR_THICKNESS, floorD]} />
+        <mesh name="floor" position={[floor.at[0], FLOOR_TOP - FLOOR_THICKNESS / 2, floor.at[1]]} material={mats.floor}>
+          <boxGeometry args={[floor.w, FLOOR_THICKNESS, floor.d]} />
         </mesh>
         <ContactShadows
           key={JSON.stringify(parts.prisms.length) + built.W + built.L + built.R + built.D}

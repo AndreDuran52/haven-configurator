@@ -26,9 +26,27 @@ export interface Section {
   join: Join | null;
 }
 
+/**
+ * H6c (Andre, 2026-11-07): the client's room, a rectangle. Only its size and
+ * how it sits are stored: Center (the sofa in the middle of the room) and
+ * Back wall (the sofa's back on the back wall, centred across) follow the
+ * sofa as it changes; Free keeps the room's top-left corner where it was put
+ * (world plan inches, the root sofa at 0,0).
+ */
+export type RoomAt = { mode: 'center' } | { mode: 'backWall' } | { mode: 'free'; x: number; y: number };
+
+export interface Room {
+  /** Room width (left wall to right wall) and depth (back wall to front wall), inches. */
+  w: number;
+  d: number;
+  at: RoomAt;
+}
+
 export interface Layout {
   schema: 1;
   sections: Section[];
+  /** The client's room; absent when none is set (never an undefined-valued key). */
+  room?: Room;
 }
 
 /** Fields every joined section shares (one depth, corner, look and seat count per sofa). */

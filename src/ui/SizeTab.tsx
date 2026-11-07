@@ -1,6 +1,6 @@
-// The Size tab (editor redesign, Andre 2026-11-06): a T's own panel, the room
-// (lock, W/L/R/D with D chips), the corner wedge (moved here from under the
-// plan), seat width, arm width, and the warnings.
+// The Size tab (editor redesign, Andre 2026-11-06): a T's own panel, the sofa
+// size (lock, W/L/R/D with D chips), the client's room (H6c), the corner wedge
+// (moved here from under the plan), seat width, arm width, and the warnings.
 import { lazy, Suspense, useState } from 'react';
 import { ARM_MAX, ARM_MIN, DEPTH_PRESETS, setArmWidth, setLock, setMeasurements, setSeatWidth, type EditResult } from '@/engine';
 import { useHavenStore, useLive, useLiveLayout } from '@/state/store';
@@ -9,6 +9,8 @@ import { MeasureField } from './MeasureField';
 import { WarningsList } from './WarningsList';
 
 const SectionsPanel = lazy(() => import('./SectionsPanel'));
+// H6c: the client's room (loads after the first paint).
+const RoomPanel = lazy(() => import('./RoomPanel'));
 // Radix Slider (~7 kB gzip) loads after the first paint, into a placeholder of its height.
 const WedgeSlider = lazy(() => import('./WedgeSlider').then((m) => ({ default: m.WedgeSlider })));
 
@@ -38,7 +40,7 @@ export function SizeTab() {
         </Suspense>
       )}
       <Section
-        title="Room"
+        title="Sofa size"
         aside={
           <Switch
             label="Lock outside size"
@@ -69,6 +71,9 @@ export function SizeTab() {
           ))}
         </div>
       </Section>
+      <Suspense fallback={<div className="h-16" aria-hidden />}>
+        <RoomPanel />
+      </Suspense>
       {!straight && (
         <Section title="Corner wedge">
           <Suspense fallback={<div className="h-28" aria-hidden />}>

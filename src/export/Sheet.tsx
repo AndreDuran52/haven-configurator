@@ -15,6 +15,8 @@ import { LIGHT, SKETCH } from '@/plan/theme';
 import { PRESET_LABELS, type PresetName } from '@/ortho/presets';
 import { fitPlan, headerLine } from './fit';
 import { LINK_LINE, linkLines, SheetLayout, type SheetViews } from './layout';
+import { RoomFloor, RoomGaps } from '@/plan/RoomLayer';
+import { frontXOf, withRoom } from '@/plan/roomDims';
 
 const INK = '#1c1b19';
 const MUTED = '#6b665e';
@@ -70,7 +72,7 @@ export function Sheet(p: SheetProps) {
   const L = new SheetLayout(p.views);
   const theme = p.look === 'sketch' ? SKETCH : LIGHT;
   const lb = p.layoutBuild;
-  const plan = L.plan ? fitPlan(lb.solo ? soloSource(b) : layoutDimSource(lb), L.plan) : null;
+  const plan = L.plan ? fitPlan(withRoom(lb.solo ? soloSource(b) : layoutDimSource(lb), lb.room), L.plan) : null;
   const hasTable = p.layout.sections.some((s) => Object.values(s.config.runs).some((ps) => ps?.some((q) => q.kind === 'table')));
   const style = p.config.tableStyle === 'standard' ? '2" wood top on a fabric base' : 'all wood';
   const spec = [
@@ -97,6 +99,7 @@ export function Sheet(p: SheetProps) {
         <g data-plan-view="">
           <T x={L.plan.x} y={L.plan.y + 9} s={`PLAN  ·  ${plan.label}`} size={7} bold />
           <g transform={`translate(${plan.ox.toFixed(3)} ${plan.oy.toFixed(3)}) scale(${plan.S})`} data-plan-scale={plan.S}>
+            {lb.room && <RoomFloor room={lb.room} k={1 / plan.S} theme={theme} />}
             {lb.solo ? (
               <PlanDrawing built={b} dims={plan.dims} k={1 / plan.S} theme={theme} showWarnings={false} seatsSize={10} gapLabelSize={7} />
             ) : (
@@ -113,6 +116,7 @@ export function Sheet(p: SheetProps) {
                 </text>
               </>
             )}
+            {lb.room && <RoomGaps room={lb.room} k={1 / plan.S} theme={theme} frontX={frontXOf(lb.sections)} size={7} />}
           </g>
         </g>
       )}

@@ -4,6 +4,7 @@ import { buildHaven } from './buildHaven';
 import type { Joint, Layout, Section, SharedKey } from './layoutTypes';
 import { SHARED_KEYS } from './layoutTypes';
 import { formatSeats } from './seating';
+import { roomFit, sofaRect, type RoomFit } from './roomFit';
 import type { BuildResult, Bounds, Config, Pt, Rect, SeatCount, Warning } from './types';
 
 export interface PlacedSection {
@@ -27,6 +28,8 @@ export interface LayoutBuild {
   warnings: (Warning & { section: string | null })[];
   errors: string[];
   exportBlocked: boolean;
+  /** H6c: the room around the sofa, its gaps and warnings; null with no room. */
+  room: RoomFit | null;
 }
 
 const hasRightLeg = (c: Config) => c.shape === 'U' || c.shape === 'L-right';
@@ -119,7 +122,7 @@ export function buildLayout(l: Layout, build: (c: Config) => BuildResult = build
     const strip = s.join.sharedBack ? { x: x - B, y: p.offset[1], w: B, h: Math.min(stem.parent, stem.child) } : null;
     joints.push({ parent: p.id, child: s.id, kind: s.join.kind, sharedBack: s.join.sharedBack, x, strip, stem });
   }
-  const outer = sections.map((s) => ({ x: s.offset[0], y: s.offset[1], w: s.config.W, h: Math.max(s.config.D, s.config.shape === 'L-left' ? s.config.L : s.config.shape === 'L-right' ? s.config.R : Math.max(s.config.L, s.config.R)) }));
+  const outer = sections.map((s) => ({ x: s.offset[0], y: s.offset[1], w: s.config.W, h: Math.max(s.config.D, s.config.shape === 'straight' ? 0 : s.config.shape === 'L-left' ? s.config.L : s.config.shape === 'L-right' ? s.config.R : Math.max(s.config.L, s.config.R)) }));
   const box = union(outer);
   let comfortable = 0;
   let snug = 0;
@@ -139,6 +142,9 @@ export function buildLayout(l: Layout, build: (c: Config) => BuildResult = build
       } else warnings.push({ ...w, section: solo ? null : s.id });
     }
   }
+  const loose = sections[0]!.config.loose.map((q) => ({ id: q.id, kind: q.kind, rect: { x: q.x, y: q.y, w: q.w, h: q.d } }));
+  const room = l.room ? roomFit(l.room, sofaRect(sections), loose) : null;
+  if (room) for (const w of room.warnings) warnings.push({ ...w, section: null });
   const errors = [...layoutErrors(l), ...sections.flatMap((s) => s.built.errors.map((e) => (solo ? e : `${sectionLabel(l, s.id)}: ${e}`)))];
   return {
     solo,
@@ -154,5 +160,6 @@ export function buildLayout(l: Layout, build: (c: Config) => BuildResult = build
     warnings,
     errors,
     exportBlocked: errors.length > 0 || sections.some((s) => s.built.exportBlocked),
+    room,
   };
 }

@@ -85,7 +85,7 @@ describe('golden links v3', () => {
     Ttwo: teeLayout({ total: 229, stem: 110, D: 44, sharedBack: false }),
   };
 
-  it('was the version before the straight sofa (v4 is current)', () => expect(LINK_VERSION).toBe(4));
+  it('is older than the current version (v5 added the room)', () => expect(LINK_VERSION).toBe(5));
 
   it('the current encoder still produces them, and they decode back to the same layout', () => {
     for (const [name, l] of Object.entries(layouts)) {
