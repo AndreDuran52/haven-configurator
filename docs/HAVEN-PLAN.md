@@ -1359,6 +1359,27 @@ Andre's answers (Q50–Q53): a rectangle only (width × depth, no doors or windo
 
 **Measured:** vitest `room.test.ts` (15: placing for a U, a straight sofa and a T, modes following the sofa, refusals with the same reference, walkway edges at 30″ and 0″, past-a-wall messages for the sofa and a coffee table, Fill the width, the v5 goldens, damaged and newer links); e2e `room.mjs` (add, size, Back wall, a typed gap, Fill the width as one undo step, the v5 link in a fresh browser, the warnings, 3D Top parity with the room floor, the PDF header and room dims, Remove back to the v1 link, labels at three sizes light and dark).
 
+### UX Phase 3: understandable edits (Andre, 2026-11-08; built)
+**How the app is used now (drives Phases 3–6):** Andre shares his laptop screen over Zoom, so the client sees everything. Laptop first (1440 × 900, 1280 × 800); the iPad keeps working. No interface text under 14 px, no pale grey for anything a client reads, plan lines and dimensions heavy enough to survive compression (checked as screenshots at half scale). Order: Phase 3, then 5 (options A | B | C, hide-panel; no Present mode), then 4 (hover, selection, "Both corners"), then 6 (picture tray, one-taps "Table in the middle", "Table at the end", "Add a seat"). Colours: blue only for the selected piece on the plan; tan for buttons and selected states in the panel; amber only for warnings.
+
+**As built:**
+1. **When pieces change: Keep sofa size | Let sofa grow** (was the "Lock outside size" switch; the "from pieces" hints are gone).
+2. **Result line** under the plan after every edit, e.g. "Table 20″ → 24″ · Seats 26½″ | 26½″ → 24½″ | 24½″" (`src/state/changes.ts`, loaded after the first edit). It stays until the next edit, Undo or ×, with **Undo** inside. A bottom strip is kept for it, so the plan never re-fits when it shows. New sofas (Start, Reset, a shape switch) show a toast instead.
+3. **Shape guard:** on an edited layout, switching shape asks "Switch to L left? This replaces your current layout." [Save first] [Switch] [Cancel]; Undo brings the old layout back. Every switch starts the new shape at its standard size (the room stays). Phase 5 upgrades the prompt to "kept as an option".
+4. **Top bar:** ‹ Projects; the project name (menu: Rename, Reset to the …, Start new…); Undo and Redo arrows; on the right the seat count as text, Share, **Save** (the one tan button, with a dot when there are unsaved changes) and Settings. "Start" left the bar. Phones: Redo and Settings hidden so the bar fits 390 px.
+5. **Labels:** Width, Left side, Right side, Depth; the room's Room width and Room length; tabs **Size | Room | Pieces | Look** (the room's warnings and badge on Room).
+6. **Seat count:** 28″ (snug 24″) by default; its control is in **Settings** with the build number.
+7. **Leftovers:** no empty "No warnings" (the sofa's warnings show under "Check these" only when there are some); no "from pieces", "44″ square", "2″ wood top" (now "Wood top on a fabric base") or "along length / depth / height only".
+8. **Grips only on the selected piece** (its two seams). **Dimensions: Overall | Detailed** over the plan (Overall = the outside sizes and depth callouts; Detailed = every piece), kept per device (`haven:dims`, Detailed by default). The sheets always print Detailed.
+9. **Keyboard:** Ctrl/Cmd+Z, Shift+Ctrl/Cmd+Z, Esc deselects, Delete removes the selected piece (one undo step).
+10. **Look:** **Fabric** and **Wood** sections with big named swatches; "Pillows in 3D" and "Plan style" in a **View** menu over the plan; the 3D cameras are **Overview** (the 3/4), **Front**, **Side** (Top and Iso stay internal); one background (#faf8f4) for the plan, the room floor and 3D.
+- **Zoom:** interface text ≥ 14 px (section titles, warning chips, hints), a darker muted ink (#4f4a43), screen dimensions 14/15 px with heavier lines, piece outlines 1.4× on screen (print unchanged).
+- **Entry budget:** 330 kB raw / 110 kB gzip (measured 323.2 / 107.9; Andre allows up to 115).
+
+**Measured:** vitest `changes.test.ts` (the result line's words); e2e `phase3.mjs` (42 checks: top bar, name menu, labels, tabs, Settings, leftovers, no text under 14 px at 1440 × 900 and 1280 × 800, the result line staying and its Undo, Let sofa grow, the keyboard, the shape guard's three buttons, Undo and Save first, grips on the selected piece only, Overall kept after a reload, the View menu, Overview | Front | Side, one background in plan, room and 3D; screenshots at 1440, 1280, iPad and phone, each also at half scale). Existing e2e updated for the new menus (Start and Reset in the name menu, presets through the store, grips after a selection).
+
+**Seat depth (Q54, open):** today D − 10 (back frame depth) − 8 (loose back cushion depth, front to back): 26″ / 22″ / 18″ at 44″ / 40″ / 36″. Hidden everywhere (the view-only summary and the PDF footer too) until Andre confirms or gives his numbers; only the "Seat depth 12″ (under 16)" warning at very shallow depths remains.
+
 ### H7: Cloud saves + tracker hand-off (optional, later; Andre decides, do not start until told)
 The configurator is complete without H7. Options, in order of cost:
 - **(a) Stay local (default).** Layouts live on each device; share links and PDFs move them between devices and people. Nothing to build.
@@ -1536,6 +1557,9 @@ Answer in a word. **Q1 is answered (camera, spring-back orbit), and Q9, Q10, Q12
 | Q51 | Where the sofa sits | **Answered:** centred by default; Center or Back wall (a typed gap places it) |
 | Q52 | Fill the width | **Answered:** the sofa grows or shrinks to the room less the side gaps |
 | Q53 | Room warnings | **Answered:** doesn't fit the room; walkway under 30″ |
+| Q54 | Seat depth formula | **Open (2026-11-08):** D − 10 − 8 (26 / 22 / 18″ at 44 / 40 / 36″ deep)? Hidden everywhere (the view-only summary and the PDF footer too) until confirmed; only the under-16″ warning remains |
+| Q55 | Lock wording | **Answered:** "When pieces change: Keep sofa size \| Let sofa grow" |
+| Q56 | Seat sizes on the plan | **Answered:** only on the selected piece; on every piece in Detailed |
 
 ---
 

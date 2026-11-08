@@ -35,7 +35,7 @@ export async function phase1(browser, base, check) {
       `Enter: D 38, corners 54, back armless 48, W/L/R 188/132/132 (${t.slice(0, 4).join(' | ')})`,
     )
     check(t.filter((x) => x === '64"').length === 2, 'each leg one-arm 78 reads seat 64 | arm 14')
-    await page.getByRole('button', { name: 'Undo' }).click()
+    await page.getByRole('button', { name: 'Undo', exact: true }).click()
     check((await config(page)).D === 44, 'one Undo brings 44 back')
     await context.close()
   }

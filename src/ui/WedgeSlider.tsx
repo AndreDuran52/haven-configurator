@@ -119,8 +119,8 @@ export function WedgeSlider({ variant = 'panel' }: { variant?: 'panel' | 'menu' 
           +
         </button>
       </div>
-      <div className="flex justify-between px-12 text-xs text-ink-muted tabular-nums">
-        <span>{min}″ square</span>
+      <div className="flex justify-between px-12 text-sm text-ink-muted tabular-nums">
+        <span>{min}″</span>
         <span>{max}″</span>
       </div>
     </div>

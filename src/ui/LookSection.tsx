@@ -1,9 +1,9 @@
-// Look (plan §10 H5): fabric and wood-finish swatches from the FABRICS /
-// FINISHES data tables (both in the share link), the pillows (3D, UI only)
-// and the plan style CAD | Sketch (UI only).
+// Look (plan §10 H5; UX Phase 3, Andre 2026-11-08): Fabric and Wood, each its
+// own section with big swatches and names (both are in the share link). The
+// pillows and the plan style moved to the View menu over the plan.
 import { FABRICS, FINISHES, setFabric, setTableFinish, type EditResult } from '@/engine';
-import { useHaven, useHavenStore, useLive } from '@/state/store';
-import { Section, Segmented, Switch } from './controls';
+import { useHavenStore, useLive } from '@/state/store';
+import { Section } from './controls';
 
 function Swatch({ color, label, on, onClick }: { color: string; label: string; on: boolean; onClick: () => void }) {
   return (
@@ -14,9 +14,9 @@ function Swatch({ color, label, on, onClick }: { color: string; label: string; o
       aria-label={label}
       title={label}
       onClick={onClick}
-      className={`flex min-h-11 items-center gap-2 rounded-lg border px-2 pr-3 text-sm ${on ? 'border-accent bg-panel-2 font-semibold' : 'border-line bg-panel'}`}
+      className={`flex min-h-16 min-w-36 items-center gap-3 rounded-xl border-2 px-3 py-2 text-[15px] ${on ? 'border-accent bg-panel-2 font-semibold' : 'border-line bg-panel font-medium'}`}
     >
-      <span className="h-7 w-7 rounded-full border border-line shadow-inner" style={{ background: color }} aria-hidden />
+      <span className="h-11 w-11 shrink-0 rounded-lg border border-line shadow-inner" style={{ background: color }} aria-hidden />
       {label}
     </button>
   );
@@ -25,40 +25,27 @@ function Swatch({ color, label, on, onClick }: { color: string; label: string; o
 export function LookSection() {
   const store = useHavenStore();
   const live = useLive();
-  const look = useHaven((s) => s.ui.look);
-  const pillows = useHaven((s) => s.ui.pillows);
   const apply = (r: EditResult) => {
     const s = store.getState();
     if (r.rejected) s.toast(r.rejected.message);
     else s.commit(r.config);
   };
   return (
-    <Section title="Materials">
-      <div role="radiogroup" aria-label="Fabric" className="flex flex-wrap gap-2" data-testid="fabrics">
-        {FABRICS.map((f) => (
-          <Swatch key={f.key} color={f.color} label={f.name} on={live.fabric === f.key} onClick={() => apply(setFabric(store.getState().config, f.key))} />
-        ))}
-      </div>
-      <div role="radiogroup" aria-label="Wood finish" className="flex flex-wrap gap-2" data-testid="finishes">
-        {FINISHES.map((f) => (
-          <Swatch key={f.key} color={f.color} label={f.name} on={live.tableFinish === f.key} onClick={() => apply(setTableFinish(store.getState().config, f.key))} />
-        ))}
-      </div>
-      <Switch label="Pillows in 3D" checked={pillows} onChange={(on) => store.getState().setUi({ pillows: on })} />
-      <div className="flex items-center gap-3">
-        <span className="text-sm">Plan style</span>
-        <div className="flex-1">
-          <Segmented
-            label="Plan style"
-            value={look}
-            options={[
-              { value: 'cad', label: 'CAD' },
-              { value: 'sketch', label: 'Sketch' },
-            ]}
-            onChange={(v) => store.getState().setUi({ look: v })}
-          />
+    <>
+      <Section title="Fabric">
+        <div role="radiogroup" aria-label="Fabric" className="flex flex-wrap gap-2" data-testid="fabrics">
+          {FABRICS.map((f) => (
+            <Swatch key={f.key} color={f.color} label={f.name} on={live.fabric === f.key} onClick={() => apply(setFabric(store.getState().config, f.key))} />
+          ))}
         </div>
-      </div>
-    </Section>
+      </Section>
+      <Section title="Wood">
+        <div role="radiogroup" aria-label="Wood finish" className="flex flex-wrap gap-2" data-testid="finishes">
+          {FINISHES.map((f) => (
+            <Swatch key={f.key} color={f.color} label={f.name} on={live.tableFinish === f.key} onClick={() => apply(setTableFinish(store.getState().config, f.key))} />
+          ))}
+        </div>
+      </Section>
+    </>
   );
 }

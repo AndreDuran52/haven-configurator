@@ -5,7 +5,7 @@
 // Fresh browser contexts only. Screenshots light and dark at four sizes.
 import { VIEWPORTS } from './browser.mjs'
 import { pdfText } from './h6.mjs'
-import { dimTexts, labelCheck, panel, setField } from './lib.mjs'
+import { dimTexts, labelCheck, panel, setField, projectMenu, selectPiece } from './lib.mjs'
 
 const SHOTS = 'test-results'
 const LAPTOP = { width: 1440, height: 900 }
@@ -59,7 +59,7 @@ export async function shapes(browser, base, check) {
     await page.getByTestId('new-standardU').click()
     await page.waitForSelector('[data-plan-svg]')
     check((await page.getByRole('radio', { name: 'T', exact: true }).count()) === 0, 'no T in the shape picker of a U')
-    await page.getByRole('button', { name: 'Start', exact: true }).click()
+    await projectMenu(page, 'start')
     await page.waitForSelector('[role=dialog]')
     check((await page.getByRole('button', { name: /T shape/ }).count()) === 0, 'no "T shape" in Start')
     await context.close()
@@ -95,13 +95,13 @@ export async function shapes(browser, base, check) {
     await setField(page, 'W', 124.5)
     let s = await state(page)
     check(s.section === 'b' && s.W.join('/') === '119.5/124.5' && (await page.inputValue('#m-total')) === '234', `right half W 124½: total ${await page.inputValue('#m-total')}`)
-    await page.getByRole('button', { name: 'Undo' }).click()
+    await page.getByRole('button', { name: 'Undo', exact: true }).click()
     s = await state(page)
     check(s.W.join('/') === '119.5/119.5', 'one Undo: both halves 119½ again')
     await setField(page, 'D', 40)
     s = await page.evaluate(() => window.__haven.getState().layout.sections.map((x) => x.config.D).join('/'))
     check(s === '40/40', `depth from the right half reaches both halves (${s})`)
-    await page.getByRole('button', { name: 'Undo' }).click()
+    await page.getByRole('button', { name: 'Undo', exact: true }).click()
     // Tap the left wing's seat (inside the left half, away from any seam).
     const wing = await page.$eval('[data-section="a"] [data-piece]', (e) => {
       const r = e.getBoundingClientRect()
@@ -120,6 +120,7 @@ export async function shapes(browser, base, check) {
     const { context, page } = await buildTee(browser, base, 'two', VIEWPORTS.ipadLandscape, 'light', { total: 340, stem: 160 })
     await page.getByRole('radio', { name: 'Right half' }).click()
     await page.waitForTimeout(100)
+    await selectPiece(page, 'back', 0) // UX Phase 3: grips show on the selected piece
     const cdp = await context.newCDPSession(page)
     const touch = (type, pts) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: pts })
     const grips = await page.$$eval('[data-grip]', (els) => els.map((e) => e.getAttribute('data-grip')))
@@ -256,7 +257,7 @@ export async function shapes(browser, base, check) {
     await p2.waitForSelector('[data-plan-svg]')
     await p2.locator('#m-total').fill('240')
     await p2.locator('#m-total').press('Enter')
-    await p2.getByRole('button', { name: 'Reset', exact: true }).click()
+    await projectMenu(p2, 'reset')
     const reset = await p2.locator('[role=dialog]').textContent()
     check(reset.includes('Reset to the T shape?'), `an opened T resets to the T ("${reset.slice(0, 40)}")`)
     await p2.getByRole('button', { name: 'Reset', exact: true }).last().click()

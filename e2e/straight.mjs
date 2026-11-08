@@ -61,7 +61,7 @@ export async function straight(browser, base, check) {
     const t = await config(page)
     check(back(t) === 'oneArm60@start armless13 table20 oneArm27@end', `the tray table splits the right seat: 20″, seats 13 | 13 (${back(t)})`)
     // The start arm becomes a table from the tap menu (the end nearest the tapped seat).
-    await page.getByRole('button', { name: 'Undo' }).click()
+    await page.getByRole('button', { name: 'Undo', exact: true }).click()
     const first = (await config(page)).runs.back[0].id
     await page.locator(`[data-piece="${first}"]`).click()
     await page.waitForSelector('[data-tap-menu]')

@@ -9,7 +9,7 @@ import type { Pt } from '@/engine';
 import { layoutBuiltOf, useHaven, useHavenStore, useLiveLayout } from '@/state/store';
 import { fitSource } from './dimLayout';
 import { DimsLayer } from './DimsLayer';
-import { gripPoints, hitTest, inPoly, lineTolPx } from './hitTest';
+import { gripPoints, gripsOf, hitTest, inPoly, lineTolPx } from './hitTest';
 import { layoutDimSource, layoutSeatsAt } from './layoutDims';
 import { RoomFloor, RoomGaps } from './RoomLayer';
 import { frontXOf, withRoom } from './roomDims';
@@ -19,7 +19,8 @@ import { PLAN_PAD_PX, planFitSource } from './planFit';
 import { PlacementPins } from './PlacementPins';
 import { PlanDrawing } from './PlanDrawing';
 import { installPlanTestApi, registerPlanSvg, setPlanOffset } from './planScreen';
-import { LIGHT, SKETCH } from './theme';
+import { LIGHT_SCREEN, SKETCH_SCREEN } from './theme';
+import { withDimsMode } from './dimsMode';
 import { usePlanGestures } from './usePlanGestures';
 
 export function PlanView() {
@@ -32,9 +33,10 @@ export function PlanView() {
   const placing = useHaven((s) => s.ui.placing);
   const dragging = useHaven((s) => s.ui.dragging);
   const readOnly = useHaven((s) => s.ui.readOnly);
-  const theme = useHaven((s) => (s.ui.look === 'sketch' ? SKETCH : LIGHT));
+  const theme = useHaven((s) => (s.ui.look === 'sketch' ? SKETCH_SCREEN : LIGHT_SCREEN));
+  const dimsMode = useHaven((s) => s.ui.dims);
   const built = active.built;
-  const src = useMemo(() => withRoom(layoutDimSource(lb), lb.room), [lb]);
+  const src = useMemo(() => withDimsMode(withRoom(layoutDimSource(lb), lb.room), dimsMode), [lb, dimsMode]);
   const wrap = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
@@ -56,7 +58,8 @@ export function PlanView() {
   useEffect(() => installPlanTestApi(() => store.getState().config, () => store.getState().layout), [store]);
 
   const liveFit = useMemo(() => (size.w > 40 && size.h > 40 ? planFitSource(src, size.w, size.h) : null), [src, size]);
-  const liveGrips = useMemo(() => (liveFit ? gripPoints(built, liveFit.k) : []), [built, liveFit]);
+  // UX Phase 3: resize grips only on the selected piece's two seams.
+  const liveGrips = useMemo(() => (liveFit ? gripsOf(built, gripPoints(built, liveFit.k), selectedId) : []), [built, liveFit, selectedId]);
   const g = usePlanGestures({ svgRef, built, fit: liveFit, grips: liveGrips, offset });
   const fit = g.frozen ?? liveFit;
   // During a gesture: frozen k / viewBox, live dimensions (the same k while the lock is on).
@@ -64,7 +67,7 @@ export function PlanView() {
     () => (g.frozen ? fitSource(src, size.w, size.h, PLAN_PAD_PX).layout : (liveFit?.layout ?? null)),
     [g.frozen, src, size, liveFit],
   );
-  const grips = useMemo(() => (g.frozen ? gripPoints(built, g.frozen.k) : liveGrips), [g.frozen, built, liveGrips]);
+  const grips = useMemo(() => (g.frozen ? gripsOf(built, gripPoints(built, g.frozen.k), selectedId) : liveGrips), [g.frozen, built, liveGrips, selectedId]);
 
   // Publish the drawn scale and centre for the Plan -> 3D hand-off (parity, plan §7.2).
   useEffect(() => {
@@ -104,7 +107,8 @@ export function PlanView() {
           ref={svgRef}
           data-plan-svg=""
           data-k={fit.k}
-          data-look={theme === SKETCH ? 'sketch' : 'cad'}
+          data-look={theme === SKETCH_SCREEN ? 'sketch' : 'cad'}
+          data-dims-mode={dimsMode}
           width={size.w}
           height={size.h}
           viewBox={`${fit.viewBox.x} ${fit.viewBox.y} ${fit.viewBox.w} ${fit.viewBox.h}`}

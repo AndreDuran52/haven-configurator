@@ -59,7 +59,7 @@ export function SavedList({ list, onChange, onOpen, onToast }: { list: SavedLayo
             ) : (
               <div className="flex items-baseline justify-between gap-2 px-1">
                 <span className="truncate font-semibold">{e.name}</span>
-                <span className="shrink-0 text-xs text-ink-muted">{savedDate(e.savedAt)}</span>
+                <span className="shrink-0 text-sm text-ink-muted">{savedDate(e.savedAt)}</span>
               </div>
             )}
             <div className="flex flex-wrap gap-1">

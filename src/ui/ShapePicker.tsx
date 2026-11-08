@@ -1,12 +1,21 @@
 // The shape picker on top of the side panel (editor redesign, Andre
-// 2026-11-06): U · L left · L right · Straight. A U or L changes shape in
-// place (setShape); to or from Straight starts that standard shape fresh. The T is custom work now (hidden 2026-11-06): an opened T shows
-// "T" here, and picking a standard shape from it starts that shape fresh at
-// its default size. Every change is one undo step.
-import { setShape, type Shape } from '@/engine';
+// 2026-11-06): U · L left · L right · Straight. Picking a shape starts it
+// fresh at its standard size (the room stays). The T is custom work (hidden
+// 2026-11-06): an opened T shows "T" here. Every change is one undo step. UX Phase 3 (Andre,
+// 2026-11-08): on an edited layout the switch asks first (ShapeGuard).
+import { lazy, Suspense, useState } from 'react';
+import type { Layout, Shape } from '@/engine';
 import { presetFor, startLabel, type StartChoice } from '@/state/start';
-import { useHavenStore, useLive, useLiveLayout } from '@/state/store';
+import { codeOf, useHavenStore, useLive, useLiveLayout } from '@/state/store';
 import { Section, Segmented } from './controls';
+
+const ShapeGuard = lazy(() => import('./ShapeGuard'));
+
+/** Edited: anything but the room differs from the preset it was started from. */
+function edited(l: Layout, last: StartChoice): boolean {
+  const { room: _room, ...sofa } = l;
+  return codeOf(sofa) !== codeOf(presetFor(last));
+}
 
 type Pick = Shape | 'T';
 
@@ -36,18 +45,26 @@ export function ShapePicker() {
     s.toast(`Started a ${startLabel(choice)}`);
   };
 
+  const [asking, setAsking] = useState<Shape | null>(null);
+
+  // Every switch starts that shape fresh at its standard size (the room stays): the guard says "replaces".
+  const switchTo = (v: Shape) => start(choiceFor(v));
+
   const pick = (v: Pick) => {
-    if (v === 'T') return;
+    if (v === 'T' || (!joined && v === live.shape)) return;
     const s = store.getState();
-    if (joined || v === 'straight' || s.config.shape === 'straight') return start(choiceFor(v));
-    const r = setShape(s.config, v);
-    if (r.rejected) s.toast(r.rejected.message);
-    else s.commit(r.config);
+    if (edited(s.layout, s.ui.lastStart)) return setAsking(v);
+    switchTo(v);
   };
 
   return (
     <Section title="Shape">
       <Segmented label="Shape" value={joined ? 'T' : live.shape} options={joined ? [...SHAPES, { value: 'T', label: 'T' }] : SHAPES} onChange={pick} />
+      {asking && (
+        <Suspense fallback={null}>
+          <ShapeGuard label={SHAPES.find((x) => x.value === asking)!.label} onSwitch={() => switchTo(asking)} onClose={() => setAsking(null)} />
+        </Suspense>
+      )}
     </Section>
   );
 }

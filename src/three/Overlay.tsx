@@ -1,5 +1,5 @@
 // HTML scale overlay (plan §7.2): a scale bar in Top, Front, Side and Iso
-// (× 0.8165 in Iso, "along length / depth / height only"), hidden in 3/4; in
+// (× 0.8165 in Iso), hidden in 3/4; in
 // Front and Side, height ticks at 1 / 18 / 23 / 27 / 31″ (leg, seat, arm, back
 // frame, back cushions) from BuildResult.heights; a tick closer than 12 px to
 // the one below it is left out. Driven by camera.zoom, so it is exact.
@@ -30,7 +30,7 @@ export function Overlay({ view, preset, heights }: { view: ViewStore; preset: Pr
   }
   const x = Math.max(4, s.leftX - 60);
   return (
-    <div className="pointer-events-none absolute inset-0 text-[11px] font-semibold text-[#3d3a35]" data-testid="scale-overlay">
+    <div className="pointer-events-none absolute inset-0 text-sm font-semibold text-[#1c1b19]" data-testid="scale-overlay">
       {ticks.length > 0 && (
         <div className="absolute" style={{ left: x, top: 0 }} data-testid="height-ticks">
           <div className="absolute w-14 border-t border-[#3d3a35]" style={{ top: s.heightY(0) }} data-h={0} />
@@ -50,7 +50,6 @@ export function Overlay({ view, preset, heights }: { view: ViewStore; preset: Pr
         </div>
         <span>
           {bar.label}
-          {iso ? ' · along length / depth / height only' : ''}
         </span>
       </div>
     </div>

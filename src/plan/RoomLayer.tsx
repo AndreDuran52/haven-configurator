@@ -19,7 +19,7 @@ export function RoomFloor({ room, k, theme }: { room: RoomFit; k: number; theme:
  * `frontX`: where the front gap is measured (under the piece that reaches
  * farthest forward, e.g. a leg of a U).
  */
-export function RoomGaps({ room, k, theme, frontX, size = 12 }: { room: RoomFit; k: number; theme: PlanTheme; frontX: number; size?: number }) {
+export function RoomGaps({ room, k, theme, frontX, size = 14 }: { room: RoomFit; k: number; theme: PlanTheme; frontX: number; size?: number }) {
   const r = room.rect;
   const s = room.sofa;
   const midY = s.y + s.h / 2;

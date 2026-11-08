@@ -4,7 +4,7 @@
 import { readdirSync, statSync, readFileSync } from 'node:fs'
 import { gzipSync } from 'node:zlib'
 import { VIEWPORTS } from './browser.mjs'
-import { config, openApp, panel } from './lib.mjs'
+import { config, openApp, panel, preset, viewMenu } from './lib.mjs'
 
 const SHOTS = 'test-results'
 // Andre's Blender models (H5c): whichever .glb files the build carries must be in use.
@@ -57,7 +57,7 @@ export async function h5(browser, base, check) {
       check(got.square === want.square && got.ball === want.ball, `Blender models in use as shipped: square ${got.square} (file ${want.square}), ball ${got.ball} (file ${want.ball})`)
     }
     for (const name of ['top', 'front', 'side', 'threeQuarter', 'iso']) {
-      await page.locator(`[data-preset=${name}]`).click()
+      await preset(page, name)
       await settle(page)
       const r = await page.evaluate(() => {
         const api = window.__haven3d
@@ -77,8 +77,8 @@ export async function h5(browser, base, check) {
     // Pillows toggle off: gone from the scene and from the fit.
     if (vName === 'ipadLandscape') {
       const n0 = await page.evaluate(() => window.__haven3d.points().length)
-      await panel(page, 'Look')
-      await page.getByRole('switch', { name: 'Pillows in 3D' }).click()
+      await viewMenu(page)
+      await page.getByRole('menuitemcheckbox', { name: 'Pillows in 3D' }).click()
       await page.waitForTimeout(300)
       const n1 = await page.evaluate(() => window.__haven3d.points().length)
       const left = await page.evaluate(() => window.__haven3d.meshNames('pillow:').length)
@@ -115,7 +115,7 @@ export async function h5(browser, base, check) {
       }
     }
     await page.locator('[data-testid=finishes]').getByRole('radio', { name: 'Dark wood' }).click()
-    await page.locator('[data-preset=iso]').click()
+    await preset(page, 'iso')
     await settle(page)
     await page.screenshot({ path: `${SHOTS}/h5-darkwood-iso.png` })
     await context.close()
@@ -124,7 +124,7 @@ export async function h5(browser, base, check) {
   // 3. Sketch toggles the plan: white fill, black lines, cushion seams.
   {
     const { context, page } = await openApp(browser, base)
-    await panel(page, 'Look')
+    await viewMenu(page)
     await page.getByRole('radio', { name: 'Sketch' }).click()
     await page.waitForTimeout(100)
     const r = await page.evaluate(() => {

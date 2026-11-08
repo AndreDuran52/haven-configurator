@@ -12,6 +12,7 @@ import { buildHaven, buildLayout, encodeLayout, replaceSection, sectionConfig, s
 import { DEFAULT_PRESET, type PresetName } from '@/ortho/presets';
 import type { TrayKind } from '@/plan/placementTargets';
 import * as H from './history';
+import { readDimsMode } from './prefs';
 import { DEFAULT_START, startForOpened, type StartChoice } from './start';
 
 /** The plan view's exact scale (CSS px per inch) and the plan point at its centre. */
@@ -51,11 +52,16 @@ export interface UiState {
   project: { id: string; name: string; code: string } | null;
   /** The section being edited ('a' = the root; a T has 'a' left half and 'b' right half). UI only. */
   section: string;
-  /** The side panel's tab (editor redesign, Andre 2026-11-06). UI only. */
+  /** The side panel's tab (editor redesign, Andre 2026-11-06; Room since UX Phase 3). UI only. */
   panel: PanelTab;
+  /** UX Phase 3: what the last edit changed ("Table 20″ → 24″"); stays until the next edit, Undo or dismiss. */
+  result: string | null;
+  /** UX Phase 3: plan dimensions, the overall sizes only or every piece (per device). */
+  dims: DimsMode;
 }
 
-export type PanelTab = 'size' | 'pieces' | 'look';
+export type PanelTab = 'size' | 'room' | 'pieces' | 'look';
+export type DimsMode = 'overall' | 'detailed';
 
 export interface CommitOpts extends H.CommitOptions {
   /** Which section `next` belongs to (default: ui.section). */
@@ -121,6 +127,24 @@ export function createHavenStore(initial: Layout | Config, ui: Partial<UiState> 
       const next = f(h);
       if (next !== h) set(fieldsOf(next, s.ui.section));
     };
+    /** UX Phase 3: after a commit, what changed since the step (or coalesced burst) began. A new sofa (start, reset) has no line. */
+    const noteResult = (before: Layout, opts: H.CommitOptions = {}) => {
+      const s = get();
+      if (s.layout === before) return;
+      const from = s.past[s.past.length - 1];
+      const after = s.layout;
+      set({ ui: { ...s.ui, result: null } });
+      if (opts.key === 'start' || opts.key === 'reset' || !from) return;
+      // The describer loads after the first edit (it stays out of the entry chunk).
+      void import('./changes').then(({ describeChange }) => {
+        const now = get();
+        // Only if nothing else happened meanwhile (another edit, Undo).
+        if (now.layout === after) set({ ui: { ...now.ui, result: describeChange(from, after) } });
+      });
+    };
+    const clearResult = () => {
+      if (get().ui.result !== null) set({ ui: { ...get().ui, result: null } });
+    };
     /** Lift a section config into the layout (same reference when unchanged or refused). */
     const lift = (base: Layout, next: Config, section: string) => replaceSection(base, section, next);
     return {
@@ -144,6 +168,8 @@ export function createHavenStore(initial: Layout | Config, ui: Partial<UiState> 
         project: null,
         section: 'a',
         panel: 'size',
+        result: null,
+        dims: readDimsMode(),
         ...ui,
       },
       setDraft: (next, section = get().ui.section) => {
@@ -153,8 +179,10 @@ export function createHavenStore(initial: Layout | Config, ui: Partial<UiState> 
       setLayoutDraft: (next) => apply((h) => H.setDraft(h, next)),
       cancelDraft: () => apply(H.cancelDraft),
       commit: (next, opts = {}) => {
+        const before = get().layout;
         if (!next) {
           apply((h) => H.commit(h, undefined, opts));
+          noteResult(before, opts);
           return null;
         }
         const r = lift(get().layout, next, opts.section ?? get().ui.section);
@@ -164,16 +192,27 @@ export function createHavenStore(initial: Layout | Config, ui: Partial<UiState> 
           return r.rejected;
         }
         apply((h) => H.commit(h, r.layout, opts));
+        noteResult(before, opts);
         return null;
       },
-      commitLayout: (next, opts) => apply((h) => H.commit(h, next, opts)),
+      commitLayout: (next, opts) => {
+        const before = get().layout;
+        apply((h) => H.commit(h, next, opts));
+        noteResult(before, opts);
+      },
       setSection: (id) => {
         const s = get();
         const section = s.layout.sections.some((x) => x.id === id) ? id : s.layout.sections[0]!.id;
         set({ ui: { ...s.ui, section, selectedId: null }, config: sectionConfig(s.layout, section), draft: s.draftLayout ? sectionConfig(s.draftLayout, section) : null });
       },
-      undo: () => apply(H.undo),
-      redo: () => apply(H.redo),
+      undo: () => {
+        apply(H.undo);
+        clearResult();
+      },
+      redo: () => {
+        apply(H.redo);
+        clearResult();
+      },
       setUi: (patch) => set({ ui: { ...get().ui, ...patch } }),
       setView: (view) => {
         const u = get().ui;
@@ -186,7 +225,7 @@ export function createHavenStore(initial: Layout | Config, ui: Partial<UiState> 
         const u = get().ui;
         set({
           ...fieldsOf(H.initHistory(asLayout(layout)), 'a'),
-          ui: { ...u, screen: 'editor', project: opts.project ?? null, lastStart: opts.lastStart ?? startForOpened(asLayout(layout), u.lastStart), selectedId: null, placing: null, dragging: null, readOnly: false, section: 'a' },
+          ui: { ...u, result: null, screen: 'editor', project: opts.project ?? null, lastStart: opts.lastStart ?? startForOpened(asLayout(layout), u.lastStart), selectedId: null, placing: null, dragging: null, readOnly: false, section: 'a' },
         });
       },
       goHome: () => set({ ui: { ...get().ui, screen: 'home', selectedId: null, placing: null, dragging: null } }),

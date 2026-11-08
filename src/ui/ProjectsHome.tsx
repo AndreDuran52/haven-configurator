@@ -90,7 +90,7 @@ export default function ProjectsHome() {
         )}
 
         <section className="flex flex-col gap-2">
-          <h2 className="text-xs font-semibold tracking-wide text-ink-muted uppercase">New Haven</h2>
+          <h2 className="text-sm font-semibold tracking-wide text-ink-muted uppercase">New Haven</h2>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
             <Button tone="primary" onClick={() => start({ kind: 'standardU' })} data-testid="new-standardU">
               Standard U
@@ -110,7 +110,7 @@ export default function ProjectsHome() {
 
         {draft && (
           <section className="flex flex-col gap-2">
-            <h2 className="text-xs font-semibold tracking-wide text-ink-muted uppercase">Last layout</h2>
+            <h2 className="text-sm font-semibold tracking-wide text-ink-muted uppercase">Last layout</h2>
             <button
               type="button"
               onClick={() => store.getState().open(draft.layout, { project: draftProject })}
@@ -122,14 +122,14 @@ export default function ProjectsHome() {
               </span>
               <span className="flex flex-col">
                 <span className="font-semibold">Continue last layout{draftProject ? ` (${draftProject.name})` : ''}</span>
-                <span className="text-xs text-ink-muted">{savedDate(draft.savedAt)}</span>
+                <span className="text-sm text-ink-muted">{savedDate(draft.savedAt)}</span>
               </span>
             </button>
           </section>
         )}
 
         <section className="flex flex-col gap-2">
-          <h2 className="text-xs font-semibold tracking-wide text-ink-muted uppercase">Saved projects ({list.length})</h2>
+          <h2 className="text-sm font-semibold tracking-wide text-ink-muted uppercase">Saved projects ({list.length})</h2>
           <SavedList list={list} onChange={() => setList(listSaved())} onOpen={openProject} onToast={toast} />
         </section>
 
@@ -143,7 +143,7 @@ export default function ProjectsHome() {
             </Button>
             <input ref={file} type="file" accept=".json,application/json" className="hidden" onChange={(e) => restore(e.target.files?.[0])} data-testid="restore-file" />
           </div>
-          <p className="text-xs text-ink-muted">
+          <p className="text-sm text-ink-muted">
             Projects stay on this device and this browser (the home-screen app keeps its own list). Back up to a file to move them to another device, or in case the
             browser clears its storage. Shared links never carry project names.
           </p>

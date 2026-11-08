@@ -25,7 +25,7 @@ Layout: `src/{engine, ortho, state, plan, three, ui, export}` (plan §4). The sh
 2. **Config is the only domain state.** Everything else (`BuildResult`, dimensions, seats, warnings, fits) is derived and never stored. Drafts during a gesture; one commit per gesture = one undo step.
 3. **The plan wins over the spec.** Rules, numbers and tests come from `docs/HAVEN-PLAN.md`; don't "fix" them from the spec.
 4. **Lazy 3D and PDF.** three / `@react-three/*` only inside `src/three/**`, reached only through `lazy()` / `import()`; jsPDF and svg2pdf only through `await import()` in `src/export/`. `src/ortho/**` never imports three. No vendor `manualChunks`.
-5. **Entry-chunk budget.** `npm run check:bundle` must pass: entry JS within budget (322 kB raw / 106 kB gzip since the room floor, 2026-11-07; Andre allows up to 115 gzip; set in `scripts/check-bundle.mjs`), no `THREE.WebGLRenderer` or `jsPDF` markers in entry files. Dialogs and other rarely used UI load with `lazy()`.
+5. **Entry-chunk budget.** `npm run check:bundle` must pass: entry JS within budget (330 kB raw / 110 kB gzip since UX Phase 3, 2026-11-08; Andre allows up to 115 gzip; set in `scripts/check-bundle.mjs`), no `THREE.WebGLRenderer` or `jsPDF` markers in entry files. Dialogs and other rarely used UI load with `lazy()`.
 6. **Share links are forever.** Codec changes bump the version, add a decoder/migration, and keep every golden link passing. Links carry geometry, fabric and finish only: never names, project numbers or prices.
 7. **No hidden network.** No CDN HDRIs, no Draco decoder, nothing cross-origin; `.glb` exported without Draco. The app must work offline after one online load (from H2).
 8. **No backend, no login** unless Andre explicitly starts H7 option (b). `priceFor` stays a stub, never rendered.
@@ -37,7 +37,7 @@ Layout: `src/{engine, ortho, state, plan, three, ui, export}` (plan §4). The sh
 
 Each milestone: `git fetch`, branch from `origin/main` (`h0b-scaffold`, `h1-engine`, `h2-plan-view`, `h3-ortho`, `h4-editing`, `h5-look`, `h6-exports`), build only that §10 block, meet its done-when list, open a PR, **stop**. Andre previews (localhost or the Vercel preview; from H2 on, installed on the iPad) and it merges on Andre's word. Tick the box below in the same PR.
 
-**Current status: room floor (H6c)** (plan §10 H6c, Andre 2026-11-07): the client's room (a rectangle) around the sofa in the plan, the PDF and 3D; Center or Back wall, typed gaps, Fill the width; "doesn't fit" and "walkway under 30″" warnings; link v5. Before it: "shapes to start, pieces to finish" (straight sofa, link v4; seats balanced around a table; the T hidden, plan-only; freeform dropped). **Next:** UX Phases 3–6 refocused on "friendly, like a game". No login (plan Q18). H7/H8 only when Andre asks.
+**Current status: UX Phase 3 built** (plan §10 "UX Phase 3", Andre 2026-11-08). The app is shared over Zoom from a laptop: laptop first (1440 × 900, 1280 × 800), no interface text under 14 px, no pale grey, heavy plan lines; check screenshots at half scale. Colours: blue only for the selected piece on the plan, tan for buttons and selected panel states, amber only for warnings. **Next, in order:** Phase 5 (options A | B | C, hide panel; no Present mode), Phase 4 (hover, selection, "Both corners"), Phase 6 (picture tray, three one-taps). Seat depth stays hidden until Andre confirms the formula (Q54). No login (plan Q18). H7/H8 only when Andre asks.
 
 - [x] H0 Docs hand-off (plan, spec, prototypes, evidence in `docs/`)
 - [x] H0b Scaffold (Vite, strict TS, oxlint guards, vitest, bundle budget, manifest, Vercel)
@@ -59,7 +59,10 @@ Each milestone: `git fetch`, branch from `origin/main` (`h0b-scaffold`, `h1-engi
 - [x] Freeform pieces: dropped 2026-11-06 (PR #15 closed unmerged; custom shapes go to CAD and Blender)
 - [x] Back to the Haven: balance seats around a table, hide the T, straight sofa + link v4 (2026-11-06)
 - [x] H6c Room floor (rectangle, Center / Back wall / typed gaps, Fill the width, fit and walkway warnings; plan, PDF, 3D floor; link v5; 2026-11-07)
-- [ ] UX Phases 3–6 (understandable edits, selection and corners, options and Present, visual tray)
+- [x] UX Phase 3: understandable edits (Keep sofa size | Let sofa grow, result line, shape guard, top bar, labels and Room tab, Settings, grips on the selection, Overall | Detailed, View menu, Overview / Front / Side, one background; 2026-11-08)
+- [ ] UX Phase 5: options A | B | C, hide panel (no Present mode)
+- [ ] UX Phase 4: hover, selection outline + size pill, "Both corners"
+- [ ] UX Phase 6: picture tray, one-taps (Table in the middle, Table at the end, Add a seat)
 - [ ] H7 Cloud saves + tracker hand-off (optional; do not start unless Andre asks)
 - [ ] H8 Blender round-trip (later; do not start unless Andre asks)
 

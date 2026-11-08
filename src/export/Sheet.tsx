@@ -8,7 +8,6 @@ import type { BuildResult, Config, LayoutBuild } from '@/engine';
 import { fabricOf, finishOf, type Layout } from '@/engine';
 import { DimsLayer } from '@/plan/DimsLayer';
 import { soloSource } from '@/plan/dims';
-import { fmtIn } from '@/plan/format';
 import { layoutDimSource, layoutSeatsAt } from '@/plan/layoutDims';
 import { PlanDrawing } from '@/plan/PlanDrawing';
 import { LIGHT, SKETCH } from '@/plan/theme';
@@ -74,10 +73,10 @@ export function Sheet(p: SheetProps) {
   const lb = p.layoutBuild;
   const plan = L.plan ? fitPlan(withRoom(lb.solo ? soloSource(b) : layoutDimSource(lb), lb.room), L.plan) : null;
   const hasTable = p.layout.sections.some((s) => Object.values(s.config.runs).some((ps) => ps?.some((q) => q.kind === 'table')));
-  const style = p.config.tableStyle === 'standard' ? '2" wood top on a fabric base' : 'all wood';
+  const style = p.config.tableStyle === 'standard' ? 'wood top on a fabric base' : 'all wood';
   const spec = [
     lb.seats.label,
-    `Seat depth ${fmtIn(b.seatDepth)}`,
+    // Seat depth stays hidden until Andre confirms the formula (plan Q54, 2026-11-08).
     `Fabric: ${fabricOf(p.config.fabric).name}`,
     hasTable ? `Tables: ${style}, ${finishOf(p.config.tableFinish).name.toLowerCase()}` : null,
   ]

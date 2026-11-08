@@ -28,7 +28,7 @@ export async function h6b(browser, base, check) {
     check(await page.getByTestId('projects-home').isVisible(), 'no edits: Projects goes straight home')
     await page.getByTestId('new-standardU').click()
     await page.waitForSelector('[data-plan-svg]')
-    check(!(await page.getByRole('button', { name: 'Undo' }).isEnabled()), 'a new Haven from home starts a fresh undo history')
+    check(!(await page.getByRole('button', { name: 'Undo', exact: true }).isEnabled()), 'a new Haven from home starts a fresh undo history')
     await page.locator('#m-W').fill('230')
     await page.locator('#m-W').press('Enter')
     await page.waitForTimeout(1300) // the draft is written 1 s after a commit

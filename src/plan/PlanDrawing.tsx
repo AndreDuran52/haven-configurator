@@ -63,9 +63,9 @@ export function PlanDrawing({ built, dims, k, theme, showWarnings, selectedId, s
       <g key={p.id} data-piece={p.id} data-kind={p.kind}>
         <polygon points={pts(p.polygon)} fill={fill} stroke="none" />
         {p.backs.map((b, i) => (
-          <Box key={`b${i}`} box={b} fill={theme.seatDetail} stroke={theme.ink} strokeWidth={lw(0.5)} />
+          <Box key={`b${i}`} box={b} fill={theme.seatDetail} stroke={theme.ink} strokeWidth={lw(0.5 * theme.line)} />
         ))}
-        {p.arm && <Box box={p.arm.rect} fill={theme.seatDetail} stroke={theme.ink} strokeWidth={lw(0.5)} />}
+        {p.arm && <Box box={p.arm.rect} fill={theme.seatDetail} stroke={theme.ink} strokeWidth={lw(0.5 * theme.line)} />}
         {theme.cushionSeams && p.cushionRect && (
           <Box data-seam="" box={inset(p.cushionRect, 0.75)} fill="none" stroke={theme.ink} strokeWidth={lw(0.5)} rx={1.5} />
         )}
@@ -76,7 +76,7 @@ export function PlanDrawing({ built, dims, k, theme, showWarnings, selectedId, s
             ))}
           </g>
         )}
-        <polygon points={pts(p.polygon)} fill="none" stroke={theme.ink} strokeWidth={lw(1)} strokeLinejoin="round" />
+        <polygon points={pts(p.polygon)} fill="none" stroke={theme.ink} strokeWidth={lw(theme.line)} strokeLinejoin="round" />
         {warnIds.has(p.id) && (
           <polygon data-warn="" points={pts(p.polygon)} fill={theme.warn} fillOpacity={0.18} stroke={theme.warn} strokeWidth={lw(2)} />
         )}

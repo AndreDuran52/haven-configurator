@@ -22,11 +22,11 @@ export const seats = (page) => page.textContent('[data-testid=seats]')
 export const warnings = (page) => page.$$eval('[data-testid=warnings] li', (els) => els.map((e) => e.textContent))
 export const config = (page) => page.evaluate(() => window.__haven.getState().config)
 
-/** Open a side-panel tab: 'Size', 'Pieces' or 'Look' (editor redesign, 2026-11-06). */
+/** Open a side-panel tab: 'Size', 'Room', 'Pieces' or 'Look' (editor redesign, 2026-11-06; Room since UX Phase 3). */
 export async function panel(page, name) {
   await page.getByRole('tab', { name: new RegExp(`^${name}`) }).click()
-  // Pieces and Look load on first open: wait for their content.
-  const content = { Size: '#m-D', Pieces: '[data-tray]', Look: '[data-testid=fabrics]' }[name]
+  // Room, Pieces and Look load on first open: wait for their content.
+  const content = { Size: '#m-D', Room: '[data-testid=add-room], #m-roomW', Pieces: '[data-tray]', Look: '[data-testid=fabrics]' }[name]
   await page.waitForSelector(content, { timeout: 10000 })
   await page.waitForTimeout(50)
 }
@@ -65,4 +65,30 @@ export function labelCheck(page) {
     })
     return { overlaps, clipped, count: boxes.length }
   })
+}
+
+/** UX Phase 3: the project name's menu (Rename, Reset, Start new). `item`: 'rename' | 'reset' | 'start'. */
+export async function projectMenu(page, item) {
+  await page.getByTestId('project-name').click()
+  await page.getByTestId(`menu-${item}`).click()
+}
+
+/** UX Phase 3: the View menu over the plan (Pillows in 3D, Plan style). Leaves it open. */
+export async function viewMenu(page) {
+  if (!(await page.getByTestId('view-menu-menu').count())) await page.getByTestId('view-menu').click()
+  await page.waitForSelector('[data-testid=view-menu-menu]')
+}
+
+/** UX Phase 3: the camera bar shows Overview, Front, Side; Top and Iso stay reachable for the checks. */
+export async function preset(page, name) {
+  await page.evaluate((n) => window.__haven.getState().setUi({ preset: n }), name)
+}
+
+/** UX Phase 3: grips show on the selected piece only. Select a piece of the edited section (by its run and index). */
+export async function selectPiece(page, run, index) {
+  await page.evaluate(([r, i]) => {
+    const s = window.__haven.getState()
+    s.setUi({ selectedId: s.config.runs[r][i].id })
+  }, [run, index])
+  await page.waitForTimeout(80)
 }

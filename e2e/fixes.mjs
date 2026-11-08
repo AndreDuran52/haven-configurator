@@ -6,7 +6,7 @@ import { config, openApp, setField } from './lib.mjs'
 const W300 = '1UW300L132R132D44_bt32s74~s74_la72_ra72.fh'
 
 export async function fixes(browser, base, check) {
-  const undoEnabled = (page) => page.getByRole('button', { name: 'Undo' }).isEnabled()
+  const undoEnabled = (page) => page.getByRole('button', { name: 'Undo', exact: true }).isEnabled()
   const draftLive = (page) => page.evaluate(() => window.__haven.getState().draft !== null)
 
   // 1. Escape in a measurement field cancels (no commit, no undo step).

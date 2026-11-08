@@ -11,7 +11,7 @@
   --panel-2: #f1ede6;
   --line: #ddd6ca;
   --ink: #1b1a18;
-  --ink-muted: #6b665e;
+  --ink-muted: #4f4a43; /* UX Phase 3: dark enough to read over Zoom */
   --accent: #8a5a3b;
   --on-accent: #ffffff;
   --warn-bg: #fdf0cc;
@@ -27,7 +27,7 @@
     --panel-2: #2e2c28;
     --line: #3d3a35;
     --ink: #f1ede6;
-    --ink-muted: #a39d93;
+    --ink-muted: #c4bdb2;
     --accent: #d09a72;
     --on-accent: #1b1a18;
     --warn-bg: #4a3a12;
@@ -127,6 +127,8 @@ body {
 /* Layout: plan above controls on narrow screens, side by side on wide ones. */
 .haven-layout {
   grid-template-rows: auto minmax(0, 1fr);
+  /* Never wider than the screen (UX Phase 3: the top bar shrinks instead). */
+  grid-template-columns: minmax(0, 1fr);
 }
 .haven-main {
   display: grid;

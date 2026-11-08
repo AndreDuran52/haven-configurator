@@ -9,6 +9,8 @@ export const KEYS = {
   savedRecovered: 'haven:savedRecovered',
   /** The project open in the editor, so a reload keeps Save updating it. */
   open: 'haven:open',
+  /** UX Phase 3: plan dimensions Overall | Detailed, per device. */
+  dims: 'haven:dims',
 } as const;
 
 function store(): Storage | null {
