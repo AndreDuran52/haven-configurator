@@ -81,6 +81,7 @@ export async function makeSheet(req: SheetRequest): Promise<SheetFile> {
     views,
     renders,
     look: req.look,
+    pillows: req.pillows,
     meta: { title: req.title.trim(), date: date.toLocaleDateString('en-US', { dateStyle: 'long' }), link: req.link },
   });
   const [{ jsPDF }] = await Promise.all([import('jspdf'), import('svg2pdf.js')]);

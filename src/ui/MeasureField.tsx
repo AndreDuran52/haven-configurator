@@ -2,13 +2,17 @@
 // (no iOS zoom), accepts 188 / 188.5 / 188 1/2 / 15'8". Nothing changes while
 // typing (Andre, UX Phase 1: "38" must never show "3"); blur or Enter commits;
 // Escape cancels. A refused value reverts and shows the minimum ("min 158″").
-// ±1″ steppers commit, coalesced by key.
+// ±1″ steppers commit, coalesced by key; holding one repeats (one undo step).
 import { useRef, useState } from 'react';
 import type { Config, EditResult, Layout, LayoutResult, Rejection } from '@/engine';
 import { fmtIn, parseInches } from '@/plan/format';
 import { useHavenStore } from '@/state/store';
+import { Stepper } from './Stepper';
 
-const show = (n: number) => fmtIn(n, { mark: false });
+/** Blank when there is no value yet (the room before its size is typed). */
+const show = (n: number) => (Number.isFinite(n) ? fmtIn(n, { mark: false }) : '');
+/** The same shown value (NaN = blank). */
+const same = (a: number, b: number) => a === b || (!Number.isFinite(a) && !Number.isFinite(b));
 
 export function MeasureField({
   name,
@@ -21,11 +25,13 @@ export function MeasureField({
   labelClass = 'w-6',
   layoutOp,
   readLayout,
+  placeholder,
+  start,
 }: {
   /** W / L / R / D, or any other field name (then pass `read`). */
   name: string;
   label: string;
-  /** The live value (draft ?? config). */
+  /** The live value (draft ?? config); NaN shows a blank field. */
   value: number;
   /** The op for a typed value, applied to the committed config. */
   apply: (c: Config, v: number) => EditResult;
@@ -37,6 +43,10 @@ export function MeasureField({
   /** Shapes: a field for the whole layout (a T's total width or stem); replaces apply/read. */
   layoutOp?: (l: Layout, v: number) => LayoutResult;
   readLayout?: (l: Layout) => number;
+  /** Shown in a blank field. */
+  placeholder?: string;
+  /** Where ± starts from when the field is blank. */
+  start?: number;
 }) {
   const store = useHavenStore();
   const [text, setText] = useState(show(value));
@@ -50,7 +60,7 @@ export function MeasureField({
     return readLayout ? readLayout(s.layout) : read(s.config);
   };
   const setError = (text: string | null) => setErrorState(text ? { text, at: committed() } : null);
-  const error = errorState && errorState.at === value ? errorState.text : null;
+  const error = errorState && same(errorState.at, value) ? errorState.text : null;
   /** The op on the committed state, and how to commit it (a section edit can still be refused by the other half). */
   const run = (v: number): { rejected: Rejection | null; commit: () => Rejection | null } => {
     const s = store.getState();
@@ -99,11 +109,17 @@ export function MeasureField({
     setError(r ? message(r) : 'Not a size');
   };
 
+  /** One ± step on the committed value; false when refused (a hold stops there). */
   const nudge = (d: number) => {
-    const r = run(committed() + d);
-    if (r.rejected) return setError(message(r));
+    const c = committed();
+    const r = run((Number.isFinite(c) ? c : (start ?? NaN)) + d);
+    if (r.rejected) {
+      setError(message(r));
+      return false;
+    }
     const refused = r.commit();
     setError(refused ? message({ rejected: refused }) : null);
+    return !refused;
   };
 
   const err = error;
@@ -113,15 +129,16 @@ export function MeasureField({
         <label htmlFor={`m-${name}`} className={`${labelClass} text-sm font-semibold`}>
           {label}
         </label>
-        <button type="button" aria-label={`${label} minus ${step}`} className="stepper" onClick={() => nudge(-step)}>
+        <Stepper label={`${label} minus ${step}`} onStep={() => nudge(-step)}>
           −
-        </button>
+        </Stepper>
         <div className="relative min-w-0 flex-1">
           <input
             id={`m-${name}`}
             name={name}
             value={editing ? text : show(value)}
             inputMode="decimal"
+            placeholder={placeholder}
             enterKeyHint="done"
             autoComplete="off"
             aria-invalid={!!err}
@@ -141,13 +158,13 @@ export function MeasureField({
                 e.currentTarget.blur();
               }
             }}
-            className="h-11 w-full rounded-lg border border-line bg-panel px-3 pr-7 text-base tabular-nums"
+            className="h-11 w-full rounded-lg border border-line bg-panel px-3 pr-7 text-base tabular-nums placeholder:text-ink-muted"
           />
           <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-sm text-ink-muted">″</span>
         </div>
-        <button type="button" aria-label={`${label} plus ${step}`} className="stepper" onClick={() => nudge(step)}>
+        <Stepper label={`${label} plus ${step}`} onStep={() => nudge(step)}>
           +
-        </button>
+        </Stepper>
       </div>
       {err && (
         <p role="alert" className="pl-8 text-sm font-medium text-danger" data-error={name}>

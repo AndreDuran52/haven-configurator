@@ -1,28 +1,23 @@
-// HTML scale overlay (plan §7.2): a scale bar in Top, Front, Side and Iso
-// (× 0.8165 in Iso), hidden in 3/4; in
-// Front and Side, height ticks at 1 / 18 / 23 / 27 / 31″ (leg, seat, arm, back
-// frame, back cushions) from BuildResult.heights; a tick closer than 12 px to
-// the one below it is left out. Driven by camera.zoom, so it is exact.
+// HTML height overlay (plan §7.2): in Front and Side, height ticks at 1 / 18 /
+// 23 / 27 / 31″ (leg, seat, arm, back frame, back cushions) from
+// BuildResult.heights; a tick closer than 12 px to the one below it is left
+// out. Projected through the live camera, so it is exact. The scale bar is gone
+// from the live 3D (Phase 3b, Andre 2026-11-08: it read as a "4 ft" tag).
 import { useSyncExternalStore } from 'react';
 import { BACK_CUSHION, type HavenDims } from '@/engine';
 import { isElevation, type PresetName } from '@/ortho/presets';
-import { ISO_AXIS_SCALE, scaleBar } from '@/ortho/scale';
 import type { ViewStore } from './viewStore';
 
 export function Overlay({ view, preset, heights }: { view: ViewStore; preset: PresetName; heights: HavenDims }) {
   const s = useSyncExternalStore(view.subscribe, view.get);
-  if (!s || preset === 'threeQuarter') return null;
-  const iso = preset === 'iso';
-  const bar = scaleBar(s.zoom, iso ? ISO_AXIS_SCALE : 1);
-  const all = isElevation(preset)
-    ? [
-        { h: heights.legHeight, label: 'leg' },
-        { h: heights.seatHeight, label: 'seat' },
-        { h: heights.armHeight, label: 'arm' },
-        { h: heights.backHeight, label: 'back' },
-        { h: heights.backHeight + BACK_CUSHION.rise, label: 'cushions' },
-      ]
-    : [];
+  if (!s || !isElevation(preset)) return null;
+  const all = [
+    { h: heights.legHeight, label: 'leg' },
+    { h: heights.seatHeight, label: 'seat' },
+    { h: heights.armHeight, label: 'arm' },
+    { h: heights.backHeight, label: 'back' },
+    { h: heights.backHeight + BACK_CUSHION.rise, label: 'cushions' },
+  ];
   const ticks: typeof all = [];
   for (const t of all) {
     const last = ticks[ticks.length - 1];
@@ -42,16 +37,6 @@ export function Overlay({ view, preset, heights }: { view: ViewStore; preset: Pr
           ))}
         </div>
       )}
-      <div className="absolute bottom-3 left-3 flex flex-col gap-1 rounded-md bg-white/85 px-2 py-1.5" data-testid="scale-bar" data-px={bar.px} data-inches={bar.inches}>
-        <div className="flex">
-          {[0, 1, 2, 3].map((i) => (
-            <span key={i} className={`block h-2 border border-[#3d3a35] ${i % 2 ? 'bg-white' : 'bg-[#3d3a35]'}`} style={{ width: bar.px / 4 }} />
-          ))}
-        </div>
-        <span>
-          {bar.label}
-        </span>
-      </div>
     </div>
   );
 }

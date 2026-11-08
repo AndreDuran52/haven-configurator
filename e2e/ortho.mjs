@@ -216,8 +216,8 @@ export async function ortho(browser, base, check) {
     const edges = { 31: cushionTop, 27: frame.tops[0], 23: arm.tops[0], 18: seat.tops[1] }
     const tickOff = Object.entries(edges).map(([h, y]) => [h, ticks.find((t) => t.h === Number(h)), y])
     check(tickOff.every(([, t, y]) => !!t && Math.abs(t.y - y) <= 1), `height ticks within 1 px of the edges: ${tickOff.map(([h, t, y]) => `${h}″ ${t ? (t.y - y).toFixed(1) : 'missing'}`).join(', ')}`)
-    const bar = await page.$eval('[data-testid=scale-bar]', (e) => ({ px: Number(e.dataset.px), inches: Number(e.dataset.inches) }))
-    check(Math.abs(bar.px - bar.inches * geo.zoom) < 1e-6, `scale bar ${bar.inches}″ = ${bar.px.toFixed(1)} px at ${geo.zoom.toFixed(3)} px/in`)
+    // Phase 3b: no scale bar in the live 3D (Andre read it as a "4 ft" tag); the height ticks stay.
+    check((await page.locator('[data-testid=scale-bar]').count()) === 0, 'no scale bar in the live 3D')
 
     // 5. Idle renders 0 frames over 2 s (V6).
     const f0 = await page.evaluate(() => window.__haven3d.state().frames)
@@ -234,7 +234,9 @@ export async function ortho(browser, base, check) {
     await context.close()
   }
 
-  // 7. Touch (V5): a pinch zooms the canvas, not the page; one finger orbits; on release it springs back (Q1).
+  // 7. Touch (V5): a pinch zooms the canvas, not the page; one finger orbits.
+  // Phase 3b (Andre, 2026-11-08): no spring-back. The camera stays where it is
+  // released; a double-tap, or the camera button already on, returns to the preset.
   {
     const context = await browser.newContext({ viewport: VIEWPORTS.ipadPortrait, hasTouch: true, isMobile: true })
     const page = await context.newPage()
@@ -262,7 +264,7 @@ export async function ortho(browser, base, check) {
     await settle(page)
     const after = await page.evaluate(() => ({ zoom: window.__haven3d.state().zoom, scale: visualViewport.scale }))
     check(during.zoom > s0.zoom * 1.3 && during.scale === 1 && after.scale === 1, `pinch zooms the canvas (${s0.zoom.toFixed(2)} → ${during.zoom.toFixed(2)} px/in), page scale stays 1`)
-    check(Math.abs(after.zoom - s0.zoom) < 1e-3, `spring-back: released pinch returns to the preset zoom (${after.zoom.toFixed(3)})`)
+    check(after.zoom > s0.zoom * 1.3, `no spring-back: the zoom stays after the pinch (${after.zoom.toFixed(3)} px/in)`)
     await touch('touchStart', [{ x: cx, y: cy, id: 1 }])
     for (let i = 1; i <= 15; i++) {
       await touch('touchMove', [{ x: cx + i * 12, y: cy - i * 8, id: 1 }])
@@ -272,9 +274,39 @@ export async function ortho(browser, base, check) {
     const orbit = await page.evaluate(() => window.__haven3d.state())
     await touch('touchEnd', [])
     await settle(page)
-    const back = await page.evaluate(() => window.__haven3d.state())
+    const stays = await page.evaluate(() => window.__haven3d.state())
     check(Math.abs(orbit.azimuthDeg - s0.azimuthDeg) > 10 && orbit.polarDeg <= 90 + 1e-9, `one finger orbits (azimuth ${s0.azimuthDeg.toFixed(1)}° → ${orbit.azimuthDeg.toFixed(1)}°, polar ≤ 90°)`)
-    check(Math.abs(back.azimuthDeg - s0.azimuthDeg) < 1e-6 && Math.abs(back.polarDeg - s0.polarDeg) < 1e-6, `spring-back: released orbit returns to the 3/4 preset (${back.azimuthDeg.toFixed(4)}°, ${back.polarDeg.toFixed(4)}°)`)
+    check(Math.abs(stays.azimuthDeg - s0.azimuthDeg) > 10, `no spring-back: the camera stays where it was released (${s0.azimuthDeg.toFixed(1)}° → ${stays.azimuthDeg.toFixed(1)}°)`)
+    // A double-tap returns to the exact preset. Injected touches can be slow in a
+    // sandbox (a "tap" of 400 ms or more): try the gesture up to 3 times.
+    let tries = 0
+    let back = stays
+    while (tries < 3 && Math.abs(back.azimuthDeg - s0.azimuthDeg) > 1e-3) {
+      tries++
+      for (let i = 0; i < 2; i++) {
+        await touch('touchStart', [{ x: cx, y: cy, id: 1 }])
+        await touch('touchEnd', [])
+      }
+      await page.waitForTimeout(300)
+      await settle(page)
+      back = await page.evaluate(() => window.__haven3d.state())
+    }
+    check(Math.abs(back.azimuthDeg - s0.azimuthDeg) < 1e-3 && Math.abs(back.polarDeg - s0.polarDeg) < 1e-3 && Math.abs(back.zoom - s0.zoom) < 1e-3, `a double-tap returns to the 3/4 preset (${back.azimuthDeg.toFixed(4)}°, ${back.polarDeg.toFixed(4)}°, ${back.zoom.toFixed(3)} px/in; try ${tries})`)
+    // The camera button already on (Overview) also returns to it.
+    await touch('touchStart', [{ x: cx, y: cy, id: 1 }])
+    for (let i = 1; i <= 15; i++) {
+      await touch('touchMove', [{ x: cx - i * 12, y: cy, id: 1 }])
+      await page.waitForTimeout(16)
+    }
+    await touch('touchEnd', [])
+    await page.waitForTimeout(300)
+    await settle(page)
+    const moved = await page.evaluate(() => window.__haven3d.state())
+    await page.locator('[data-preset=threeQuarter]').click()
+    await page.waitForTimeout(300)
+    await settle(page)
+    const reset = await page.evaluate(() => window.__haven3d.state())
+    check(Math.abs(moved.azimuthDeg - s0.azimuthDeg) > 10 && Math.abs(reset.azimuthDeg - s0.azimuthDeg) < 1e-3 && Math.abs(reset.polarDeg - s0.polarDeg) < 1e-3, `"Overview" pressed again returns to it (${moved.azimuthDeg.toFixed(1)}° → ${reset.azimuthDeg.toFixed(4)}°)`)
     await context.close()
   }
 

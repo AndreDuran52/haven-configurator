@@ -1,5 +1,5 @@
 // Wedge size C (plan §8): a Radix slider over [D, D + 30], step 1, 44 px thumb,
-// ± steppers. Dragging drafts from the committed config; release commits (one
+// ± steppers (hold to repeat). Dragging drafts from the committed config; release commits (one
 // undo step). The part the runs can't absorb is shaded; the engine clamps (G3).
 // Since the editor redesign (2026-11-06) it is in the Size tab ("panel") and in
 // the corner's tap menu ("menu": named "Corner wedge…", the menu title reads the size).
@@ -8,6 +8,7 @@ import { WEDGE_RANGE, layoutWedgeRange, resetWedge, setWedge, wedgeC } from '@/e
 import { useMemo, useRef } from 'react';
 import { builtOf, useHaven, useHavenStore, useLive } from '@/state/store';
 import { Button, WarnChip } from './controls';
+import { Stepper } from './Stepper';
 
 export function WedgeSlider({ variant = 'panel' }: { variant?: 'panel' | 'menu' }) {
   const menu = variant === 'menu';
@@ -65,7 +66,15 @@ export function WedgeSlider({ variant = 'panel' }: { variant?: 'panel' | 'menu' 
     if (r.rejected) {
       s.cancelDraft();
       s.toast(r.rejected.message);
-    } else s.commit(r.config, { key: 'wedge' });
+      return false;
+    }
+    s.commit(r.config, { key: 'wedge' });
+  };
+  /** ±1 from the committed size (fresh on every repeat of a hold). */
+  const nudge = (d: number) => {
+    const c = wedgeC(store.getState().config);
+    if (c + d < min || c + d > max) return false;
+    return commitAt(c + d);
   };
   const reset = () => {
     const s = store.getState();
@@ -88,9 +97,9 @@ export function WedgeSlider({ variant = 'panel' }: { variant?: 'panel' | 'menu' 
         </Button>
       </div>
       <div className="flex items-center gap-2">
-        <button type="button" className="stepper" aria-label={`${name} minus 1`} onClick={() => commitAt(C - 1)}>
+        <Stepper label={`${name} minus 1`} onStep={() => nudge(-1)}>
           −
-        </button>
+        </Stepper>
         <Slider.Root
           className="relative flex h-11 flex-1 touch-none items-center select-none"
           min={min}
@@ -115,9 +124,9 @@ export function WedgeSlider({ variant = 'panel' }: { variant?: 'panel' | 'menu' 
             aria-label={`${name} ${C} inches`}
           />
         </Slider.Root>
-        <button type="button" className="stepper" aria-label={`${name} plus 1`} onClick={() => commitAt(C + 1)}>
+        <Stepper label={`${name} plus 1`} onStep={() => nudge(1)}>
           +
-        </button>
+        </Stepper>
       </div>
       <div className="flex justify-between px-12 text-sm text-ink-muted tabular-nums">
         <span>{min}″</span>

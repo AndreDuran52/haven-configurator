@@ -2,7 +2,7 @@
 // (229 across, 110 stem, 44 deep) for both back options. The T is hidden from
 // the menus since 2026-11-06 (custom work), so T's open from share links; labels, editing a half (Undo, touch seam drag, tap to switch),
 // save and reload, the share link in a fresh browser, ?view, the PDF plan.
-// Fresh browser contexts only. Screenshots light and dark at four sizes.
+// Fresh browser contexts only. Screenshots at four sizes (light only since Phase 3b).
 import { VIEWPORTS } from './browser.mjs'
 import { pdfText } from './h6.mjs'
 import { dimTexts, labelCheck, panel, setField, projectMenu, selectPiece } from './lib.mjs'
@@ -271,8 +271,8 @@ export async function shapes(browser, base, check) {
     await fresh.close()
   }
 
-  // 7. Screenshots: light and dark at iPad landscape/portrait, laptop and phone.
-  for (const scheme of ['light', 'dark']) {
+  // 7. Screenshots at iPad landscape/portrait, laptop and phone (one light look since Phase 3b).
+  for (const scheme of ['light']) {
     for (const [vn, vp] of [...Object.entries(VIEWPORTS), ['laptop', LAPTOP]]) {
       const { context, page } = await buildTee(browser, base, 'shared', vp, scheme)
       await page.screenshot({ path: `${SHOTS}/shapes-${scheme}-${vn}.png` })

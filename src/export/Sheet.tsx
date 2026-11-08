@@ -9,7 +9,9 @@ import { fabricOf, finishOf, type Layout } from '@/engine';
 import { DimsLayer } from '@/plan/DimsLayer';
 import { soloSource } from '@/plan/dims';
 import { layoutDimSource, layoutSeatsAt } from '@/plan/layoutDims';
+import { fmtIn } from '@/plan/format';
 import { PlanDrawing } from '@/plan/PlanDrawing';
+import { planPillows } from '@/plan/pillowShapes';
 import { LIGHT, SKETCH } from '@/plan/theme';
 import { PRESET_LABELS, type PresetName } from '@/ortho/presets';
 import { fitPlan, headerLine } from './fit';
@@ -37,6 +39,8 @@ export interface SheetProps {
   views: SheetViews;
   renders: SheetRender[];
   look: 'cad' | 'sketch';
+  /** Phase 3b: the plan shows the pillows when the View menu's Pillows switch is on. */
+  pillows?: boolean;
   meta: { title: string; date: string; link: string };
 }
 
@@ -76,7 +80,8 @@ export function Sheet(p: SheetProps) {
   const style = p.config.tableStyle === 'standard' ? 'wood top on a fabric base' : 'all wood';
   const spec = [
     lb.seats.label,
-    // Seat depth stays hidden until Andre confirms the formula (plan Q54, 2026-11-08).
+    // Seat depth = sofa depth − 18 (Andre confirmed, Phase 3b, plan Q54).
+    `Seat depth ${fmtIn(b.seatDepth)}`,
     `Fabric: ${fabricOf(p.config.fabric).name}`,
     hasTable ? `Tables: ${style}, ${finishOf(p.config.tableFinish).name.toLowerCase()}` : null,
   ]
@@ -100,13 +105,13 @@ export function Sheet(p: SheetProps) {
           <g transform={`translate(${plan.ox.toFixed(3)} ${plan.oy.toFixed(3)}) scale(${plan.S})`} data-plan-scale={plan.S}>
             {lb.room && <RoomFloor room={lb.room} k={1 / plan.S} theme={theme} />}
             {lb.solo ? (
-              <PlanDrawing built={b} dims={plan.dims} k={1 / plan.S} theme={theme} showWarnings={false} seatsSize={10} gapLabelSize={7} />
+              <PlanDrawing built={b} dims={plan.dims} k={1 / plan.S} theme={theme} showWarnings={false} seatsSize={10} gapLabelSize={7} pillows={p.pillows ? planPillows(b) : null} />
             ) : (
               <>
                 {/* The root last: with a shared back it owns the frame down the stem (as on screen). */}
                 {[...lb.sections].reverse().map((s) => (
                   <g key={s.id} data-section={s.id} transform={`translate(${s.offset[0]} ${s.offset[1]})`}>
-                    <PlanDrawing built={s.built} dims={null} k={1 / plan.S} theme={theme} showWarnings={false} showSeats={false} gapLabelSize={7} />
+                    <PlanDrawing built={s.built} dims={null} k={1 / plan.S} theme={theme} showWarnings={false} showSeats={false} gapLabelSize={7} pillows={p.pillows ? planPillows(s.built) : null} />
                   </g>
                 ))}
                 <DimsLayer dims={plan.dims} theme={theme} />

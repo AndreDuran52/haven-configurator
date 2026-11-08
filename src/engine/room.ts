@@ -5,7 +5,7 @@ import { buildLayout } from './layoutBuild';
 import { editSection, isSolo, type LayoutResult } from './layoutOps';
 import type { Layout, Room, RoomAt } from './layoutTypes';
 import { setMeasurements } from './ops';
-import { ROOM_MAX, ROOM_MIN } from './roomFit';
+import { gapsOf, ROOM_MAX, ROOM_MIN, type Wall } from './roomFit';
 import type { Rejection } from './types';
 
 const half = (x: number): number => Math.round(x * 2) / 2 + 0;
@@ -31,15 +31,40 @@ export function placeRoom(l: Layout, mode: 'center' | 'backWall'): LayoutResult 
   return withRoom(l, { ...l.room, at: { mode } });
 }
 
-/** Type the gap from the sofa to the left or back wall; the room stays there (Free) until Center or Back wall. */
-export function setRoomGap(l: Layout, wall: 'left' | 'back', inches: number): LayoutResult {
+/**
+ * Type the distance from the sofa to one wall (Phase 3b: any of the four); the
+ * opposite one follows, and the room stays there (Free, "Custom") until
+ * Center or Back wall.
+ */
+export function setRoomGap(l: Layout, wall: Wall, inches: number): LayoutResult {
   if (!l.room) return refused(l, 'Add the room first');
   const g = half(inches);
-  if (!Number.isFinite(g) || g < 0) return refused(l, 'A gap is 0″ or more', 'infeasible');
-  const fit = buildLayout(l).room!;
-  const at: RoomAt = { mode: 'free', x: wall === 'left' ? fit.sofa.x - g : fit.rect.x, y: wall === 'back' ? fit.sofa.y - g : fit.rect.y };
-  const room: Room = { ...l.room, at };
+  if (!Number.isFinite(g) || g < 0) return refused(l, 'A distance is 0″ or more', 'infeasible');
+  const { sofa, rect } = buildLayout(l).room!;
+  const x = wall === 'left' ? sofa.x - g : wall === 'right' ? sofa.x + sofa.w + g - rect.w : rect.x;
+  const y = wall === 'back' ? sofa.y - g : wall === 'front' ? sofa.y + sofa.h + g - rect.h : rect.y;
+  const room: Room = { ...l.room, at: { mode: 'free', x, y } };
   return same(l.room, room) ? { layout: l, rejected: null } : withRoom(l, room);
+}
+
+/** The move pad (Phase 3b): which way the sofa moves in the room. */
+export type Nudge = 'left' | 'right' | 'back' | 'front';
+const NUDGE: Record<Nudge, [number, number]> = { left: [-1, 0], right: [1, 0], back: [0, -1], front: [0, 1] };
+
+/**
+ * Move the sofa in the room by `inches` (1″ per tap of the move pad): the room
+ * moves the other way and stays there (Free). The sofa stops at a wall: a move
+ * toward a wall it already touches (or is past) is refused.
+ */
+export function nudgeRoom(l: Layout, dir: Nudge, inches = 1): LayoutResult {
+  if (!l.room) return refused(l, 'Add the room first');
+  const { sofa, rect } = buildLayout(l).room!;
+  const gap = gapsOf(sofa, rect)[dir];
+  const step = Math.min(inches, gap);
+  if (!(step > 0)) return refused(l, `The sofa is against the ${dir} wall`);
+  const [dx, dy] = NUDGE[dir];
+  const at: RoomAt = { mode: 'free', x: half(rect.x - dx * step), y: half(rect.y - dy * step) };
+  return withRoom(l, { ...l.room, at });
 }
 
 export function clearRoom(l: Layout): LayoutResult {

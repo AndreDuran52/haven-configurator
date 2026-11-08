@@ -1,16 +1,18 @@
 // The bar over the plan / 3D box (plan §7.2; UX Phase 3, Andre 2026-11-08):
 // Plan | 3D; in the plan, Dimensions Overall | Detailed; in 3D the cameras
-// Overview, Front, Side (Top repeats the plan, and 3/4 and Iso are one
-// Overview); and a small View menu (pillows in 3D, plan style). In the entry
-// chunk: it imports only three-free modules (ortho/presets), so no three.js.
+// Overview, Top, Front, Side (3/4 and Iso are one Overview; Top is back since
+// Phase 3b); and a small View menu (Pillows in the plan and 3D, plan style).
+// A camera button returns to its exact view even when it's already on. In the
+// entry chunk: it imports only three-free modules (ortho/presets), so no three.js.
 import { isElevation, type PresetName } from '@/ortho/presets';
 import { writeDimsMode } from '@/state/prefs';
 import { useHaven, useHavenStore, useLive } from '@/state/store';
 import { Menu } from './Menu';
 
-/** The 3D cameras offered (UX Phase 3): Overview is the 3/4 view. */
+/** The 3D cameras offered (UX Phase 3; Top again in 3b): Overview is the 3/4 view. */
 const CAMERAS: { preset: PresetName; label: string }[] = [
   { preset: 'threeQuarter', label: 'Overview' },
+  { preset: 'top', label: 'Top' },
   { preset: 'front', label: 'Front' },
   { preset: 'side', label: 'Side' },
 ];
@@ -74,7 +76,7 @@ export function ViewBar() {
       {view === '3d' && (
         <div role="radiogroup" aria-label="3D view" className={`${group} flex-wrap`} data-testid="presets">
           {CAMERAS.map((c) => (
-            <button key={c.preset} type="button" role="radio" aria-checked={preset === c.preset} data-preset={c.preset} className={pill(preset === c.preset)} onClick={() => setUi({ preset: c.preset })}>
+            <button key={c.preset} type="button" role="radio" aria-checked={preset === c.preset} data-preset={c.preset} className={pill(preset === c.preset)} onClick={() => setUi({ preset: c.preset, cameraReset: store.getState().ui.cameraReset + 1 })}>
               {c.label}
             </button>
           ))}
@@ -89,7 +91,7 @@ export function ViewBar() {
         <Menu label="View options" testId="view-menu" button={<span>View ▾</span>}>
           {() => (
             <>
-              <Toggle label="Pillows in 3D" on={pillows} onChange={(on) => setUi({ pillows: on })} testId="pillows" />
+              <Toggle label="Pillows" on={pillows} onChange={(on) => setUi({ pillows: on })} testId="pillows" />
               <div className="flex flex-col gap-1.5 px-3 py-2">
                 <span className="text-[15px] font-medium text-ink">Plan style</span>
                 <div role="radiogroup" aria-label="Plan style" className="flex gap-1 rounded-lg border border-line bg-panel-2 p-0.5">

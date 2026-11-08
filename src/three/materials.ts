@@ -2,11 +2,9 @@
 // no asset files (real bouclé / wood maps arrive in H5). ExtrudeGeometry UVs are
 // in shape units = inches, so repeat = 1 / tileInches gives true-scale texture.
 import { CanvasTexture, Color, MeshBasicMaterial, MeshStandardMaterial, RepeatWrapping, SRGBColorSpace, type Material } from 'three';
-import { fabricOf, finishOf, type PillowTone, type TableFinish } from '@/engine';
+import { fabricOf, finishOf, PILLOW_COLOR, type PillowTone, type TableFinish } from '@/engine';
 import type { MatId } from './parts';
 
-/** Pillow fabrics from the showroom photos: taupe and oatmeal linen squares, cream bouclé and mocha velvet balls. */
-const PILLOW_COLOR: Record<PillowTone, string> = { taupe: '#9a897c', oatmeal: '#e2dbcf', cream: '#eee8de', mocha: '#7c675b' };
 
 function canvasTex(size: number, draw: (g: CanvasRenderingContext2D, s: number) => void, tileInches: number, srgb: boolean) {
   const c = document.createElement('canvas');

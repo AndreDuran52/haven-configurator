@@ -22,6 +22,7 @@ import { installPlanTestApi, registerPlanSvg, setPlanOffset } from './planScreen
 import { LIGHT_SCREEN, SKETCH_SCREEN } from './theme';
 import { withDimsMode } from './dimsMode';
 import { usePlanGestures } from './usePlanGestures';
+import { usePlanPillows } from './usePlanPillows';
 
 export function PlanView() {
   const lb = layoutBuiltOf(useLiveLayout());
@@ -35,6 +36,7 @@ export function PlanView() {
   const readOnly = useHaven((s) => s.ui.readOnly);
   const theme = useHaven((s) => (s.ui.look === 'sketch' ? SKETCH_SCREEN : LIGHT_SCREEN));
   const dimsMode = useHaven((s) => s.ui.dims);
+  const pillowsOf = usePlanPillows(useHaven((s) => s.ui.pillows));
   const built = active.built;
   const src = useMemo(() => withDimsMode(withRoom(layoutDimSource(lb), lb.room), dimsMode), [lb, dimsMode]);
   const wrap = useRef<HTMLDivElement>(null);
@@ -124,13 +126,13 @@ export function PlanView() {
           <rect x={-1e4} y={-1e4} width={2e4} height={2e4} fill={theme.paper} />
           {lb.room && <RoomFloor room={lb.room} k={fit.k} theme={theme} />}
           {lb.solo ? (
-            <PlanDrawing built={built} dims={dims} k={fit.k} theme={theme} showWarnings selectedId={selectedId} />
+            <PlanDrawing built={built} dims={dims} k={fit.k} theme={theme} showWarnings selectedId={selectedId} pillows={pillowsOf?.(built)} />
           ) : (
             <>
               {/* The root last: with a shared back it owns the frame down the stem. */}
               {[...lb.sections].reverse().map((s) => (
                 <g key={s.id} data-section={s.id} data-active={s.id === active.id ? '' : undefined} transform={`translate(${s.offset[0]} ${s.offset[1]})`}>
-                  <PlanDrawing built={s.built} dims={null} k={fit.k} theme={theme} showWarnings selectedId={s.id === active.id ? selectedId : null} showSeats={false} />
+                  <PlanDrawing built={s.built} dims={null} k={fit.k} theme={theme} showWarnings selectedId={s.id === active.id ? selectedId : null} showSeats={false} pillows={pillowsOf?.(s.built)} />
                 </g>
               ))}
               {dims && <DimsLayer dims={dims} theme={theme} />}

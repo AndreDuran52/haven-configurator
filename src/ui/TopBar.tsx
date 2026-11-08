@@ -12,6 +12,7 @@ import { codeOf, isDirty, layoutBuiltOf, useHaven, useHavenStore, useLive, useLi
 import { editUrl } from '@/state/url';
 import { Button } from './controls';
 import { Menu, MenuItem } from './Menu';
+import { Stepper } from './Stepper';
 
 // Dialogs load on first open: Radix Dialog stays out of the entry chunk.
 const StartMenu = lazy(() => import('./StartMenu'));
@@ -68,15 +69,19 @@ export function TopBar() {
     if (codeOf(store.getState().layout) === codeOf(presetFor(lastStart))) return;
     setConfirmReset(true);
   };
-  const seatWidth = (w: number) => {
+  /** ±1″ from the committed seat width (fresh on every repeat of a hold). */
+  const seatWidth = (d: number) => {
     const s = store.getState();
-    const r = setSeatWidth(s.config, w);
-    if (r.rejected) s.toast(r.rejected.message);
-    else s.commit(r.config, { key: 'seatWidth' });
+    const r = setSeatWidth(s.config, s.config.seatWidth + d);
+    if (r.rejected) {
+      s.toast(r.rejected.message);
+      return false;
+    }
+    s.commit(r.config, { key: 'seatWidth' });
   };
 
   return (
-    <header className="safe-top flex min-w-0 items-center gap-0.5 overflow-hidden border-b border-line bg-panel px-1 sm:gap-2 sm:px-3">
+    <header className="safe-top relative z-30 flex min-w-0 items-center gap-0.5 overflow-x-clip border-b border-line bg-panel px-1 sm:gap-2 sm:px-3">
       {readOnly ? (
         <>
           <span className="mr-1 hidden text-base font-semibold tracking-tight sm:inline">
@@ -150,15 +155,15 @@ export function TopBar() {
               <div className="flex flex-col gap-2 p-2" data-testid="settings-panel">
                 <span className="text-[15px] font-semibold text-ink">Seat count</span>
                 <div className="flex items-center gap-2">
-                  <button type="button" className="stepper" aria-label="Seat width minus 1" onClick={() => seatWidth(live.seatWidth - 1)}>
+                  <Stepper label="Seat width minus 1" onStep={() => seatWidth(-1)}>
                     −
-                  </button>
+                  </Stepper>
                   <span className="flex-1 text-center text-[15px] tabular-nums" data-testid="seat-width">
                     {live.seatWidth}″ per seat (snug {Math.min(live.snugWidth, live.seatWidth)}″)
                   </span>
-                  <button type="button" className="stepper" aria-label="Seat width plus 1" onClick={() => seatWidth(live.seatWidth + 1)}>
+                  <Stepper label="Seat width plus 1" onStep={() => seatWidth(1)}>
                     +
-                  </button>
+                  </Stepper>
                 </div>
                 <p className="border-t border-line pt-2 text-sm text-ink-muted" data-testid="build">
                   Haven Configurator · build <span className="font-mono">{buildInfo.commit}</span>

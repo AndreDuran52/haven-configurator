@@ -3,8 +3,9 @@
 /* Hover styles only where hovering exists (plan §8: no sticky hover on iPad). */
 @custom-variant hover-hover (@media (hover: hover) { &:hover });
 
-/* Design tokens: a minimal set with dark-mode variants. The plan drawing uses
-   literal colours instead (plan/theme.ts), because svg2pdf can't read var(). */
+/* Design tokens. One light look only (no dark mode, Andre 2026-11-08: the
+   app is shared over Zoom and matches the PDF). The plan drawing uses literal
+   colours instead (plan/theme.ts), because svg2pdf can't read var(). */
 :root {
   --canvas: #f6f3ee;
   --panel: #ffffff;
@@ -18,23 +19,6 @@
   --warn-ink: #7a5300;
   --danger: #b3261e;
   color-scheme: light;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --canvas: #1b1a18;
-    --panel: #242320;
-    --panel-2: #2e2c28;
-    --line: #3d3a35;
-    --ink: #f1ede6;
-    --ink-muted: #c4bdb2;
-    --accent: #d09a72;
-    --on-accent: #1b1a18;
-    --warn-bg: #4a3a12;
-    --warn-ink: #f6d58a;
-    --danger: #f2877f;
-    color-scheme: dark;
-  }
 }
 
 @theme inline {

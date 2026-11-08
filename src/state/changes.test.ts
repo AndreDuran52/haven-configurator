@@ -1,6 +1,6 @@
 // The result line's words (UX Phase 3, Andre 2026-11-08).
 import { describe, expect, it } from 'vitest';
-import { addPiece, editSection, placeRoom, resizePiece, setArmWidth, setLock, setMeasurements, setRoom, solo, standardU, teeLayout, type Layout } from '@/engine';
+import { addPiece, editSection, nudgeRoom, placeRoom, resizePiece, setArmWidth, setLock, setMeasurements, setRoom, solo, standardU, teeLayout, type Layout } from '@/engine';
 import { describeChange } from './changes';
 
 const u = () => solo(standardU());
@@ -27,10 +27,15 @@ describe('describeChange', () => {
 
   it('arms, the lock and the room', () => {
     expect(describeChange(u(), edit(u(), (c) => setArmWidth(c, 10)))).toMatch(/^Arms 14″ → 10″/);
-    expect(describeChange(u(), edit(u(), (c) => setLock(c, false)))).toBe('Let sofa grow');
+    expect(describeChange(u(), edit(u(), (c) => setLock(c, false)))).toBe('Sofa size changes');
     const r = setRoom(u(), { w: 240, d: 200 }).layout;
     expect(describeChange(u(), r)).toBe('Room 240″ x 200″');
     expect(describeChange(r, placeRoom(r, 'backWall').layout)).toBe('Sofa on the back wall');
+    // Phase 3b: the move pad (a held arrow is one step: before to after).
+    const free = nudgeRoom(r, 'right').layout;
+    expect(describeChange(r, free)).toBe('Sofa placed in the room');
+    const more = nudgeRoom(nudgeRoom(nudgeRoom(free, 'right').layout, 'right').layout, 'back').layout;
+    expect(describeChange(free, more)).toBe('Sofa moved 2″ right · Sofa moved 1″ toward the back');
   });
 
   it('nothing visible changed, or a new sofa: no line', () => {

@@ -105,13 +105,15 @@ export async function straight(browser, base, check) {
     const pdf = await pdfText(path)
     const header = pdf.items.find((i) => i.str.startsWith('Straight sofa'))?.str.replace(/\s+/g, ' ')
     check(header === `Straight sofa · 212" W · 44" deep · 17'-8" wide`, `PDF header "${header}"`)
+    const spec = pdf.items.find((i) => i.str.includes('Seat depth'))?.str.replace(/\s+/g, ' ')
+    check(!!spec?.includes('Seat depth 26"'), `the PDF shows the seat depth again: "${spec}"`)
     check(errors.length === 0, `no console errors ${errors.join('; ')}`)
     await context.close()
   }
 
-  // 3. Screenshots at three sizes, light and dark.
+  // 3. Screenshots at three sizes (one light look since Phase 3b: no dark mode).
   for (const [vn, vp] of Object.entries(VIEWPORTS)) {
-    for (const scheme of ['light', 'dark']) {
+    for (const scheme of ['light']) {
       const { context, page } = await fresh(browser, `${base}#c=${PHOTO}`, vp, scheme)
       await page.waitForSelector('[data-plan-svg]')
       await page.waitForTimeout(200)
