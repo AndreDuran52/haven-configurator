@@ -2,7 +2,7 @@
 // DPR 2, and judged by outcome: the committed config (as its share code), the
 // undo stack, the DOM.
 import { enterEditor, VIEWPORTS } from './browser.mjs'
-import { config, panel, warnings } from './lib.mjs'
+import { config, panel, warnings, projectMenu, preset, selectPiece } from './lib.mjs'
 import { planShapes, topParityIoU } from './parity.mjs'
 
 const SHOTS = 'test-results'
@@ -63,6 +63,7 @@ export async function h4(browser, base, check) {
   // 1. Seam drag by touch: one undo step, live readout 40" | 28"; touchCancel leaves no trace.
   {
     const { context, page, errors, drag } = await open(browser, base)
+    await selectPiece(page, 'back', 1) // UX Phase 3: grips show on the selected piece
     const g = await centreOf(page, '[data-grip="back:1"] rect')
     const k = await page.evaluate(() => window.__plan.k())
     const d0 = await undoDepth(page)
@@ -75,9 +76,10 @@ export async function h4(browser, base, check) {
     const before = await code(page)
     await drag(line(g, [g[0] - 6 / k, g[1]]), { cancel: true })
     check((await code(page)) === before && !(await hasDraft(page)) && (await undoDepth(page)) === d0 + 1, 'touchCancel mid-drag leaves no trace (config, draft, history)')
-    await page.getByRole('button', { name: 'Undo' }).click()
+    await page.getByRole('button', { name: 'Undo', exact: true }).click()
     check((await code(page)) === T1, 'Undo restores the Standard U')
     // Keyboard: arrows on a grip, coalesced into one step.
+    await selectPiece(page, 'back', 1)
     await page.focus('[data-grip="back:1"]')
     for (let i = 0; i < 3; i++) await page.keyboard.press('ArrowRight')
     const kc = await config(page)
@@ -120,11 +122,11 @@ export async function h4(browser, base, check) {
     await drag(line(t4, svgOut, 10))
     check((await code(page)) === T3A, 'a table dropped outside the plan snaps back')
     await page.screenshot({ path: `${SHOTS}/h4-3a.png` })
-    // Trash: drag the table onto the trash bar (over the bottom of the plan since the redesign).
+    // Trash: drag the table onto the trash bar (UX Phase 3: in the strip under the plan, where the result line sits).
     const d1 = await undoDepth(page)
     const trashAt = await page.$eval('[data-plan-svg]', (e) => {
       const r = e.getBoundingClientRect()
-      return [r.left + r.width / 2, r.bottom - 40]
+      return [r.left + r.width / 2, r.bottom + 30]
     })
     await drag(line(t4, trashAt, 16))
     const ct = await config(page)
@@ -149,7 +151,7 @@ export async function h4(browser, base, check) {
     await page.waitForTimeout(80)
     const after = await config(page)
     check(!after.runs.back.some((p) => p.id === seat) && (await undoDepth(page)) === d0 + 1, 'menu Delete: piece gone, one undo step')
-    await page.getByRole('button', { name: 'Undo' }).click()
+    await page.getByRole('button', { name: 'Undo', exact: true }).click()
     // Table: width chips and the style.
     const tid = await tableId(page)
     await tap(...(await centreOf(page, `[data-piece="${tid}"]`)))
@@ -187,7 +189,7 @@ export async function h4(browser, base, check) {
     await tap(...(await centreOf(page, '[data-pin="0"] circle:nth-of-type(2)')))
     const n = (c) => Object.values(c.runs).flat().filter((p) => p.kind === 'armless').length
     check(n(await config(page)) === 2 && (await undoDepth(page)) === d0 + 1 && !(await page.$('[data-pins]')), 'tapping a pin adds an armless seat in one step')
-    await page.getByRole('button', { name: 'Undo' }).click()
+    await page.getByRole('button', { name: 'Undo', exact: true }).click()
     // Drag a table chip into the right leg.
     const chip = await centreOf(page, '[data-tray-item=table]')
     const r = (await config(page)).runs.right[0]
@@ -224,7 +226,7 @@ export async function h4(browser, base, check) {
     check(legs(await config(page)) === 'armless19 table24 oneArm29', `Even seats shares 23 | 15 back to 19 | 19 (${legs(await config(page))})`)
     check((await page.getByRole('button', { name: 'Even seats' }).count()) === 0, 'Even seats hides once the seats are equal')
     await page.keyboard.press('Escape')
-    for (let i = 0; i < 5; i++) await page.getByRole('button', { name: 'Undo' }).click()
+    for (let i = 0; i < 5; i++) await page.getByRole('button', { name: 'Undo', exact: true }).click()
     // Long-press reorder: the back seat moves before the table.
     const back = (await config(page)).runs.back
     const s = await centreOf(page, `[data-piece="${back[1].id}"]`)
@@ -275,7 +277,7 @@ export async function h4(browser, base, check) {
     const iou = await topParityIoU(page, shapes)
     check(iou >= 0.999, `coffee table in 3D Top at parity (IoU ${iou.toFixed(5)})`)
     for (const name of ['top', 'threeQuarter', 'iso', 'front', 'side']) {
-      await page.locator(`[data-preset=${name}]`).click()
+      await preset(page, name)
       await page.waitForTimeout(200)
       // Software WebGL in a busy sandbox can render ~1.5 frames/s, so a preset tween can take
       // well over 20 s to settle (measured on main too, 2026-10-03); the framing check itself is unchanged.
@@ -295,7 +297,7 @@ export async function h4(browser, base, check) {
   // 6. Blank U filled piece by piece until export unblocks.
   {
     const { context, page, errors, tap } = await open(browser, base)
-    await page.getByRole('button', { name: 'Start', exact: true }).click()
+    await projectMenu(page, 'start')
     await page.getByRole('button', { name: 'Start blank' }).click()
     await page.waitForSelector('[data-gap]')
     check(await page.evaluate(() => window.__plan.exportBlocked()), 'Blank U: export blocked')
@@ -315,6 +317,7 @@ export async function h4(browser, base, check) {
   // 7. Mouse: seam line (±7 px) and a drag-to-reorder; screenshots at 3 viewports with the menu open.
   {
     const { context, page } = await open(browser, base)
+    await selectPiece(page, 'back', 1)
     const g = await page.$eval('[data-grip="back:1"] line', (e) => {
       const r = e.getBoundingClientRect()
       return [r.left + r.width / 2, r.top + 4]

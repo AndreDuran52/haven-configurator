@@ -35,10 +35,10 @@ export interface DimProfile {
   feetInches: boolean
 }
 
-/** CSS px. Legible on an iPad at arm's length; 12px is the floor. */
+/** CSS px. UX Phase 3 (Andre, 2026-11-08): shared over Zoom, so 14px is the floor and lines are heavier. */
 export const SCREEN: Omit<DimProfile, 'k'> = {
-  font: 12, fontOverall: 13, widthScale: 1.08, arrowLen: 8, arrowHalf: 2.6, extGap: 4, extOver: 5,
-  firstOffset: 14, textGap: 3, rowGap: 7, labelPad: 3, dotR: 1.8, lineW: 0.75, feetInches: true,
+  font: 14, fontOverall: 15, widthScale: 1.08, arrowLen: 9, arrowHalf: 3.2, extGap: 4, extOver: 5,
+  firstOffset: 14, textGap: 3, rowGap: 7, labelPad: 3, dotR: 2.2, lineW: 1.1, feetInches: true,
 }
 /** Points on paper. 7pt ≈ 2.5 mm CAD text; 5.5pt arrows ≈ 2 mm "small arrowheads". */
 export const PRINT: Omit<DimProfile, 'k'> = {
@@ -212,8 +212,11 @@ export interface DimSource {
 /** One sofa (today's plan). */
 export const soloSource = (b: BuildResult): DimSource => ({ groups: (p) => requests(b, p), frame: planFrame(b) })
 
+/** A straight sofa's Seats label sits this far under its front (plan inches); the frame keeps it in view. */
+export const STRAIGHT_SEATS_BELOW = 26
+
 export function planFrame(b: BuildResult): Frame {
   const legs = b.shape !== 'straight'
   const maxLeg = Math.max(legs && b.shape !== 'L-right' ? b.L : 0, legs && b.shape !== 'L-left' ? b.R : 0, b.D)
-  return { x0: 0, y0: 0, x1: b.W, y1: maxLeg }
+  return { x0: 0, y0: 0, x1: b.W, y1: legs ? maxLeg : b.D + STRAIGHT_SEATS_BELOW + 8 }
 }

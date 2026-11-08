@@ -29,7 +29,7 @@ export function ViewSummary() {
     ...shape,
     ['Depth', fmtIn(b.D)],
     ...(layout.room ? [['Room', `${fmtIn(layout.room.w)} x ${fmtIn(layout.room.d)}`] as [string, string]] : []),
-    ['Seat depth', fmtIn(b.seatDepth)],
+    // Seat depth stays hidden until Andre confirms the formula (plan Q54, 2026-11-08).
     ['Seats', lb.seats.label.replace(/^Seats /, '')],
     ['Fabric', fabricOf(c.fabric).name],
     ...(hasTable ? [['Tables', `${c.tableStyle === 'standard' ? 'Wood top on fabric' : 'All wood'}, ${finishOf(c.tableFinish).name.toLowerCase()}`] as [string, string]] : []),
@@ -46,7 +46,7 @@ export function ViewSummary() {
           ))}
         </dl>
       </Section>
-      <p className="text-xs text-ink-muted">
+      <p className="text-sm text-ink-muted">
         {t ? 'A view-only layout. Tap "Edit a copy" to change it.' : 'A view-only layout. Switch between Plan and 3D above; tap "Edit a copy" to change it.'}
       </p>
     </div>

@@ -114,7 +114,7 @@ export default function ShareDialog({ open, onOpenChange }: { open: boolean; onO
   return (
     <Dialog open={open} onOpenChange={onOpenChange} title="Share & PDF" description="A one-page sheet (Letter): the plan to scale, plus the 3D views you tick.">
       <fieldset className="flex flex-col gap-1" data-testid="sheet-views">
-        <legend className="mb-1 text-xs font-semibold tracking-wide text-ink-muted uppercase">On the sheet</legend>
+        <legend className="mb-1 text-sm font-semibold tracking-wide text-ink-muted uppercase">On the sheet</legend>
         {labels.map((v) => (
           <label key={v.key} className="flex min-h-11 items-center gap-3 text-sm">
             <input type="checkbox" className="h-5 w-5 accent-[var(--accent)]" checked={ticked(v.key)} disabled={joined} onChange={() => toggle(v.key)} data-view={v.key} />
@@ -158,19 +158,19 @@ export default function ShareDialog({ open, onOpenChange }: { open: boolean; onO
               Image (PNG)
             </Button>
           </div>
-          <p className="text-xs text-ink-muted">{made.name}</p>
+          <p className="text-sm text-ink-muted">{made.name}</p>
         </div>
       )}
       {error && <p className="text-sm text-danger">{error}</p>}
       <div className="flex flex-col gap-2 border-t border-line pt-3">
-        <p className="text-xs font-semibold tracking-wide text-ink-muted uppercase">Send the layout as a link</p>
+        <p className="text-sm font-semibold tracking-wide text-ink-muted uppercase">Send the layout as a link</p>
         <div className="grid grid-cols-2 gap-2">
           <Button onClick={() => sendLink(links.view, 'View-only link')} data-testid="share-view-link">
             View-only link
           </Button>
           <Button onClick={() => sendLink(links.edit, 'Editable link')}>Editable link</Button>
         </div>
-        <p className="text-xs text-ink-muted">Links carry the sofa only: never names or prices.</p>
+        <p className="text-sm text-ink-muted">Links carry the sofa only: never names or prices.</p>
       </div>
     </Dialog>
   );

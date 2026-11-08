@@ -75,7 +75,7 @@ export function MenuBody({ sel }: { sel: Selection }) {
           />
         )}
         {clearance?.min != null && (
-          <p className="text-xs text-ink-muted">
+          <p className="text-sm text-ink-muted">
             Closest clearance {fmtIn(clearance.min)}
             {clearance.min < 14 ? ' (under 14″)' : ''}. Drag it in the plan to move it.
           </p>
@@ -95,7 +95,7 @@ export function MenuBody({ sel }: { sel: Selection }) {
     ];
     return (
       <div className="flex flex-col gap-2">
-        <p className="text-xs font-semibold tracking-wide text-ink-muted uppercase">Fill with</p>
+        <p className="text-sm font-semibold tracking-wide text-ink-muted uppercase">Fill with</p>
         <Row>
           {fills.map((f) => {
             const why = tryOp(fillGap(config, sel.id, f.kind));
@@ -106,7 +106,7 @@ export function MenuBody({ sel }: { sel: Selection }) {
             );
           })}
         </Row>
-        <p className="text-xs text-ink-muted">Or drag its seams, or drop a piece from the tray into it.</p>
+        <p className="text-sm text-ink-muted">Or drag its seams, or drop a piece from the tray into it.</p>
       </div>
     );
   }
@@ -127,14 +127,14 @@ export function MenuBody({ sel }: { sel: Selection }) {
   ];
   const endCap = nearEnd && capState && capState !== 'unfilled' && (
     <div className="flex flex-col gap-1">
-      <p className="text-xs font-semibold tracking-wide text-ink-muted uppercase">End of this run</p>
+      <p className="text-sm font-semibold tracking-wide text-ink-muted uppercase">End of this run</p>
       <Segmented
         label="End cap"
         value={(capState === 'armTable' ? 'table' : capState) as EndCap}
         options={caps}
         onChange={(v) => apply(setEndCap(s().config, sel.run, v, open ?? undefined))}
       />
-      {capState === 'armTable' && <p className="text-xs text-ink-muted">A table outside the arm</p>}
+      {capState === 'armTable' && <p className="text-sm text-ink-muted">A table outside the arm</p>}
     </div>
   );
   const del = (
@@ -160,7 +160,7 @@ export function MenuBody({ sel }: { sel: Selection }) {
           </Row>
         )}
         <div className="flex flex-col gap-1">
-          <p className="text-xs font-semibold tracking-wide text-ink-muted uppercase">Width</p>
+          <p className="text-sm font-semibold tracking-wide text-ink-muted uppercase">Width</p>
           <Row>
             {TABLE_WIDTHS.map((w) => (
               <Button
@@ -175,7 +175,7 @@ export function MenuBody({ sel }: { sel: Selection }) {
           </Row>
         </div>
         <div className="flex flex-col gap-1">
-          <p className="text-xs font-semibold tracking-wide text-ink-muted uppercase">Style (all tables)</p>
+          <p className="text-sm font-semibold tracking-wide text-ink-muted uppercase">Style (all tables)</p>
           <Segmented
             label="Table style"
             value={config.tableStyle}
@@ -187,7 +187,7 @@ export function MenuBody({ sel }: { sel: Selection }) {
           />
         </div>
         {endCap}
-        <p className="text-xs text-ink-muted">Drag the table to move it; drop it on the tray to remove it.</p>
+        <p className="text-sm text-ink-muted">Drag the table to move it; drop it on the tray to remove it.</p>
         {del}
       </div>
     );

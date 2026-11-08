@@ -20,6 +20,8 @@ export interface PlanTheme {
   floor: string;
   wall: string;
   bad: string;
+  /** Outline weight multiplier (the screen draws heavier lines so they survive a shared screen; print is 1). */
+  line: number;
   /** Sketch: outline each seat cushion (the seams between cushion, back and arm). */
   cushionSeams: boolean;
 }
@@ -39,6 +41,7 @@ export const LIGHT: PlanTheme = {
   floor: '#f6f2ea',
   wall: '#1c1b19',
   bad: '#c0392b',
+  line: 1,
   font: 'helvetica, arial, sans-serif',
   bold: 700,
   cushionSeams: false,
@@ -59,3 +62,12 @@ export const SKETCH: PlanTheme = {
   wall: '#000000',
   cushionSeams: true,
 };
+
+/**
+ * UX Phase 3 (Andre, 2026-11-08: the app is shared over Zoom): one background
+ * for the plan, the room floor and the 3D view, heavier outlines and darker
+ * dimensions on screen. The sheets keep LIGHT / SKETCH (white paper).
+ */
+export const SCREEN_BG = '#faf8f4';
+export const LIGHT_SCREEN: PlanTheme = { ...LIGHT, paper: SCREEN_BG, floor: SCREEN_BG, dim: '#1c1b19', gap: '#6f695f', line: 1.4 };
+export const SKETCH_SCREEN: PlanTheme = { ...SKETCH, paper: SCREEN_BG, floor: SCREEN_BG, gap: '#555555', line: 1.4 };

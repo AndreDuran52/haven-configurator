@@ -69,6 +69,17 @@ export function gripPoints(b: BuildResult, k: number, r = GRIP_R): Grip[] {
   return out;
 }
 
+/**
+ * UX Phase 3 (Andre, 2026-11-08): the grips shown, the two seams of the
+ * selected piece only (none when nothing is selected). A split group's seams
+ * are the group's ends.
+ */
+export function gripsOf(b: BuildResult, all: Grip[], selectedId: string | null): Grip[] {
+  const p = selectedId ? b.pieces.find((q) => q.id === selectedId && q.run !== null && q.index !== null) : undefined;
+  if (!p) return [];
+  return all.filter((g) => g.run === p.run && (g.seam === p.index || g.seam === p.index! + 1));
+}
+
 export function inPoly(pt: Pt, poly: Pt[]): boolean {
   let inside = false;
   for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {

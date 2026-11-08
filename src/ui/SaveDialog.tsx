@@ -8,7 +8,18 @@ import { codeOf, useHaven, useHavenStore } from '@/state/store';
 import { Button } from './controls';
 import { Dialog } from './Dialog';
 
-export default function SaveDialog({ open, onOpenChange, leaving = false }: { open: boolean; onOpenChange: (o: boolean) => void; leaving?: boolean }) {
+export default function SaveDialog({
+  open,
+  onOpenChange,
+  leaving = false,
+  onSaved,
+}: {
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+  leaving?: boolean;
+  /** Runs after a successful save (the shape guard's "Save first", UX Phase 3). */
+  onSaved?: () => void;
+}) {
   const store = useHavenStore();
   const project = useHaven((s) => s.ui.project);
   const [name, setName] = useState('');
@@ -20,6 +31,7 @@ export default function SaveDialog({ open, onOpenChange, leaving = false }: { op
     s.toast(`Saved "${saved.name}"`);
     onOpenChange(false);
     if (leaving) s.goHome();
+    onSaved?.();
   };
   const saveInPlace = () => {
     const s = store.getState();

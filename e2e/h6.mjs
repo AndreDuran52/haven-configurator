@@ -3,7 +3,7 @@
 // measured with pdf.js: text positions in points on the page.
 import { readFileSync } from 'node:fs'
 import { VIEWPORTS } from './browser.mjs'
-import { config, openApp } from './lib.mjs'
+import { config, openApp, projectMenu } from './lib.mjs'
 
 const SHOTS = 'test-results'
 const T1 = '1UW188L132R132D44_bt32s36_la72_ra72.wh'
@@ -105,7 +105,7 @@ export async function h6(browser, base, check) {
   // 3. Disabled on the Blank U; enabled again once filled is covered by e2e/h4 (export unblocks).
   {
     const { context, page } = await openApp(browser, base)
-    await page.getByRole('button', { name: 'Start', exact: true }).click()
+    await projectMenu(page, 'start')
     await page.getByRole('button', { name: 'Start blank' }).click()
     await page.waitForSelector('[data-gap]')
     await page.getByTestId('share').click()
@@ -136,7 +136,7 @@ export async function h6(browser, base, check) {
     await page.waitForSelector('#m-W')
     check((await page.evaluate(() => location.search)) === '', '"Edit a copy" drops ?view')
     await page.getByRole('radio', { name: 'Plan' }).click()
-    await page.waitForSelector('[data-grip]')
+    await page.waitForSelector('[data-plan-svg]')
     check((await page.evaluate(() => window.__plan.encode())) === T1, '…and opens the same layout, editable')
     check(errors.length === 0, `no console errors (${errors.join(' | ')})`)
     await context.close()
@@ -162,7 +162,7 @@ export async function h6(browser, base, check) {
     check((await config(page)).W === 200, 'reopened from Projects: W 200')
     await page.locator('#m-W').fill('210')
     await page.locator('#m-W').press('Enter')
-    check(/edited/.test(await page.textContent('[data-testid=project-name]')), 'an edit marks the project "edited"')
+    check((await page.getByTestId('unsaved-dot').count()) === 1, 'an edit marks the project unsaved (the dot on Save)')
     await page.getByRole('button', { name: 'Save', exact: true }).click()
     await page.getByTestId('save-project').click()
     await page.waitForTimeout(100)

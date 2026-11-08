@@ -29,7 +29,7 @@ export function BlankForm({ onStart, onError }: { onStart: (c: StartChoice) => v
       />
       <div className="grid grid-cols-4 gap-2">
         {(blank.shape === 'straight' ? (['W', 'D'] as const) : (['W', 'L', 'R', 'D'] as const)).map((k) => (
-          <label key={k} className="flex flex-col gap-1 text-xs font-semibold">
+          <label key={k} className="flex flex-col gap-1 text-sm font-semibold">
             {k}
             <input
               value={blank[k]}

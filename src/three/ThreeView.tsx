@@ -18,6 +18,7 @@ import { buildParts } from './parts';
 import { CAMERA_DISTANCE, Rig } from './Rig';
 import { SofaModel } from './SofaModel';
 import { createViewStore } from './viewStore';
+import { SCREEN_BG } from '@/plan/theme';
 
 /** Key light from the camera's upper-left-front, re-aimed on every frame (plan §7.3). */
 function CameraKeyLight() {
@@ -113,7 +114,8 @@ export default function ThreeView() {
           gl.toneMapping = NeutralToneMapping; // ACES turns white bouclé grey and yellow
         }}
       >
-        <color attach="background" args={['#efe6d8']} />
+        {/* UX Phase 3: one background with the plan and the room. */}
+        <color attach="background" args={[SCREEN_BG]} />
         <hemisphereLight args={['#ffffff', '#b9ab97', 1.2]} />
         <CameraKeyLight />
         <directionalLight position={[1200, 500, 300]} intensity={0.3} />

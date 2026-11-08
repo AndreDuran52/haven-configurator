@@ -150,11 +150,11 @@ export function MeasureField({
         </button>
       </div>
       {err && (
-        <p role="alert" className="pl-8 text-xs font-medium text-danger" data-error={name}>
+        <p role="alert" className="pl-8 text-sm font-medium text-danger" data-error={name}>
           {err}
         </p>
       )}
-      {hint && !err && <p className="pl-8 text-xs text-ink-muted">{hint}</p>}
+      {hint && !err && <p className="pl-8 text-sm text-ink-muted">{hint}</p>}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 // H2 done-when checks (plan §10), judged by outcome in the DOM.
 import { mkdirSync } from 'node:fs'
 import { enterEditor, VIEWPORTS } from './browser.mjs'
-import { config, dimTexts, labelCheck, openApp, seats, setField, slide, warnings } from './lib.mjs'
+import { config, dimTexts, labelCheck, openApp, seats, setField, slide, warnings, projectMenu } from './lib.mjs'
 
 const SHOTS = 'test-results'
 
@@ -80,7 +80,7 @@ export async function h2(browser, base, check) {
     const c = await config(page)
     check(c.dims.A === 10 && t.filter((x) => x === '10"').length === 2 && t.filter((x) => x === '62"').length === 2 && c.L === 132, `arm width 10: legs read 62 | 10, L holds 132 (A ${c.dims.A}, ${t.join(' ')})`)
     // Stepper presses coalesce into one undo step (like Seat width).
-    await page.getByRole('button', { name: 'Undo' }).click()
+    await page.getByRole('button', { name: 'Undo', exact: true }).click()
     check((await config(page)).dims.A === 14, 'one Undo takes the arm width back to 14')
     await context.close()
   }
@@ -90,11 +90,11 @@ export async function h2(browser, base, check) {
     const { context, page } = await openApp(browser, base)
     await setField(page, 'D', 36)
     await setField(page, 'W', 300)
-    await page.getByRole('button', { name: 'Reset', exact: true }).click()
+    await projectMenu(page, 'reset')
     await page.getByRole('dialog').getByRole('button', { name: 'Reset' }).click()
     const t = await dimTexts(page)
     check(t.slice(0, 4).join(' | ') === '60" | 32" | 36" | 60"', 'Reset restores the Standard U')
-    await page.getByRole('button', { name: 'Undo' }).click()
+    await page.getByRole('button', { name: 'Undo', exact: true }).click()
     const c = await config(page)
     check(c.W === 300 && c.D === 36, 'one Undo brings the edited layout back')
     await context.close()
@@ -103,7 +103,7 @@ export async function h2(browser, base, check) {
   // 8. Blank U shows hatched "unfilled 68/72/72".
   {
     const { context, page } = await openApp(browser, base)
-    await page.getByRole('button', { name: 'Start', exact: true }).click()
+    await projectMenu(page, 'start')
     await page.getByRole('button', { name: 'Start blank' }).click()
     await page.waitForSelector('[data-gap]')
     const labels = await page.$$eval('[data-gap] text', (els) => els.map((e) => e.textContent))
@@ -155,12 +155,12 @@ export async function h2(browser, base, check) {
     await setField(page, 'L', 140)
     const seen = []
     for (let i = 0; i < 3; i++) {
-      await page.getByRole('button', { name: 'Undo' }).click()
+      await page.getByRole('button', { name: 'Undo', exact: true }).click()
       const c = await config(page)
       seen.push(`${c.W}/${c.D}/${c.L}`)
     }
     check(seen.join(' ') === '190/40/132 190/44/132 188/44/132', `Undo walks back each commit (${seen.join(' → ')})`)
-    check(await page.getByRole('button', { name: 'Undo' }).isDisabled(), 'Undo disabled at the start')
+    check(await page.getByRole('button', { name: 'Undo', exact: true }).isDisabled(), 'Undo disabled at the start')
     await context.close()
   }
 

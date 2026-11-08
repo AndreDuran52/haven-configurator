@@ -70,7 +70,7 @@ export function Section({ title, children, aside }: { title: string; children: R
   return (
     <section className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
-        <h2 className="text-xs font-semibold tracking-wide text-ink-muted uppercase">{title}</h2>
+        <h2 className="text-sm font-bold tracking-wide text-ink-muted uppercase">{title}</h2>
         {aside}
       </div>
       {children}
@@ -80,5 +80,5 @@ export function Section({ title, children, aside }: { title: string; children: R
 
 /** Amber chip for warnings (never blocking). */
 export function WarnChip({ children }: { children: ReactNode }) {
-  return <span className="inline-flex items-center gap-1 rounded-md bg-warn-bg px-2 py-1 text-xs font-medium text-warn-ink">{children}</span>;
+  return <span className="inline-flex items-center gap-1 rounded-md bg-warn-bg px-2.5 py-1.5 text-sm font-semibold text-warn-ink">{children}</span>;
 }

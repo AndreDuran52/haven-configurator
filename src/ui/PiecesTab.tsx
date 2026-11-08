@@ -33,7 +33,7 @@ export default function PiecesTab() {
               else s.commit(r.config);
             }}
           />
-          <p className="text-xs text-ink-muted">{live.tableStyle === 'standard' ? '2″ wood top on a fabric base' : 'Solid wood, top to floor'}</p>
+          <p className="text-sm text-ink-muted">{live.tableStyle === 'standard' ? 'Wood top on a fabric base' : 'Solid wood, top to floor'}</p>
         </Section>
       )}
     </>

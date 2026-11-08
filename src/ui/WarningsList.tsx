@@ -1,12 +1,13 @@
 // Amber warnings (plan §5.4): never blocking, always visible. A T names the half.
-import { sectionLabel } from '@/engine';
+import { sectionLabel, type WarningCode } from '@/engine';
 import { layoutBuiltOf, useLiveLayout } from '@/state/store';
 import { WarnChip } from './controls';
 
-export function WarningsList() {
+/** Nothing to show: no list at all (UX Phase 3: no empty "No warnings"). */
+export function WarningsList({ only, exclude }: { only?: WarningCode[]; exclude?: WarningCode[] }) {
   const layout = useLiveLayout();
-  const warnings = layoutBuiltOf(layout).warnings;
-  if (!warnings.length) return <p className="text-sm text-ink-muted">No warnings</p>;
+  const warnings = layoutBuiltOf(layout).warnings.filter((w) => (!only || only.includes(w.code)) && !exclude?.includes(w.code));
+  if (!warnings.length) return null;
   return (
     <ul className="flex flex-wrap gap-1.5" data-testid="warnings">
       {warnings.map((w, i) => (

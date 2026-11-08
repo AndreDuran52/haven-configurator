@@ -10,6 +10,7 @@ import { clearSeatsAt } from './seatsLabel';
 import { fmtIn } from './format';
 import { hatch, pts, woodGrain } from './geometry';
 import type { PlanTheme } from './theme';
+import { STRAIGHT_SEATS_BELOW } from './dims';
 
 export interface PlanDrawingProps {
   built: BuildResult;
@@ -21,8 +22,6 @@ export interface PlanDrawingProps {
   selectedId?: string | null;
   /** display units: 16 on screen (px), ~10 on paper (pt) */
   seatsSize?: number;
-  /** Screen px kept clear under a straight sofa for the seam grips (the live plan only). */
-  gripClear?: number;
   gapLabelSize?: number;
   /** false for each section of a layout (the layout draws one seat label). */
   showSeats?: boolean;
@@ -34,7 +33,7 @@ const Box = ({ box: r, ...rest }: { box: Rect } & Omit<React.SVGProps<SVGRectEle
 
 const inset = (r: Rect, d: number): Rect => ({ x: r.x + d, y: r.y + d, w: r.w - 2 * d, h: r.h - 2 * d });
 
-export function PlanDrawing({ built, dims, k, theme, showWarnings, selectedId, seatsSize = 16, gripClear = 0, gapLabelSize = 11, showSeats = true }: PlanDrawingProps) {
+export function PlanDrawing({ built, dims, k, theme, showWarnings, selectedId, seatsSize = 16, gapLabelSize = 11, showSeats = true }: PlanDrawingProps) {
   const lw = (u: number) => +(u * k).toFixed(4); // display units -> plan inches
   const warnIds = new Set(showWarnings ? built.warnings.map((w) => w.pieceId).filter(Boolean) : []);
   const runPieces = (run: string) => built.pieces.filter((p) => p.run === run);
@@ -63,9 +62,9 @@ export function PlanDrawing({ built, dims, k, theme, showWarnings, selectedId, s
       <g key={p.id} data-piece={p.id} data-kind={p.kind}>
         <polygon points={pts(p.polygon)} fill={fill} stroke="none" />
         {p.backs.map((b, i) => (
-          <Box key={`b${i}`} box={b} fill={theme.seatDetail} stroke={theme.ink} strokeWidth={lw(0.5)} />
+          <Box key={`b${i}`} box={b} fill={theme.seatDetail} stroke={theme.ink} strokeWidth={lw(0.5 * theme.line)} />
         ))}
-        {p.arm && <Box box={p.arm.rect} fill={theme.seatDetail} stroke={theme.ink} strokeWidth={lw(0.5)} />}
+        {p.arm && <Box box={p.arm.rect} fill={theme.seatDetail} stroke={theme.ink} strokeWidth={lw(0.5 * theme.line)} />}
         {theme.cushionSeams && p.cushionRect && (
           <Box data-seam="" box={inset(p.cushionRect, 0.75)} fill="none" stroke={theme.ink} strokeWidth={lw(0.5)} rx={1.5} />
         )}
@@ -76,7 +75,7 @@ export function PlanDrawing({ built, dims, k, theme, showWarnings, selectedId, s
             ))}
           </g>
         )}
-        <polygon points={pts(p.polygon)} fill="none" stroke={theme.ink} strokeWidth={lw(1)} strokeLinejoin="round" />
+        <polygon points={pts(p.polygon)} fill="none" stroke={theme.ink} strokeWidth={lw(theme.line)} strokeLinejoin="round" />
         {warnIds.has(p.id) && (
           <polygon data-warn="" points={pts(p.polygon)} fill={theme.warn} fillOpacity={0.18} stroke={theme.warn} strokeWidth={lw(2)} />
         )}
@@ -88,7 +87,7 @@ export function PlanDrawing({ built, dims, k, theme, showWarnings, selectedId, s
   // Seats label: centre of the U opening / inside corner of an L / in front of a straight sofa
   const usualSeatsAt: Pt =
     built.shape === 'straight'
-      ? [built.W / 2, built.D + Math.max(20, lw(gripClear))]
+      ? [built.W / 2, built.D + STRAIGHT_SEATS_BELOW]
       : built.shape === 'U'
       ? [built.W / 2, built.D + Math.max(built.opening?.depth ?? 0, 20) * 0.45]
       : built.shape === 'L-left'

@@ -6,6 +6,7 @@
 import { lazy, Suspense, useEffect } from 'react';
 import { PlanView } from '@/plan/PlanView';
 import { useHaven, useHavenStore } from '@/state/store';
+import { ResultLine } from './ResultLine';
 import { Sidebar } from './Sidebar';
 import { Toast } from './Toast';
 import { TopBar } from './TopBar';
@@ -36,7 +37,8 @@ export function HavenLayout() {
         <section className="haven-plan flex min-h-0 min-w-0 flex-col">
           <div className="relative min-h-0 flex-1">
             {/* Plan and 3D share one box under the view bar: same size = parity hand-off. */}
-            <div className="absolute inset-x-0 top-15 bottom-0">
+            {/* The bottom strip is kept for the result line, so the plan never re-fits when it shows. */}
+            <div className={`absolute inset-x-0 top-15 ${readOnly ? 'bottom-0' : 'bottom-16'}`}>
               {view === 'plan' ? (
                 <PlanView />
               ) : (
@@ -46,6 +48,7 @@ export function HavenLayout() {
               )}
             </div>
             <ViewBar />
+            {!readOnly && <ResultLine />}
             {/* A table dragged here is removed (the gesture hit-tests [data-trash]). */}
             {tableDrag && (
               <div

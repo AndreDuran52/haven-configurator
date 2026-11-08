@@ -35,7 +35,7 @@ export async function phase1(browser, base, check) {
       `Enter: D 38, corners 54, back armless 48, W/L/R 188/132/132 (${t.slice(0, 4).join(' | ')})`,
     )
     check(t.filter((x) => x === '64"').length === 2, 'each leg one-arm 78 reads seat 64 | arm 14')
-    await page.getByRole('button', { name: 'Undo' }).click()
+    await page.getByRole('button', { name: 'Undo', exact: true }).click()
     check((await config(page)).D === 44, 'one Undo brings 44 back')
     await context.close()
   }
@@ -99,7 +99,8 @@ export async function phase1(browser, base, check) {
     await page.reload({ waitUntil: 'networkidle' })
     await page.waitForSelector('[data-plan-svg]')
     const name = await page.textContent('[data-testid=project-name]').catch(() => '')
-    check(/Garcia/.test(name) && /edited/.test(name), `after a reload the project is still open and marked edited ("${name?.trim()}")`)
+    const dot = await page.getByTestId('unsaved-dot').count()
+    check(/Garcia/.test(name) && dot === 1, `after a reload the project is still open and marked unsaved ("${name?.trim()}", dot ${dot})`)
     await page.getByRole('button', { name: 'Save', exact: true }).click()
     await page.getByTestId('save-project').click()
     await page.getByTestId('projects').click()
@@ -113,10 +114,11 @@ export async function phase1(browser, base, check) {
     const other = await context.newPage()
     await other.goto(`${base}#c=1UW300L132R132D44_bt32s74~s74_la72_ra72.fh`, { waitUntil: 'networkidle' })
     await other.waitForSelector('[data-plan-svg]')
-    check((await other.locator('[data-testid=project-name]').count()) === 0, 'another link (new tab) opens without the project')
+    // UX Phase 3: the name button always shows; with no project it reads "Untitled layout".
+    check((await other.textContent('[data-testid=project-name]'))?.includes('Untitled layout'), 'another link (new tab) opens without the project')
     await other.reload({ waitUntil: 'networkidle' })
     await other.waitForSelector('[data-plan-svg]')
-    check((await other.locator('[data-testid=project-name]').count()) === 0, '…also after its reload')
+    check((await other.textContent('[data-testid=project-name]'))?.includes('Untitled layout'), '…also after its reload')
     await page.reload({ waitUntil: 'networkidle' })
     await page.waitForSelector('[data-plan-svg]')
     check(/Garcia/.test((await page.textContent('[data-testid=project-name]').catch(() => '')) ?? ''), 'and the first tab still has its project after a reload')

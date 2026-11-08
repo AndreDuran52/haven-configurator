@@ -1,0 +1,47 @@
+// The result line's words (UX Phase 3, Andre 2026-11-08).
+import { describe, expect, it } from 'vitest';
+import { addPiece, editSection, placeRoom, resizePiece, setArmWidth, setLock, setMeasurements, setRoom, solo, standardU, teeLayout, type Layout } from '@/engine';
+import { describeChange } from './changes';
+
+const u = () => solo(standardU());
+const edit = (l: Layout, op: Parameters<typeof editSection>[2]) => editSection(l, 'a', op).layout;
+
+describe('describeChange', () => {
+  it('measurements and the seat count', () => {
+    expect(describeChange(u(), edit(u(), (c) => setMeasurements(c, { W: 200 })))).toBe('Width 188″ → 200″ · Seat 36″ → 48″ · Seats 7 → 7–8');
+    expect(describeChange(u(), edit(u(), (c) => setMeasurements(c, { D: 40 })))).toMatch(/^Depth 44″ → 40″/);
+  });
+
+  it('a table dropped into a seat: the table and its two even seats', () => {
+    const a = u();
+    const b = edit(a, (c) => addPiece(c, 'table', { run: 'left', at: 'split', pieceId: c.runs.left![0]!.id }));
+    expect(describeChange(a, b)).toBe('Seats 19″ | 19″ · Added table 20″ · Seats 7 → 5');
+  });
+
+  it('resizing that table: one line for the pair', () => {
+    const a = edit(u(), (c) => addPiece(c, 'table', { run: 'left', at: 'split', pieceId: c.runs.left![0]!.id }));
+    const t = a.sections[0]!.config.runs.left!.find((p) => p.kind === 'table')!.id;
+    const b = edit(a, (c) => resizePiece(c, t, 24));
+    expect(describeChange(a, b)).toBe('Seats 19″ | 19″ → 17″ | 17″ · Table 20″ → 24″');
+  });
+
+  it('arms, the lock and the room', () => {
+    expect(describeChange(u(), edit(u(), (c) => setArmWidth(c, 10)))).toMatch(/^Arms 14″ → 10″/);
+    expect(describeChange(u(), edit(u(), (c) => setLock(c, false)))).toBe('Let sofa grow');
+    const r = setRoom(u(), { w: 240, d: 200 }).layout;
+    expect(describeChange(u(), r)).toBe('Room 240″ x 200″');
+    expect(describeChange(r, placeRoom(r, 'backWall').layout)).toBe('Sofa on the back wall');
+  });
+
+  it('nothing visible changed, or a new sofa: no line', () => {
+    const a = u();
+    expect(describeChange(a, a)).toBeNull();
+    expect(describeChange(a, teeLayout({ total: 229, stem: 110 }))).toBeNull();
+  });
+
+  it('long lists are cut at four', () => {
+    const a = u();
+    const b = edit(a, (c) => setMeasurements(c, { W: 200, L: 140, R: 140, D: 40 }));
+    expect(describeChange(a, b)).toMatch(/ · \+\d+ more$/);
+  });
+});

@@ -37,7 +37,8 @@ async function open3d(browser, base, viewport = VIEWPORTS.ipadLandscape, hash = 
 }
 
 async function preset(page, name) {
-  await page.locator(`[data-preset=${name}]`).click()
+  // UX Phase 3: the bar offers Overview, Front, Side; every preset stays reachable through the store.
+  await page.evaluate((n) => window.__haven.getState().setUi({ preset: n }), name)
   await settle(page)
 }
 
