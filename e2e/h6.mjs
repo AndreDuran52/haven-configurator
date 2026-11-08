@@ -162,7 +162,7 @@ export async function h6(browser, base, check) {
     check((await config(page)).W === 200, 'reopened from Projects: W 200')
     await page.locator('#m-W').fill('210')
     await page.locator('#m-W').press('Enter')
-    check(/edited/.test(await page.textContent('[data-testid=project-name]')), 'an edit marks the project "edited"')
+    check((await page.getByTestId('unsaved-dot').count()) === 1, 'an edit marks the project unsaved (the dot on Save)')
     await page.getByRole('button', { name: 'Save', exact: true }).click()
     await page.getByTestId('save-project').click()
     await page.waitForTimeout(100)

@@ -212,8 +212,11 @@ export interface DimSource {
 /** One sofa (today's plan). */
 export const soloSource = (b: BuildResult): DimSource => ({ groups: (p) => requests(b, p), frame: planFrame(b) })
 
+/** A straight sofa's Seats label sits this far under its front (plan inches); the frame keeps it in view. */
+export const STRAIGHT_SEATS_BELOW = 26
+
 export function planFrame(b: BuildResult): Frame {
   const legs = b.shape !== 'straight'
   const maxLeg = Math.max(legs && b.shape !== 'L-right' ? b.L : 0, legs && b.shape !== 'L-left' ? b.R : 0, b.D)
-  return { x0: 0, y0: 0, x1: b.W, y1: maxLeg }
+  return { x0: 0, y0: 0, x1: b.W, y1: legs ? maxLeg : b.D + STRAIGHT_SEATS_BELOW + 8 }
 }

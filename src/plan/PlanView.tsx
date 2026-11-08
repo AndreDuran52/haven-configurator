@@ -124,7 +124,7 @@ export function PlanView() {
           <rect x={-1e4} y={-1e4} width={2e4} height={2e4} fill={theme.paper} />
           {lb.room && <RoomFloor room={lb.room} k={fit.k} theme={theme} />}
           {lb.solo ? (
-            <PlanDrawing built={built} dims={dims} k={fit.k} theme={theme} showWarnings selectedId={selectedId} gripClear={120} />
+            <PlanDrawing built={built} dims={dims} k={fit.k} theme={theme} showWarnings selectedId={selectedId} />
           ) : (
             <>
               {/* The root last: with a shared back it owns the frame down the stem. */}

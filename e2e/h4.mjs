@@ -122,11 +122,11 @@ export async function h4(browser, base, check) {
     await drag(line(t4, svgOut, 10))
     check((await code(page)) === T3A, 'a table dropped outside the plan snaps back')
     await page.screenshot({ path: `${SHOTS}/h4-3a.png` })
-    // Trash: drag the table onto the trash bar (over the bottom of the plan since the redesign).
+    // Trash: drag the table onto the trash bar (UX Phase 3: in the strip under the plan, where the result line sits).
     const d1 = await undoDepth(page)
     const trashAt = await page.$eval('[data-plan-svg]', (e) => {
       const r = e.getBoundingClientRect()
-      return [r.left + r.width / 2, r.bottom - 40]
+      return [r.left + r.width / 2, r.bottom + 30]
     })
     await drag(line(t4, trashAt, 16))
     const ct = await config(page)
