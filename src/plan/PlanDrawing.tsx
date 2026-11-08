@@ -115,7 +115,7 @@ export function PlanDrawing({ built, dims, k, theme, showWarnings, selectedId, s
         </g>
       ))}
       {pillows && (
-        <g data-pillows="" stroke={theme.ink} strokeWidth={lw(0.6 * theme.line)}>
+        <g data-pillows="" stroke={theme.ink} strokeWidth={lw(0.6 * theme.line)} pointerEvents="none">
           {pillows.map((p) =>
             p.kind === 'ball' ? (
               <circle key={p.key} data-pillow={p.kind} cx={p.cx} cy={p.cy} r={p.w / 2} fill={p.fill} />
