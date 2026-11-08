@@ -16,6 +16,10 @@ export interface PlanTheme {
   loose: string;
   font: string;
   bold: 700;
+  /** H6c: the room's floor fill and walls; a gap past a wall. */
+  floor: string;
+  wall: string;
+  bad: string;
   /** Sketch: outline each seat cushion (the seams between cushion, back and arm). */
   cushionSeams: boolean;
 }
@@ -32,6 +36,9 @@ export const LIGHT: PlanTheme = {
   warn: '#d99a00',
   select: '#2f6fed',
   loose: '#f6f4f0',
+  floor: '#f6f2ea',
+  wall: '#1c1b19',
+  bad: '#c0392b',
   font: 'helvetica, arial, sans-serif',
   bold: 700,
   cushionSeams: false,
@@ -48,5 +55,7 @@ export const SKETCH: PlanTheme = {
   dim: '#000000',
   gap: '#555555',
   loose: '#ffffff',
+  floor: '#ffffff',
+  wall: '#000000',
   cushionSeams: true,
 };

@@ -17,7 +17,7 @@ It is a **standalone app**: its own repo, its own Vercel project, no login, no b
 
 Vite + React 19 (pinned 19.2.x: R3F peers React < 19.4) + TypeScript `strict`, Tailwind CSS, a few Radix primitives, zustand (vanilla store). three.js + @react-three/fiber + drei (camera-controls) for 3D, jsPDF + svg2pdf.js for sheets. vitest, oxlint, playwright-core. `vite-plugin-pwa` (precache-only service worker, from H2). Deployed on Vercel (production = `main`, a preview per branch). `@` → `src/`.
 
-Layout: `src/{engine, ortho, state, plan, three, ui, export}` (plan §4). The share codec is `src/engine/codec.ts` (one sofa; link v4 = the straight sofa) wrapped by `src/engine/codecLayout.ts` (layouts; the only one app code may use).
+Layout: `src/{engine, ortho, state, plan, three, ui, export}` (plan §4). The share codec is `src/engine/codec.ts` (one sofa; link v4 = the straight sofa) wrapped by `src/engine/codecLayout.ts` (layouts and the room, link v5; the only one app code may use).
 
 ## Non-negotiable rules
 
@@ -25,7 +25,7 @@ Layout: `src/{engine, ortho, state, plan, three, ui, export}` (plan §4). The sh
 2. **Config is the only domain state.** Everything else (`BuildResult`, dimensions, seats, warnings, fits) is derived and never stored. Drafts during a gesture; one commit per gesture = one undo step.
 3. **The plan wins over the spec.** Rules, numbers and tests come from `docs/HAVEN-PLAN.md`; don't "fix" them from the spec.
 4. **Lazy 3D and PDF.** three / `@react-three/*` only inside `src/three/**`, reached only through `lazy()` / `import()`; jsPDF and svg2pdf only through `await import()` in `src/export/`. `src/ortho/**` never imports three. No vendor `manualChunks`.
-5. **Entry-chunk budget.** `npm run check:bundle` must pass: entry JS within budget (318 kB raw / 104 kB gzip since the straight sofa, 2026-11-06; Andre allows up to 115 gzip; set in `scripts/check-bundle.mjs`), no `THREE.WebGLRenderer` or `jsPDF` markers in entry files. Dialogs and other rarely used UI load with `lazy()`.
+5. **Entry-chunk budget.** `npm run check:bundle` must pass: entry JS within budget (322 kB raw / 106 kB gzip since the room floor, 2026-11-07; Andre allows up to 115 gzip; set in `scripts/check-bundle.mjs`), no `THREE.WebGLRenderer` or `jsPDF` markers in entry files. Dialogs and other rarely used UI load with `lazy()`.
 6. **Share links are forever.** Codec changes bump the version, add a decoder/migration, and keep every golden link passing. Links carry geometry, fabric and finish only: never names, project numbers or prices.
 7. **No hidden network.** No CDN HDRIs, no Draco decoder, nothing cross-origin; `.glb` exported without Draco. The app must work offline after one online load (from H2).
 8. **No backend, no login** unless Andre explicitly starts H7 option (b). `priceFor` stays a stub, never rendered.
@@ -37,7 +37,7 @@ Layout: `src/{engine, ortho, state, plan, three, ui, export}` (plan §4). The sh
 
 Each milestone: `git fetch`, branch from `origin/main` (`h0b-scaffold`, `h1-engine`, `h2-plan-view`, `h3-ortho`, `h4-editing`, `h5-look`, `h6-exports`), build only that §10 block, meet its done-when list, open a PR, **stop**. Andre previews (localhost or the Vercel preview; from H2 on, installed on the iPad) and it merges on Andre's word. Tick the box below in the same PR.
 
-**Current status: balance seats + straight sofa** (plan §10 "Back to the Haven", Andre 2026-11-06): "shapes to start, pieces to finish". Freeform is dropped (PR #15 closed); the T is custom work, hidden from the menus (saved T's and T links still open; plan-only, no 3D). Built: seats balanced around a table (a new mid-seat table starts at 20″, seats always even, Even seats, Try 10″ arms) and the straight sofa (link v4). **Next:** H6c Room floor (link v5), then UX Phases 3–6 refocused on "friendly, like a game". No login (plan Q18). H7/H8 only when Andre asks.
+**Current status: room floor (H6c)** (plan §10 H6c, Andre 2026-11-07): the client's room (a rectangle) around the sofa in the plan, the PDF and 3D; Center or Back wall, typed gaps, Fill the width; "doesn't fit" and "walkway under 30″" warnings; link v5. Before it: "shapes to start, pieces to finish" (straight sofa, link v4; seats balanced around a table; the T hidden, plan-only; freeform dropped). **Next:** UX Phases 3–6 refocused on "friendly, like a game". No login (plan Q18). H7/H8 only when Andre asks.
 
 - [x] H0 Docs hand-off (plan, spec, prototypes, evidence in `docs/`)
 - [x] H0b Scaffold (Vite, strict TS, oxlint guards, vitest, bundle budget, manifest, Vercel)
@@ -58,8 +58,8 @@ Each milestone: `git fetch`, branch from `origin/main` (`h0b-scaffold`, `h1-engi
 - [x] Editor redesign (UX Phase 2 reshaped: shape picker + tabs Size · Pieces · Look, wedge in the corner's menu and the Size tab, no bottom bar, trash bar over the plan, seam grips, move badge; 2026-11-06)
 - [x] Freeform pieces: dropped 2026-11-06 (PR #15 closed unmerged; custom shapes go to CAD and Blender)
 - [x] Back to the Haven: balance seats around a table, hide the T, straight sofa + link v4 (2026-11-06)
+- [x] H6c Room floor (rectangle, Center / Back wall / typed gaps, Fill the width, fit and walkway warnings; plan, PDF, 3D floor; link v5; 2026-11-07)
 - [ ] UX Phases 3–6 (understandable edits, selection and corners, options and Present, visual tray)
-- [ ] H6c Room floor space (next) (W × D + wall gaps; plan, PDF, 3D floor; fit warning; codec v5)
 - [ ] H7 Cloud saves + tracker hand-off (optional; do not start unless Andre asks)
 - [ ] H8 Blender round-trip (later; do not start unless Andre asks)
 

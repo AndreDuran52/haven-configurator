@@ -28,6 +28,7 @@ export function ViewSummary() {
   const rows: [string, string][] = [
     ...shape,
     ['Depth', fmtIn(b.D)],
+    ...(layout.room ? [['Room', `${fmtIn(layout.room.w)} x ${fmtIn(layout.room.d)}`] as [string, string]] : []),
     ['Seat depth', fmtIn(b.seatDepth)],
     ['Seats', lb.seats.label.replace(/^Seats /, '')],
     ['Fabric', fabricOf(c.fabric).name],

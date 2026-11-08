@@ -5,11 +5,12 @@
 // Tightened at the end of H2 (plan §3): measured entry 272.2 kB raw / 88.3 kB
 // gzip (engine + plan view + store + UI + react-dom; the dialogs load lazily)
 // + 15 %, rounded up. Raise it only on purpose, and say why in the PR.
-// 2026-11-06: 318 / 104 for the straight sofa (Andre approved up to 115 gzip).
+// 2026-11-06: 318 / 104 for the straight sofa; 2026-11-07: 322 / 106 for the room
+// floor (Andre approved up to 115 gzip).
 import { readFileSync } from 'node:fs'
 import { gzipSync } from 'node:zlib'
 
-const BUDGET = { rawKb: 318, gzipKb: 104 }
+const BUDGET = { rawKb: 322, gzipKb: 106 }
 const MARKERS = [
   { name: 'three.js', text: 'THREE.WebGLRenderer' },
   { name: 'jsPDF', text: 'jsPDF' },

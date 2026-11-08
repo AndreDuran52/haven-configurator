@@ -29,5 +29,7 @@ export * from './fabrics';
 export * from './layoutTypes';
 export * from './layoutBuild';
 export * from './layoutOps';
+export * from './roomFit';
+export * from './room';
 export * from './tee';
 export * from './codecLayout';
