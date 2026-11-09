@@ -6,8 +6,7 @@
 // Andre 2026-11-09), the corner wedge, and the sofa's warnings. "When pieces
 // change" is on the Pieces tab; the room has its own tab; the seat width for
 // the seat count is in the View menu. UX Phase 3c (Andre, 2026-11-09): on a U,
-// Copy left to right | Copy right to left (a mirror copy; each side edits on
-// its own after).
+// the Mirror sides switch under the side fields (one change makes both sides).
 import { lazy, Suspense } from 'react';
 import { DEPTH_PRESETS, setArmWidth, setMeasurements, type EditResult } from '@/engine';
 import { fmtIn } from '@/plan/format';
@@ -18,7 +17,7 @@ import { ROOM_CODES } from './warningCodes';
 import { WarningsList } from './WarningsList';
 
 const SectionsPanel = lazy(() => import('./SectionsPanel'));
-const CopySides = lazy(() => import('./CopySides'));
+const MirrorSides = lazy(() => import('./MirrorSides'));
 // Radix Slider (~7 kB gzip) loads after the first paint, into a placeholder of its height.
 const WedgeSlider = lazy(() => import('./WedgeSlider').then((m) => ({ default: m.WedgeSlider })));
 
@@ -53,7 +52,7 @@ export function SizeTab() {
         {!joined && hasRight && <MeasureField name="R" label="Right side" labelClass="w-24" value={live.R} apply={(c, v) => setMeasurements(c, { R: v })} />}
         {!joined && live.shape === 'U' && (
           <Suspense fallback={<div className="h-11" aria-hidden />}>
-            <CopySides />
+            <MirrorSides />
           </Suspense>
         )}
         <MeasureField name="D" label="Depth" labelClass="w-24" value={live.D} apply={(c, v) => setMeasurements(c, { D: v })} />

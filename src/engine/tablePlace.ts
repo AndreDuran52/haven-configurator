@@ -1,6 +1,7 @@
 // Where a new table goes (Andre, 2026-11-09). A table goes between cushions
-// (at a seam), never cut into a seat, except in a run with no seam where one
-// fits (then one centred split of its largest seat). A new table starts at the
+// (at a seam); at an open end it takes the arm's place (seat | table, never
+// seat | arm | table: Andre, Phase 3c fixes, Q72); and it may split a seat in
+// two when both halves stay 23″ or more (Q73). A new table starts at the
 // standard 32″; if that would leave a seat under 23″ it steps down to 28, 24,
 // then 20″; if none fits: "Not enough seat for a table here." Between two seats
 // with the lock on, both seats shrink equally (placement.ts shareSeam); with
@@ -8,7 +9,7 @@
 // links are never re-placed: only new edits use this.
 import { buildHaven } from './buildHaven';
 import { edit, noRoom } from './edit';
-import { runIds } from './layout';
+import { endCapState, openEnds, runIds } from './layout';
 import { cushionOf, isSeat, SEAT_WARN, TABLE_DEFAULT } from './pieces';
 import { insertPiece } from './placement';
 import type { Config, EditResult, Placement, Pt } from './types';
@@ -53,25 +54,25 @@ export interface TableTarget {
   config: Config;
 }
 
-/** Every place a new table can go: each seam where it fits; a run with none gets one centred split of its largest seat. */
+/**
+ * Every place a new table can go: each seam where it fits, except beyond an
+ * arm (there the table takes the arm's place instead), and the middle of each
+ * seat whose two halves stay 23″ or more.
+ */
 export function tableTargets(config: Config): TableTarget[] {
   const out: TableTarget[] = [];
-  for (const run of runIds(config.shape)) {
-    const ps = config.runs[run] ?? [];
-    let found = false;
-    for (let seam = 0; seam <= ps.length; seam++) {
-      const placement: Placement = { run, at: 'seam', seam };
-      const r = addTable(config, placement);
-      if (r.rejected) continue;
-      out.push({ placement, config: r.config });
-      found = true;
-    }
-    if (found) continue;
-    const seats = ps.filter(isSeat).sort((a, b) => cushionOf(b, config.dims.A) - cushionOf(a, config.dims.A));
-    if (!seats[0]) continue;
-    const placement: Placement = { run, at: 'split', pieceId: seats[0].id };
+  const add = (placement: Placement) => {
     const r = addTable(config, placement);
     if (!r.rejected) out.push({ placement, config: r.config });
+  };
+  for (const run of runIds(config.shape)) {
+    const ps = config.runs[run] ?? [];
+    const opens = openEnds(config.shape, run);
+    const armed = opens.filter((e) => endCapState(ps, e) === 'arm');
+    const beyondArm = armed.map((e) => (e === 'end' ? ps.length : 0));
+    for (let seam = 0; seam <= ps.length; seam++) if (!beyondArm.includes(seam)) add({ run, at: 'seam', seam });
+    for (const end of armed) add({ run, at: 'replaceArm', end });
+    for (const p of ps) if (isSeat(p)) add({ run, at: 'split', pieceId: p.id });
   }
   return out;
 }

@@ -76,29 +76,96 @@ export async function keep(browser, base, check) {
     await context.close()
   }
 
-  // 3. Copy left to right / right to left on a U.
+  // 3. Mirror sides (Andre's fixes, Q71): off by default; on with different sides copies the left to the right;
+  //    while on, a change to one side is made to the other (one undo step); a new layout opens with it off.
   {
     const { context, page, errors } = await fresh(browser, base, `#c=${U}`)
+    const sw = page.getByRole('switch', { name: 'Mirror sides' })
+    await sw.waitFor()
+    check((await sw.getAttribute('aria-checked')) === 'false', 'Mirror sides is off when a layout opens')
     await setField(page, 'R', 120)
     const d = await undoDepth(page)
-    await page.getByTestId('copy-left').click()
+    await sw.click()
     await page.waitForTimeout(250)
-    const c = await config(page)
-    check(c.R === 132 && run(c, 'right') === run(c, 'left') && (await undoDepth(page)) === d + 1, `Copy left to right: right side ${c.R}″, ${run(c, 'right')}; one undo step`)
+    let c = await config(page)
+    check((await sw.getAttribute('aria-checked')) === 'true' && c.R === 132 && run(c, 'right') === run(c, 'left') && (await undoDepth(page)) === d + 1, `on with different sides: the left is copied to the right (R ${c.R}, ${run(c, 'right')}); one undo step`)
     const line = await result(page)
-    check(line.startsWith('Copied the left side to the right · Right side 120″ → 132″'), `the result line: "${line}"`)
-    await page.getByRole('button', { name: 'Undo', exact: true }).click()
-    check((await config(page)).R === 120, 'Undo: the right side is 120″ again')
-    await page.getByTestId('copy-right').click()
-    await page.waitForTimeout(250)
-    check((await config(page)).L === 120 && run(await config(page), 'left') === run(await config(page), 'right'), 'Copy right to left: the left side is 120″ too')
-    await page.getByTestId('copy-right').click()
-    await page.waitForTimeout(250)
-    const toast = (await page.textContent('[data-testid=toast]').catch(() => '')) ?? ''
-    check(toast.includes('already the same'), `the sides already match: "${toast.trim()}"`)
+    check(line.startsWith('Left side copied to the right · Right side 120″ → 132″'), `the result line: "${line}"`)
+    await setField(page, 'L', 140)
+    c = await config(page)
+    check(c.L === 140 && c.R === 140 && run(c, 'right') === run(c, 'left'), `Left side 140: both sides 140 (${run(c, 'left')} | ${run(c, 'right')})`)
+    check((await result(page)).startsWith('Sides 132″ → 140″'), `the result line: "${await result(page)}"`)
+    await panel(page, 'Pieces')
+    await page.evaluate(() => window.__haven.getState().setUi({ selectedId: null }))
+    const d2 = await undoDepth(page)
+    // A table at the left corner seam (as the tray drops one): the right side gets one too.
+    await page.evaluate(() => {
+      const s = window.__haven.getState()
+      const c = structuredClone(s.config)
+      const n = c.nextId
+      c.runs.left = [{ id: `p${n}`, kind: 'table', length: 32 }, { ...c.runs.left[0], length: c.runs.left[0].length - 32 }]
+      c.nextId = n + 1
+      s.commit(c)
+    })
+    c = await config(page)
+    check(run(c, 'left') === 'table32 oneArm48' && run(c, 'right') === run(c, 'left') && (await undoDepth(page)) === d2 + 1, `a table on the left: the right gets one too (${run(c, 'left')} | ${run(c, 'right')})`)
+    await panel(page, 'Size')
+    await sw.click()
+    await page.waitForTimeout(150)
+    await setField(page, 'R', 150)
+    c = await config(page)
+    check((await sw.getAttribute('aria-checked')) === 'false' && c.L === 140 && c.R === 150, 'switched off: the sides edit separately again')
     const small = await smallText(page)
     check(small.length === 0, `Size tab: no text under 14 px (${small.join('; ')})`)
+    await sw.click()
+    await page.waitForTimeout(250)
     await shot(browser, page, 'keep-size-1440')
+    await page.evaluate((u) => (location.hash = `#c=${u}`), U)
+    await page.waitForTimeout(400)
+    await page.reload({ waitUntil: 'networkidle' })
+    await page.waitForSelector('[data-plan-svg]')
+    check((await page.getByRole('switch', { name: 'Mirror sides' }).getAttribute('aria-checked')) === 'false', 'a reload opens with Mirror sides off')
+    check(errors.length === 0, `no console errors ${errors.join('; ')}`)
+    await context.close()
+  }
+
+  // 3b. A table at the end of a side takes the arm's place (Q72); a long seat offers its middle (Q73).
+  {
+    const { context, page, errors } = await fresh(browser, base, `#c=${U}`)
+    await panel(page, 'Pieces')
+    // Drag the tray's Table past the end of the right side: seat | table, no arm between.
+    /** Drag the tray's Table to a client point. */
+    const dragTable = async (to) => {
+      const chip = await page.locator('[data-tray-item=table]').boundingBox()
+      const from = [chip.x + chip.width / 2, chip.y + chip.height / 2]
+      await page.mouse.move(...from)
+      await page.mouse.down()
+      for (let i = 1; i <= 16; i++) await page.mouse.move(from[0] + ((to[0] - from[0]) * i) / 16, from[1] + ((to[1] - from[1]) * i) / 16)
+      await page.mouse.up()
+      await page.waitForTimeout(250)
+    }
+    const box = (id) => page.$eval(`[data-piece="${id}"]`, (e) => e.getBoundingClientRect().toJSON())
+    // Past the end of the right side: seat | table, no arm between.
+    const rb = await box((await config(page)).runs.right[0].id)
+    await dragTable([rb.left + rb.width / 2, rb.bottom - 8])
+    let c = await config(page)
+    check(run(c, 'right') === 'armless40 table32', `a table dropped at the end of the right side takes the arm's place: seat | table (${run(c, 'right')})`)
+    await page.getByRole('button', { name: 'Undo', exact: true }).click()
+    // The left side does the same (Andre saw the two sides differ: one kept its arm).
+    const lb0 = await box((await config(page)).runs.left[0].id)
+    await dragTable([lb0.left + lb0.width / 2, lb0.bottom - 8])
+    c = await config(page)
+    check(run(c, 'left') === 'armless40 table32' && c.L === 132 && c.W === 188, `…and at the end of the left side: seat | table, the sofa's size kept (${run(c, 'left')}, L ${c.L}, W ${c.W})`)
+    await page.getByRole('button', { name: 'Undo', exact: true }).click()
+    // A 164″ side (a 90″ seat): its middle is offered; the halves stay 29″.
+    await panel(page, 'Size')
+    await setField(page, 'L', 164)
+    await panel(page, 'Pieces')
+    const lb = await box((await config(page)).runs.left[0].id)
+    await dragTable([lb.left + lb.width / 2, lb.top + (lb.height - 14 * (lb.height / 104)) / 2])
+    c = await config(page)
+    check(run(c, 'left') === 'armless29 table32 oneArm43', `a table dropped on the middle of the 90″ seat: 29 | 32 | 29 (${run(c, 'left')})`)
+    await shot(browser, page, 'keep-tables-1440')
     check(errors.length === 0, `no console errors ${errors.join('; ')}`)
     await context.close()
   }

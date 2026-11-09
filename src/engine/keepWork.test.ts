@@ -6,8 +6,8 @@ import { tableSeats } from './balance';
 import { standardL, standardStraight, standardU } from './defaults';
 import { resetWedge, setLock, setMeasurements, setWedge } from './ops';
 import { addPiece, resizePiece } from './pieceOps';
-import { copySide, sidesMatch } from './sides';
-import { centralTable } from './tablePlace';
+import { copySide, mirrorSides, sidesMatch } from './sides';
+import { addTable, centralTable } from './tablePlace';
 import { resizeTable, TABLE_SEAT_ROOM } from './tableSize';
 import { deepFreeze, desc, valid } from './testing';
 import type { Config } from './types';
@@ -47,6 +47,36 @@ describe('Copy left to right / right to left', () => {
     expect(copySide(u, 'left')).toEqual({ config: u, rejected: null });
     const l = deepFreeze(standardL('left'));
     expect(copySide(l, 'left').rejected?.code).toBe('notAllowed');
+  });
+});
+
+describe('Mirror sides (the switch on, Q71)', () => {
+  const both = (c: Config) => [desc(c, 'left').join(' '), desc(c, 'right').join(' ')];
+
+  it('a change to the left side is made to the right; to the right side, to the left; ids stay', () => {
+    const u = deepFreeze(standardU());
+    const l = ok(setMeasurements(u, { L: 140 }));
+    const m = mirrorSides(u, l);
+    expect([m.L, m.R]).toEqual([140, 140]);
+    expect(both(m)[1]).toBe(both(m)[0]);
+    expect(m.runs.right![0]!.id).toBe(u.runs.right![0]!.id); // the right seat keeps its id (a selection follows)
+    const r = ok(setMeasurements(u, { R: 120 }));
+    const n = mirrorSides(u, r);
+    expect([n.L, n.R]).toEqual([120, 120]);
+  });
+
+  it('a table added to one side appears on the other; the back and other shapes are left alone', () => {
+    const u = deepFreeze(standardU());
+    const t = addTable(u, { run: 'right', at: 'seam', seam: 0 }).config;
+    const m = mirrorSides(u, t);
+    expect(desc(m, 'left')).toEqual(['table 32', 'oneArm 40=26+14@end']);
+    expect(desc(m, 'right')).toEqual(desc(m, 'left'));
+    valid(m);
+    const d = ok(setMeasurements(u, { D: 40 }));
+    expect(mirrorSides(u, d)).toBe(d);
+    const l = standardL('left');
+    const l2 = ok(setMeasurements(l, { L: 150 }));
+    expect(mirrorSides(l, l2)).toBe(l2);
   });
 });
 

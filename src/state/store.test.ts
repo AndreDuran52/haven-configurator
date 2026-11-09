@@ -31,3 +31,24 @@ describe('Projects home (H6b): open, goHome, unsaved changes', () => {
     expect(isDirty(s.getState())).toBe(true);
   });
 });
+
+describe('Mirror sides (Phase 3c, Q71): the store makes one change on both sides', () => {
+  it('on: a commit and a gesture draft change both sides, one undo step; open() turns it off', async () => {
+    const { mirrorSides } = await import('@/engine/sides');
+    const s = createHavenStore(standardU());
+    s.getState().setMirror(mirrorSides);
+    expect(s.getState().ui.mirror).toBe(true);
+    const c = s.getState().config;
+    s.getState().commit(setMeasurements(c, { L: 140 }).config);
+    expect([s.getState().config.L, s.getState().config.R, s.getState().past.length]).toEqual([140, 140, 1]);
+    s.getState().setDraft(setMeasurements(s.getState().config, { R: 150 }).config);
+    expect([s.getState().draft!.L, s.getState().draft!.R]).toEqual([150, 150]);
+    s.getState().commit();
+    s.getState().undo();
+    expect([s.getState().config.L, s.getState().config.R]).toEqual([140, 140]);
+    s.getState().open(standardU());
+    expect([s.getState().ui.mirror, s.getState().mirrorFn]).toEqual([false, null]);
+    s.getState().commit(setMeasurements(s.getState().config, { L: 140 }).config);
+    expect([s.getState().config.L, s.getState().config.R]).toEqual([140, 132]);
+  });
+});

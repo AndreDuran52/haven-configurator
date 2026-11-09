@@ -65,6 +65,12 @@ describe('describeChange', () => {
     expect(describeChange(uneven, copied, 'Copied the left side to the right')).toBe('Copied the left side to the right · Right side 120″ → 132″ · Seats 6 → 7');
   });
 
+  it('Mirror sides: the same change on both sides reads once (Phase 3c)', () => {
+    const a = u();
+    const b = edit(a, (c) => setMeasurements(c, { L: 140, R: 140 }));
+    expect(describeChange(a, b)).toBe('Sides 132″ → 140″ · Seat 58″ → 66″ (both sides)');
+  });
+
   it('long lists are cut at four', () => {
     const a = u();
     const b = edit(a, (c) => setMeasurements(c, { W: 200, L: 140, R: 140, D: 40 }));

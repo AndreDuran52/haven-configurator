@@ -136,19 +136,22 @@ describe('table dragging', () => {
     expect(desc(snap(u, [95, 22]), 'back')).toEqual(['armless 36', 'table 32']); // no split: the nearest seam
     expect(desc(snap(u, [22, 92]), 'left')).toEqual(['table 32', 'oneArm 40=26+14@end']); // the corner seam (26 ≥ 23)
     expect(desc(snap(u, [22, 125]), 'left')).toEqual(['armless 40', 'table 32']); // arm centre: replaceArm = 3a
-    expect(desc(snap(u, [22, 150]), 'left')).toEqual(['oneArm 40=26+14@end', 'table 32']); // beyond the end: outside the arm
+    expect(desc(snap(u, [22, 150]), 'left')).toEqual(['armless 40', 'table 32']); // beyond the end: the arm's place (3c fixes, Q72)
     expect(raw.snapTable(u, tableId(u), [76, 22]).result.config).toBe(u); // on its own spot: nothing changes
   });
 
-  it('anchors: seams only (no split where a seam fits); the open-end seam next to an arm exists only as "outside the arm"; hysteresis keeps the current target', () => {
+  it('anchors: seams, the arm\'s place at an open end (never outside the arm, Q72), a seat middle only when both halves stay 23″+ (Q73); hysteresis keeps the current target', () => {
     const u = U();
     const t = raw.anchoredTargets(u, tableId(u)).filter((a) => a.placement.run === 'left');
     expect(t.map((a) => [a.placement.at, a.anchor])).toEqual([
       ['seam', [22, 76]],
       ['replaceArm', [22, 125]],
-      ['seam', [22, 148]],
     ]);
-    expect(raw.anchoredTargets(u, tableId(u)).some((a) => a.placement.at === 'split')).toBe(false);
+    expect(raw.anchoredTargets(u, tableId(u)).some((a) => a.placement.at === 'split')).toBe(false); // 58″ seats: halves under 23
+    const long = raw.setMeasurements(u, { L: 164 }).config; // left seat 90″: 29 | 32 | 29
+    const split = raw.anchoredTargets(long, tableId(long)).find((a) => a.placement.run === 'left' && a.placement.at === 'split');
+    expect(split).toBeDefined();
+    expect(desc(raw.moveTable(long, tableId(long), split!.placement).config, 'left')).toEqual(['armless 29', 'table 32', 'oneArm 43=29+14@end']);
     const current = { run: 'left', at: 'seam', seam: 0 } as const;
     // (22, 103) is 5 nearer the replaceArm anchor than seam 0: within 6" hysteresis, keep seam 0
     expect(raw.snapTable(u, tableId(u), [22, 103], current).placement).toEqual(current);

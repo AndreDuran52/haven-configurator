@@ -17,8 +17,12 @@ const sizeOf = (p: RunPiece, A: number) => (p.kind === 'armless' || p.kind === '
 function fieldChanges(a: Config, b: Config, items: string[]) {
   const legs = b.shape === 'U' ? ['L', 'R'] : b.shape === 'L-left' ? ['L'] : b.shape === 'L-right' ? ['R'] : [];
   if (a.W !== b.W) items.push(arrow(`Width ${inch(a.W)}`, inch(b.W)));
-  if (legs.includes('L') && a.L !== b.L) items.push(arrow(`Left side ${inch(a.L)}`, inch(b.L)));
-  if (legs.includes('R') && a.R !== b.R) items.push(arrow(`Right side ${inch(a.R)}`, inch(b.R)));
+  // Mirror sides (Phase 3c): both sides the same change reads once.
+  if (legs.length === 2 && a.L !== b.L && a.L === a.R && b.L === b.R) items.push(arrow(`Sides ${inch(a.L)}`, inch(b.L)));
+  else {
+    if (legs.includes('L') && a.L !== b.L) items.push(arrow(`Left side ${inch(a.L)}`, inch(b.L)));
+    if (legs.includes('R') && a.R !== b.R) items.push(arrow(`Right side ${inch(a.R)}`, inch(b.R)));
+  }
   if (a.D !== b.D) items.push(arrow(`Depth ${inch(a.D)}`, inch(b.D)));
   if (a.dims.A !== b.dims.A) items.push(arrow(`Arms ${inch(a.dims.A)}`, inch(b.dims.A)));
   if (a.lockOutside !== b.lockOutside) items.push(b.lockOutside ? 'Other seats adjust' : 'Sofa size changes');
@@ -30,8 +34,10 @@ function fieldChanges(a: Config, b: Config, items: string[]) {
  * Pieces by id: a size change reads "Table 20″ → 24″"; a table's two seats,
  * when both change, read as one pair "Seats 26½″ | 26½″ → 24½″ | 24½″".
  */
-function pieceChanges(a: Config, b: Config, items: string[]) {
+function pieceChanges(a: Config, b: Config, out: string[]) {
+  const byRun: Record<'back' | 'left' | 'right', string[]> = { back: [], left: [], right: [] };
   for (const run of ['back', 'left', 'right'] as const) {
+    const items = byRun[run];
     const before = new Map((a.runs[run] ?? []).map((p) => [p.id, p]));
     const after = b.runs[run] ?? [];
     const seen = new Set<string>();
@@ -67,6 +73,10 @@ function pieceChanges(a: Config, b: Config, items: string[]) {
     const now = new Set(after.map((p) => p.id));
     for (const q of a.runs[run] ?? []) if (!now.has(q.id) && q.kind !== 'gap') items.push(`Removed ${KIND[q.kind].toLowerCase()}`);
   }
+  // Mirror sides (Phase 3c): the same change on both sides reads once, "(both sides)".
+  const same = byRun.left.length > 0 && byRun.left.join('|') === byRun.right.join('|');
+  out.push(...byRun.back, ...(same ? byRun.left.map((x) => `${x} (both sides)`) : [...byRun.left, ...byRun.right]));
+  const items = out;
   const loose = new Set(b.loose.map((l) => l.id));
   const was = new Map(a.loose.map((l) => [l.id, l]));
   const name = (k: string) => (k === 'ottoman' ? 'ottoman' : 'coffee table');
