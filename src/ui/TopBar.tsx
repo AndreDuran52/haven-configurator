@@ -2,17 +2,15 @@
 // Left: back to Projects, the project name (its menu: Rename, Reset, Start
 // new), Undo and Redo arrows. Right: the seat count as text, Share, Save (the
 // one tan button, with a dot when there are unsaved changes), and Settings
-// (seat width for the seat count, the build). ?view shows "View only" and
+// (the build; the seat width moved to the View menu's Seating, 2026-11-09). ?view shows "View only" and
 // "Edit a copy" instead. Pads with the top safe-area inset in the installed app.
 import { lazy, Suspense, useState } from 'react';
 import { buildInfo } from '@/buildInfo';
-import { setSeatWidth } from '@/engine';
 import { presetFor, startLabel } from '@/state/start';
-import { codeOf, isDirty, layoutBuiltOf, useHaven, useHavenStore, useLive, useLiveLayout } from '@/state/store';
+import { codeOf, isDirty, layoutBuiltOf, useHaven, useHavenStore, useLiveLayout } from '@/state/store';
 import { editUrl } from '@/state/url';
 import { Button } from './controls';
 import { Menu, MenuItem } from './Menu';
-import { Stepper } from './Stepper';
 
 // Dialogs load on first open: Radix Dialog stays out of the entry chunk.
 const StartMenu = lazy(() => import('./StartMenu'));
@@ -41,7 +39,6 @@ export function TopBar() {
   const canRedo = useHaven((s) => s.future.length > 0 && !s.draft);
   const lastStart = useHaven((s) => s.ui.lastStart);
   const seats = layoutBuiltOf(useLiveLayout()).seats.label;
-  const live = useLive();
   const [startOpen, setStartOpen] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
   const [saveOpen, setSaveOpen] = useState<false | 'save' | 'leave'>(false);
@@ -69,17 +66,6 @@ export function TopBar() {
     if (codeOf(store.getState().layout) === codeOf(presetFor(lastStart))) return;
     setConfirmReset(true);
   };
-  /** ±1″ from the committed seat width (fresh on every repeat of a hold). */
-  const seatWidth = (d: number) => {
-    const s = store.getState();
-    const r = setSeatWidth(s.config, s.config.seatWidth + d);
-    if (r.rejected) {
-      s.toast(r.rejected.message);
-      return false;
-    }
-    s.commit(r.config, { key: 'seatWidth' });
-  };
-
   return (
     <header className="safe-top relative z-30 flex min-w-0 items-center gap-0.5 overflow-x-clip border-b border-line bg-panel px-1 sm:gap-2 sm:px-3">
       {readOnly ? (
@@ -153,19 +139,7 @@ export function TopBar() {
           <Menu label="Settings" testId="settings" align="right" button={<Gear />}>
             {() => (
               <div className="flex flex-col gap-2 p-2" data-testid="settings-panel">
-                <span className="text-[15px] font-semibold text-ink">Seat count</span>
-                <div className="flex items-center gap-2">
-                  <Stepper label="Seat width minus 1" onStep={() => seatWidth(-1)}>
-                    −
-                  </Stepper>
-                  <span className="flex-1 text-center text-[15px] tabular-nums" data-testid="seat-width">
-                    {live.seatWidth}″ per seat (snug {Math.min(live.snugWidth, live.seatWidth)}″)
-                  </span>
-                  <Stepper label="Seat width plus 1" onStep={() => seatWidth(1)}>
-                    +
-                  </Stepper>
-                </div>
-                <p className="border-t border-line pt-2 text-sm text-ink-muted" data-testid="build">
+                <p className="text-sm text-ink-muted" data-testid="build">
                   Haven Configurator · build <span className="font-mono">{buildInfo.commit}</span>
                 </p>
               </div>

@@ -55,7 +55,7 @@ describe('§12 spec tests', () => {
       expect(b.seatDepth).toBe(18);
       expect([b.W, b.L, b.R]).toEqual([188, 132, 132]);
       expect(b.opening).toEqual({ width: 116, depth: 96 });
-      expect(b.seats.label).toBe('Seats 7–8');
+      expect([b.seats.label, b.seats.snug]).toEqual(['Seats 7', 8]); // one number (2026-11-09); snug 8
     }
   });
 
@@ -93,7 +93,7 @@ describe('§12 spec tests', () => {
     expect(piece(b, idAt(c, 'right', 0)).bbox).toEqual({ x: 76, y: 60, w: 44, h: 40 });
     expect(backLine(b)).toEqual(['oneArm 60', 'wedge 60']);
     expect(b.opening).toBeNull();
-    expect(b.seats.label).toBe('Seats 2–3');
+    expect([b.seats.label, b.seats.snug]).toEqual(['Seats 2', 3]);
   });
 
   it('T5 W = 300: back [table 32][74][74] (one split group), legs 72, Seats 11–12', () => {
@@ -105,7 +105,7 @@ describe('§12 spec tests', () => {
       expect(desc(c, 'left')).toEqual(['oneArm 72=58+14@end']);
       const built = valid(c);
       expect(built.W).toBe(300);
-      expect(built.seats.label).toBe('Seats 11–12');
+      expect([built.seats.label, built.seats.snug]).toEqual(['Seats 11', 12]);
     }
   });
 
@@ -126,7 +126,7 @@ describe('§12 spec tests', () => {
     expect(desc(c, 'right')).toEqual(['armless 72']);
     const b = valid(c);
     expect(runOf(b, 'right').endCap).toBe('open');
-    expect(b.seats.label).toBe('Seats 7–8');
+    expect([b.seats.label, b.seats.snug]).toEqual(['Seats 7', 8]);
   });
 
   it('T8 blankConfig(U) at D 44, C 60: gaps 68 / 72 / 72, no arms, export blocked, Seats 2', () => {

@@ -4,7 +4,7 @@
 // gestures in its own inches, and a tap on another section starts editing it. The fit follows the live config (a slider or stepper draft
 // rescales as you type), except during a plan gesture: then k, the viewBox and
 // the CTM stay frozen, so a lock-off drag never rescales under the finger.
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { Pt } from '@/engine';
 import { layoutBuiltOf, useHaven, useHavenStore, useLiveLayout } from '@/state/store';
 import { fitSource } from './dimLayout';
@@ -23,6 +23,8 @@ import { LIGHT_SCREEN, SKETCH_SCREEN } from './theme';
 import { withDimsMode } from './dimsMode';
 import { usePlanGestures } from './usePlanGestures';
 import { usePlanPillows } from './usePlanPillows';
+// The seat markers load when first switched on (out of the entry chunk).
+const PlanMarkers = lazy(() => import('./PlanMarkers'));
 
 export function PlanView() {
   const lb = layoutBuiltOf(useLiveLayout());
@@ -37,6 +39,9 @@ export function PlanView() {
   const theme = useHaven((s) => (s.ui.look === 'sketch' ? SKETCH_SCREEN : LIGHT_SCREEN));
   const dimsMode = useHaven((s) => s.ui.dims);
   const pillowsOf = usePlanPillows(useHaven((s) => s.ui.pillows));
+  const snug = useHaven((s) => !!s.layout.snug);
+  const root = lb.sections[0]!.config;
+  const markers = useHaven((s) => s.ui.markers);
   const built = active.built;
   const src = useMemo(() => withDimsMode(withRoom(layoutDimSource(lb), lb.room), dimsMode), [lb, dimsMode]);
   const wrap = useRef<HTMLDivElement>(null);
@@ -118,7 +123,7 @@ export function PlanView() {
           role="application"
           aria-label={
             lb.solo
-              ? `Plan: ${built.shape}, ${built.W} by ${built.shape === 'straight' ? built.D : Math.max(built.L, built.R)} inches, ${built.seats.label}`
+              ? `Plan: ${built.shape}, ${built.W} by ${built.shape === 'straight' ? built.D : Math.max(built.L, built.R)} inches, ${lb.seats.label}`
               : `Plan: T shape, ${lb.overall.W} by ${lb.overall.depth} inches, ${lb.seats.label}`
           }
           {...(readOnly ? {} : { ...g.handlers, onPointerDown })}
@@ -126,7 +131,7 @@ export function PlanView() {
           <rect x={-1e4} y={-1e4} width={2e4} height={2e4} fill={theme.paper} />
           {lb.room && <RoomFloor room={lb.room} k={fit.k} theme={theme} />}
           {lb.solo ? (
-            <PlanDrawing built={built} dims={dims} k={fit.k} theme={theme} showWarnings selectedId={selectedId} pillows={pillowsOf?.(built)} />
+            <PlanDrawing built={built} dims={dims} k={fit.k} theme={theme} showWarnings selectedId={selectedId} pillows={pillowsOf?.(built)} seatsLabel={lb.seats.label} />
           ) : (
             <>
               {/* The root last: with a shared back it owns the frame down the stem. */}
@@ -144,6 +149,11 @@ export function PlanView() {
             </>
           )}
           {lb.room && <RoomGaps room={lb.room} k={fit.k} theme={theme} frontX={frontXOf(lb.sections)} />}
+          {markers && (
+            <Suspense fallback={null}>
+              <PlanMarkers lb={lb} mode={{ snug, seatWidth: root.seatWidth, snugWidth: root.snugWidth }} k={fit.k} theme={theme} />
+            </Suspense>
+          )}
           <g transform={lb.solo ? undefined : `translate(${offset[0]} ${offset[1]})`}>
             {coffee.map((p) => (
               <ClearanceLayer key={p.id} built={built} id={p.id} k={fit.k} />

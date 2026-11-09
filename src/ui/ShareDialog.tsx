@@ -29,6 +29,7 @@ export default function ShareDialog({ open, onOpenChange }: { open: boolean; onO
   const layout = useHaven((s) => s.layout);
   const uiLook = useHaven((s) => s.ui.look);
   const pillows = useHaven((s) => s.ui.pillows);
+  const markers = useHaven((s) => s.ui.markers);
   const [views, setViews] = useState<Views>(() => ({ ...DEFAULT_VIEWS, ...readJson<Partial<Views>>(KEYS.sheetViews) }));
   const [look, setLook] = useState<'cad' | 'sketch'>(uiLook);
   const [title, setTitle] = useState('');
@@ -44,7 +45,7 @@ export default function ShareDialog({ open, onOpenChange }: { open: boolean; onO
   const chosen = labels.filter((v) => ticked(v.key));
 
   // A new layout or new choices make the old PDF stale.
-  const sig = JSON.stringify([links.edit, views, look, title, pillows]);
+  const sig = JSON.stringify([links.edit, views, look, title, pillows, markers]);
   const made = madeState && madeState.sig === sig ? madeState : null;
   useEffect(() => () => (madeState ? URL.revokeObjectURL(madeState.preview) : undefined), [madeState]);
 
@@ -64,6 +65,7 @@ export default function ShareDialog({ open, onOpenChange }: { open: boolean; onO
         views: { plan: views.plan, views: (['threeQuarter', 'iso', 'front', 'side'] as PresetName[]).filter((k) => views[k as keyof Views]) },
         look,
         pillows,
+        markers,
         title,
         link: links.view,
       });

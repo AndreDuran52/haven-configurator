@@ -1,5 +1,5 @@
 // §8 derived numbers: seat count, opening, coffee-table clearances, warnings.
-import { CLEARANCE_MIN, OPENING_MIN, SEAT_DEPTH_MIN, WEDGE_FACE_MIN } from './defaults';
+import { CLEARANCE_MIN, OPENING_MIN, SEAT_DEPTH_MIN, SEAT_WIDTH_DEFAULT, SNUG_SEAT_WIDTH, WEDGE_FACE_MIN } from './defaults';
 import { BACK_CUSHION } from './profiles';
 import { corners, runIds } from './layout';
 import { MAX_PIECE, SEAT_WARN, TABLE_MAX, TABLE_MIN, cushionOf, isSeat } from './pieces';
@@ -34,11 +34,27 @@ export function seatStretches(c: Config): number[] {
   return out;
 }
 
-export function formatSeats(comfortable: number, snug: number): string {
-  return comfortable === snug ? `Seats ${comfortable}` : `Seats ${comfortable}–${snug}`;
+/**
+ * The one seat number shown everywhere (Andre, 2026-11-09): the comfortable
+ * count ("Seats 7", 28″ seats), or the snug count ("Seats 8 · snug", 24″) when
+ * the layout counts snug. A width other than the standard one says so:
+ * "Seats 9 · 21″ seats". The top bar, the plan, the markers and the PDF all
+ * read this.
+ */
+export function seatsLabel(n: number, o: { snug: boolean; seatWidth: number; snugWidth: number }): string {
+  const width = o.snug ? Math.min(o.snugWidth, o.seatWidth) : o.seatWidth;
+  const standard = o.snug ? SNUG_SEAT_WIDTH : SEAT_WIDTH_DEFAULT;
+  if (width !== standard) return `Seats ${n} · ${fmt(width)}″ seats`;
+  return o.snug ? `Seats ${n} · snug` : `Seats ${n}`;
 }
 
-/** Each wedge = 1; each stretch = floor(len / seatWidth) .. floor(len / min(snugWidth, seatWidth)) (G8). */
+/** The count and its label for comfortable / snug totals. */
+export function seatTotals(comfortable: number, snug: number, o: { snug: boolean; seatWidth: number; snugWidth: number }): SeatCount {
+  const count = o.snug ? snug : comfortable;
+  return { comfortable, snug, count, label: seatsLabel(count, o) };
+}
+
+/** Each wedge = 1; each stretch = floor(len / seatWidth) .. floor(len / min(snugWidth, seatWidth)) (G8). One sofa counts comfortable; the layout picks snug. */
 export function seatCount(c: Config): SeatCount {
   const wedges = corners(c.shape).length;
   const snugWidth = Math.min(c.snugWidth, c.seatWidth);
@@ -48,7 +64,7 @@ export function seatCount(c: Config): SeatCount {
     comfortable += Math.floor(len / c.seatWidth);
     snug += Math.floor(len / snugWidth);
   }
-  return { comfortable, snug, label: formatSeats(comfortable, snug) };
+  return seatTotals(comfortable, snug, { snug: false, seatWidth: c.seatWidth, snugWidth: c.snugWidth });
 }
 
 /** Inside opening, U only (§8). */

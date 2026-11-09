@@ -23,7 +23,7 @@ describe('a one-section layout is exactly today’s sofa', () => {
       const lb = buildLayout(l, () => built);
       expect(lb.sections[0]!.built).toBe(built);
       expect(lb.bounds).toBe(built.bounds);
-      expect(lb.seats).toBe(built.seats);
+      expect(lb.seats).toEqual(built.seats);
       expect(lb.warnings.map((w) => w.message)).toEqual(built.warnings.map((w) => w.message));
       expect(lb.errors).toEqual(built.errors);
       const d = decodeLayout(encode(c));
@@ -196,7 +196,7 @@ describe('link v3', () => {
     ];
     for (const b of bad) expect(decodeLayout(resum(b)), b).toEqual({ error: 'damaged' });
     expect(decodeLayout(GOLDEN_V3.Tshared.slice(0, -4))).toEqual({ error: 'damaged' });
-    expect(decodeLayout(`6${GOLDEN_V3.Tshared.slice(1)}`)).toEqual({ error: "newer" });
+    expect(decodeLayout(`7${GOLDEN_V3.Tshared.slice(1)}`)).toEqual({ error: "newer" });
   });
 
   it('the one-sofa decoder calls a T "newer" and still reads a v3 link with no sections', async () => {

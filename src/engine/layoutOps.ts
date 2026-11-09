@@ -143,3 +143,11 @@ export function addLooseInLayout(l: Layout, sectionId: string, kind: LooseKind, 
   if (r.rejected) return refused(l, r.rejected);
   return replaceSection(l, root.id, r.config);
 }
+
+/** Count the seats snug (24″) or comfortable (28″) for the whole layout (Andre, 2026-11-09; link v6). Same reference when unchanged. */
+export function setSnug(l: Layout, on: boolean): LayoutResult {
+  if (!!l.snug === on) return { layout: l, rejected: null };
+  if (on) return { layout: { ...l, snug: true }, rejected: null };
+  const { snug: _off, ...rest } = l;
+  return { layout: rest, rejected: null };
+}

@@ -1381,7 +1381,7 @@ Andre's answers (Q50–Q53): a rectangle only (width × depth, no doors or windo
 **Seat depth (Q54):** D − 10 (back frame depth) − 8 (loose back cushion depth, front to back): 26″ / 22″ / 18″ at 44″ / 40″ / 36″. Hidden in Phase 3; **confirmed by Andre and shown again in Phase 3b.**
 
 ### UX Phase 3b: the quick notes (Andre's notes, 2026-11-08; built)
-Andre's 16 notes after testing Phase 3, reviewed with him over six rounds of questions, then approved with five changes. **The order from here (one PR each, stop after each):** 1. Phase 3b (this). 2. Seat markers. 3. Phase 3c, keep my work. 4. Phase 5, options A | B | C and the hide-panel button. 5. The 3D person. 6. The look (link v6; waits on Andre's fabric list and logo). 7. Phase 4. 8. Phase 6. Later, only when Andre says: realistic rendering, lumbar pillows, drag-and-drop pillows, a spec sheet.
+Andre's 16 notes after testing Phase 3, reviewed with him over six rounds of questions, then approved with five changes. **The order from here (one PR each, stop after each):** 1. Phase 3b (this). 2. Seat markers. 3. Phase 3c, keep my work. 4. Phase 5, options A | B | C and the hide-panel button. 5. The 3D person. 6. The look (link v7 since the seat markers took v6; waits on Andre's fabric list and logo). 7. Phase 4. 8. Phase 6. Later, only when Andre says: realistic rendering, lumbar pillows, drag-and-drop pillows, a spec sheet.
 
 **How a call goes (drives the order):** Andre alone, sharing his laptop over Zoom; he picks a shape, then the sizes, talking the client through it; the room is a supporting view, not the start; the client gets the PDF, then the quote. What matters most on a call: 1. how many people fit (seat markers), 2. how it sits (the 3D person), 3. the look.
 
@@ -1408,7 +1408,7 @@ Andre's 16 notes after testing Phase 3, reviewed with him over six rounds of que
 - **Phase 3c, keep my work:** switching shape **converts in place, no prompt** (U → L drops a leg and that end gets an arm; L → U adds a mirror of the existing leg; Straight → L or U puts corners at the ends with standard legs; the result line says what changed, Undo brings it back); **Copy left to right** and **Copy right to left** on a U (a mirror copy, then each side edits on its own); seats even around a table stay even when a leg grows; a table **±** that grows from the middle.
 - **Phase 5:** options **A | B | C** in a project; the PDF prints the **current option** with its letter; a hide-panel button.
 - **The 3D person:** type the client's height (e.g. 5'7″); a plain, faceless, neutral-grey figure with proportions from standard body measurements scaled by height (knee height, thigh length, lower leg); **Lounge | Upright** (Upright adds a square back pillow). **Before that PR is done:** the Side view of a 5'7″ person at 44″ and at 36″ deep, with the numbers used, goes to Andre to check against a real person on a real Haven.
-- **The look (link v6):** pillow colours **Colour 1, Colour 2** (with a "Same colour" switch) and **Ball**; per corner or arm end: None / 2 squares / 2 squares + ball; **Seats: Stitch line | No line** as a client choice that tables follow (saved in the project, the link and the sheet); Andre's fabric list (names, colours, a swatch photo each) and logo (SVG or a large PNG) in the top bar and on the PDF.
+- **The look (link v7):** pillow colours **Colour 1, Colour 2** (with a "Same colour" switch) and **Ball**; per corner or arm end: None / 2 squares / 2 squares + ball; **Seats: Stitch line | No line** as a client choice that tables follow (saved in the project, the link and the sheet); Andre's fabric list (names, colours, a swatch photo each) and logo (SVG or a large PNG) in the top bar and on the PDF.
 - **Not now:** realistic rendering, lumbar pillows, drag-and-drop pillows, a spec sheet, room walls in 3D, pinning the sofa to corners or dragging it in the room. Undo and Redo stay top left (next to the name, as in Canva, Google Docs and Office).
 
 ### Fixes before the seat markers (Andre, 2026-11-09; built)
@@ -1428,6 +1428,17 @@ Andre tested Phase 3b and asked for five fixes as one PR before the seat markers
 - **Entry budget:** 330 kB raw / 110 kB gzip (measured 327.6 / 109.7).
 
 **Measured:** vitest `tablePlace.test.ts` (Andre's straight 10 | 34 | 32 | 34 | 10, 14″ arms, lock off grows by 32, corner and open-end seams, step-down to 28 and 24, the refusal, tray targets, "Table in the middle", moves keep their width, the Standard U and its link unchanged), updated `tables.test.ts`, `tableBalance.test.ts`, `hitTest.test.ts`, `changes.test.ts`, `room.test.ts` (bigger than the room), `pillowShapes.test.ts` (the baked outline, one shape per pillow, turned not stretched); e2e `fixes2.mjs` (the View menu in Plan and 3D, every plan pillow against its 3D mesh, the Room rows, arrows, typed gaps, one Undo per hold, Center; Table tapped on Andre's straight, the result line, Undo, a sofa with no room refused cleanly), updated `h4.mjs`, `straight.mjs`, `room.mjs`, `h2.mjs`, `phase3b.mjs`.
+
+### Seat markers: one seat number everywhere (Andre, 2026-11-09; built)
+Andre's answers: Snug travels **with the layout** (the project, the share link and the PDF say "Seats 8 · snug"); markers are **off when a layout opens** and the PDF plan shows them when they're on (like Pillows).
+- **One number everywhere:** "Seats 7" (comfortable, 28″ seats), "Seats 8 · snug" (24″), or "Seats 9 · 21″ seats" when the width in use isn't the standard one (`seatsLabel`, `src/engine/seating.ts`). The range ("Seats 7–8") is gone. `buildLayout` gives `seats.count` and `seats.label` from the layout's mode; the top bar, the plan, the markers, the view-only summary, the result line ("Seats 7 → 8 · snug") and the PDF footer all read it.
+- **Markers** (`src/engine/seatMarkers.ts`): one numbered circle per seat the count gives. Each straight stretch of cushion (broken by a table, a gap, an arm or a corner, exactly as the count) gets floor(length / width) markers, spread evenly, across the middle of the seat; each corner wedge is one seat at the middle of its seat area. Numbered round the sofa from its left end (the left leg from its open end, the left corner, the back left to right, the right corner, the right leg); a T numbers on from its first half. A property test checks that the markers always equal the count (comfortable and snug, every shape, depth, width and table layout).
+- **Where:** the plan (ink circles, 26 px with a 14 px bold number, no clicks; loaded on first use), the 3D Top view (the same circles over the seats; not in the other views), and the PDF plan when on (7 pt circles, 8 pt numbers).
+- **The View menu's Seating section:** Seat markers (in the plan and 3D Top, where they draw), **Snug (24″ seats)** (a layout edit, one undo step), and the seat width (moved from Settings; hold ± to repeat). Settings keeps the build only.
+- **Link v6:** Snug is a last token `N`, written only when on, so every older link stays byte for byte; an `N` in an older version is damaged; the one-sofa decoder calls a snug link newer. Golden v6 links: `6UW188L132R132D44_bt32s36_la72_ra72_N.m1`, `6iW120L44R44D44_ba60Sa60E_Mw200d150_N.pt`. **"The look" becomes link v7.**
+- **Entry budget:** 330 kB raw / 110 kB gzip (measured 328.3 / 109.9: the marker placement and the Seating section load on demand).
+
+**Measured:** vitest `seats.test.ts` (labels, setSnug, the v6 round trip for a U, a straight, a room and a T, the v6 goldens, version checks, markers = count for every generated layout and a T, the Standard U's order, a straight's spacing and a table breaking a stretch) and the updated label / version tests; e2e `seats.mjs` (off by default, 7 markers numbered 1–7 = "Seats 7", Snug "Seats 8 · snug" with 8 markers and a v6 link, Undo, 21″ seats "Seats 10 · 21″ seats", 3D Top = the top bar, none in Overview, a fresh browser opening the snug link, the PDF footer and its 8 markers, no text under 14 px), updated `h2.mjs`, `phase3.mjs`, `phase3b.mjs`.
 
 ### H7: Cloud saves + tracker hand-off (optional, later; Andre decides, do not start until told)
 The configurator is complete without H7. Options, in order of cost:
@@ -1613,12 +1624,14 @@ Answer in a word. **Q1 is answered (camera, spring-back orbit), and Q9, Q10, Q12
 | Q58 | 3D snap-back | **Answered (Phase 3b):** off; the camera stays; the camera buttons and a double-click return to a preset (supersedes Q1's spring-back) |
 | Q59 | Shape switching | **Answered (for Phase 3c):** converts in place, no prompt (U → L drops a leg and gives that end an arm; L → U mirrors the leg; Straight → L/U adds corners and standard legs) |
 | Q60 | Same both sides of the U | **Answered (for Phase 3c):** Copy left to right, Copy right to left; each side edits on its own after |
-| Q61 | Seat count | **Answered (for seat markers):** one number everywhere; comfortable by default, "· snug" with Snug, "· 21″ seats" for a non-standard width; a wedge is 1 |
+| Q61 | Seat count | **Answered and built (2026-11-09):** one number everywhere; comfortable by default, "· snug" with Snug, "· 21″ seats" for a non-standard width; a wedge is 1 |
 | Q62 | Options | **Answered (for Phase 5):** A \| B \| C in a project; the PDF prints the current option only |
 | Q63 | The 3D person | **Answered:** typed height, plain grey figure, Lounge \| Upright; Andre checks a 5'7″ Side view at 44″ and 36″ before the PR is done |
-| Q64 | Pillows, seat line, fabrics, logo | **Answered (for the look, link v6):** Colour 1, Colour 2, Same colour, Ball; None / 2 squares / 2 squares + ball per spot; Seats: Stitch line \| No line; waits on Andre's fabric list and logo |
+| Q64 | Pillows, seat line, fabrics, logo | **Answered (for the look, link v7):** Colour 1, Colour 2, Same colour, Ball; None / 2 squares / 2 squares + ball per spot; Seats: Stitch line \| No line; waits on Andre's fabric list and logo |
 | Q65 | Pillow depth in the plan | **Answered (2026-11-09):** match the 3D exactly (20 × about 13″ from above, the 12″ model leaning); the 3D is unchanged |
 | Q66 | Moving a table where its width would leave a seat under 23″ | **Answered (2026-11-09):** it keeps its width; such spots are not offered |
+| Q67 | Where Snug is remembered | **Answered (2026-11-09):** with the layout (project, link v6, PDF) |
+| Q68 | Seat markers default and the PDF | **Answered (2026-11-09):** off when a layout opens; the PDF plan shows them when on |
 
 ---
 

@@ -20,6 +20,7 @@ export * from './shape';
 export * from './pieceOps';
 export * from './tableOps';
 export * from './tablePlace';
+export * from './seatMarkers';
 export * from './balance';
 export * from './looseOps';
 export * from './codec';

@@ -16,6 +16,10 @@
 // when a room is set (so every older link stays byte for byte):
 //   M w<width> d<depth> [B = back wall | x<x> y<y> = placed by its gaps]
 // (no letter = centred on the sofa).
+//
+// v6 (seat markers, Andre 2026-11-09) adds the snug seat count as the very
+// last token, `N`, written only when the layout counts snug (so every older
+// link stays byte for byte).
 import { buildHaven } from './buildHaven';
 import { checksum, decodeBody, decodeRun, encode, encodeParts, inRange, LINK_VERSION, num, NUM, runTokens, SHAPE_CODE, shapeFromCode } from './codec';
 import { openEnd, runIds } from './layout';
@@ -31,7 +35,7 @@ const JOIN_CODE = { legs: 'g' } as const;
 export function encodeLayout(l: Layout): string {
   const [root, ...rest] = l.sections;
   if (!root) throw new Error('codec: empty layout');
-  if (!rest.length && !l.room) return encode(root.config);
+  if (!rest.length && !l.room && !l.snug) return encode(root.config);
   const head = encodeParts(root.config);
   const parts = [...head.parts];
   rest.forEach((s, i) => {
@@ -42,7 +46,8 @@ export function encodeLayout(l: Layout): string {
     parts.push(`P${JOIN_CODE[s.join.kind]}${SHAPE_CODE(c.shape)}W${num(c.W)}L${num(c.L)}R${num(c.R)}${s.join.sharedBack ? 'H' : ''}`, ...runTokens(c));
   });
   if (l.room) parts.push(roomToken(l.room));
-  const version = l.room ? 5 : Math.max(3, head.version);
+  if (l.snug) parts.push('N');
+  const version = l.snug ? 6 : l.room ? 5 : Math.max(3, head.version);
   const body = `${version}${parts.join('_')}`;
   return `${body}.${checksum(body)}`;
 }
@@ -92,8 +97,12 @@ export function decodeLayout(link: string): LayoutDecode {
   const version = Number(m[1]);
   if (version > LINK_VERSION) return { error: 'newer' };
   if (checksum(`${m[1]}${m[2]}`) !== m[3]) return { error: 'damaged' };
-  const all = m[2]!.split('_');
-  // v5: the room, always last.
+  const tail = m[2]!.split('_');
+  // v6: the snug count, the very last token.
+  const snug = tail.length > 1 && tail[tail.length - 1] === 'N';
+  if (snug && version < 6) return { error: 'damaged' };
+  const all = snug ? tail.slice(0, -1) : tail;
+  // v5: the room, last before it.
   const roomTok = all.length > 1 && all[all.length - 1]!.startsWith('M') ? all[all.length - 1]! : null;
   if (roomTok && version < 5) return { error: 'damaged' };
   const room = roomTok ? decodeRoom(roomTok) : null;
@@ -114,7 +123,7 @@ export function decodeLayout(link: string): LayoutDecode {
     const id = String.fromCharCode(98 + k); // 'b', 'c', …
     sections.push({ id, config: s.config, join: { ...s.join!, to: sections[sections.length - 1]!.id } });
   }
-  const layout: Layout = room ? { schema: 1, sections, room } : { schema: 1, sections };
+  const layout: Layout = { schema: 1, sections, ...(room ? { room } : {}), ...(snug ? { snug: true as const } : {}) };
   if (sections.some((s) => !inRange(s.config) || buildHaven(s.config).errors.length > 0)) return { error: 'damaged' };
   if (layoutErrors(layout).length) return { error: 'damaged' };
   return { layout };

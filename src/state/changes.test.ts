@@ -1,6 +1,6 @@
 // The result line's words (UX Phase 3, Andre 2026-11-08).
 import { describe, expect, it } from 'vitest';
-import { addPiece, editSection, nudgeRoom, placeRoom, resizePiece, setArmWidth, setLock, setMeasurements, setRoom, solo, standardStraight, standardU, teeLayout, type Layout } from '@/engine';
+import { addPiece, editSection, nudgeRoom, setSnug, placeRoom, resizePiece, setArmWidth, setLock, setMeasurements, setRoom, solo, standardStraight, standardU, teeLayout, type Layout } from '@/engine';
 import { describeChange } from './changes';
 
 const u = () => solo(standardU());
@@ -8,7 +8,10 @@ const edit = (l: Layout, op: Parameters<typeof editSection>[2]) => editSection(l
 
 describe('describeChange', () => {
   it('measurements and the seat count', () => {
-    expect(describeChange(u(), edit(u(), (c) => setMeasurements(c, { W: 200 })))).toBe('Width 188″ → 200″ · Seat 36″ → 48″ · Seats 7 → 7–8');
+    // One seat number (2026-11-09): 7 comfortable before and after, so no seats item.
+    expect(describeChange(u(), edit(u(), (c) => setMeasurements(c, { W: 200 })))).toBe('Width 188″ → 200″ · Seat 36″ → 48″');
+    expect(describeChange(u(), setSnug(u(), true).layout)).toBe('Seats 7 → 7 · snug');
+    expect(describeChange(u(), edit(u(), (c) => setMeasurements(c, { W: 300 })))).toMatch(/Seats 7 → 11$/);
     expect(describeChange(u(), edit(u(), (c) => setMeasurements(c, { D: 40 })))).toMatch(/^Depth 44″ → 40″/);
   });
 
