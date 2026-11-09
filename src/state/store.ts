@@ -143,7 +143,7 @@ export function createHavenStore(initial: Layout | Config, ui: Partial<UiState> 
       void import('./changes').then(({ describeChange }) => {
         const now = get();
         // Only if nothing else happened meanwhile (another edit, Undo).
-        if (now.layout === after) set({ ui: { ...now.ui, result: describeChange(from, after) } });
+        if (now.layout === after) set({ ui: { ...now.ui, result: describeChange(from, after, opts.say) } });
       });
     };
     const clearResult = () => {

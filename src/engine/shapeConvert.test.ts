@@ -5,7 +5,8 @@
 import { describe, expect, it } from 'vitest';
 import { buildHaven } from './buildHaven';
 import { standardL, standardStraight, standardU } from './defaults';
-import { addLooseInLayout, setLayoutShape, setSnug, solo } from './layoutOps';
+import { addLooseInLayout, setSnug, solo } from './layoutOps';
+import { setLayoutShape } from './shapeLayout';
 import type { Layout } from './layoutTypes';
 import { setMeasurements, setSeatWidth } from './ops';
 import { cushionOf, isSeat } from './pieces';

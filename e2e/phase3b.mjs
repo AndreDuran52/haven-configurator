@@ -121,7 +121,7 @@ export async function phase3b(browser, base, check) {
     check((await config(page)).dims.A === 13.5, 'arm width − on the Size tab: 13½″')
     await panel(page, 'Pieces')
     const heads = await page.$$eval('#panel-pieces h2', (els) => els.map((e) => e.textContent))
-    check(heads.join(' | ') === 'Add a piece | When pieces change', `Pieces: ${heads.join(' | ')}`)
+    check(heads.join(' | ') === 'Add a piece | When pieces change | Tables', `Pieces: ${heads.join(' | ')} (Tables since Phase 3c)`)
     const lock = await page.$$eval('[aria-label="When pieces change"] [role=radio]', (els) => els.map((e) => `${e.textContent}${e.getAttribute('aria-checked') === 'true' ? '*' : ''}`))
     check(lock.join(' | ') === 'Other seats adjust* | Sofa size changes', `"When pieces change": ${lock.join(' | ')}`)
     await page.getByRole('radio', { name: 'Sofa size changes' }).click()

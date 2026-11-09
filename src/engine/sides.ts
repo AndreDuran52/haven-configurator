@@ -2,9 +2,8 @@
 // right" and "Copy right to left". A mirror copy: the other leg gets the same
 // pieces (legs run from their corner, so a copy is a mirror) and the same side
 // length; after that each side edits on its own.
-import { edit, notAllowed, type Outcome } from './edit';
+import { edit, notAllowed, type Config, type EditResult, type Outcome, type RunPiece } from './index';
 import { cloneRun } from './shape';
-import type { Config, EditResult, RunPiece } from './types';
 
 type Side = 'left' | 'right';
 

@@ -5,6 +5,7 @@ import { launchBrowser } from './browser.mjs'
 import { fixes } from './fixes.mjs'
 import { fixes2 } from './fixes2.mjs'
 import { seats } from './seats.mjs'
+import { keep } from './keep.mjs'
 import { h2 } from './h2.mjs'
 import { h4 } from './h4.mjs'
 import { h5 } from './h5.mjs'
@@ -43,6 +44,7 @@ try {
   await phase3b(browser, BASE, check)
   await fixes2(browser, BASE, check)
   await seats(browser, BASE, check)
+  await keep(browser, BASE, check)
 } finally {
   await browser.close()
   await server.close()

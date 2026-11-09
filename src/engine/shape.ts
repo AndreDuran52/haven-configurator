@@ -7,11 +7,8 @@
 //   Straight -> L or U adds standard 132″ legs; to Straight drops them.
 // - L left <-> L right is a mirror (the back reverses, the leg is copied).
 // Loose pieces move with the back seats. Switching back gives the same sofa.
-import { DEFAULT_MEASURES } from './defaults';
-import { corners, defaultFill, endIndex, runEnds, runIds, runSum, wedgeC, type Alloc } from './layout';
-import { edit, type Outcome } from './edit';
-import { half } from './pieces';
-import type { Config, EditResult, RunEnd, RunId, RunPiece, Shape } from './types';
+// Through the index (not file by file), so the engine stays one chunk when this loads lazily.
+import { DEFAULT_MEASURES, corners, defaultFill, edit, endIndex, half, runEnds, runIds, runSum, wedgeC, type Alloc, type Config, type EditResult, type Outcome, type RunEnd, type RunId, type RunPiece, type Shape } from './index';
 
 /** The standard side length a new leg gets (Straight -> L or U). */
 export const STANDARD_SIDE = DEFAULT_MEASURES.L;

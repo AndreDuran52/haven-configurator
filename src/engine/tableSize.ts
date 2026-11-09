@@ -3,13 +3,8 @@
 // gives (or takes) half of the change; with a seat on one side only, that seat
 // takes it all; with "Sofa size changes" the sofa grows and the seats stay.
 // 16–40″, and never a seat beside it pushed under 23″ (narrowing always works).
-import { ABSORB_FLOOR, TABLE_MAX, TABLE_MIN, cushionOf, half, splitHalf } from './pieces';
-import { settle } from './absorb';
-import { detach } from './layout';
-import { seatPair } from './balance';
-import { edit, findPiece, noRoom, notAllowed, refuse, type Outcome } from './edit';
-import { tableFits } from './tablePlace';
-import type { Config, EditResult } from './types';
+// Through the index (not file by file), so the engine stays one chunk when this loads lazily.
+import { ABSORB_FLOOR, TABLE_MAX, TABLE_MIN, cushionOf, detach, edit, findPiece, half, noRoom, notAllowed, refuse, seatPair, settle, splitHalf, tableFits, type Config, type EditResult, type Outcome } from './index';
 
 export const TABLE_SEAT_ROOM = 'The seats beside it can’t go under 23″';
 

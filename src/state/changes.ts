@@ -98,17 +98,33 @@ function moved(dx: number, dy: number, items: string[]) {
   if (dy) items.push(`Sofa moved ${inch(Math.abs(dy))} ${dy > 0 ? 'toward the front' : 'toward the back'}`);
 }
 
-/** What changed from `a` to `b`, in a line; null when nothing a client would see changed. */
-export function describeChange(a: Layout, b: Layout): string | null {
+const SHAPE_NAME: Record<Config['shape'], string> = { U: 'U', 'L-left': 'L left', 'L-right': 'L right', straight: 'Straight' };
+
+/**
+ * What changed from `a` to `b`, in a line; null when nothing a client would see
+ * changed. `lead` (UX Phase 3c) names an edit in one phrase ("Copied the left
+ * side to the right") in place of its piece-by-piece changes. A shape switched
+ * in place reads "U → L left · Width 188″ → 142″ · Seats 7 → 5".
+ */
+export function describeChange(a: Layout, b: Layout, lead?: string): string | null {
   if (a === b) return null;
   const items: string[] = [];
   const multi = b.sections.length > 1;
   for (const s of b.sections) {
     const before = a.sections.find((x) => x.id === s.id);
-    if (!before || before.config.shape !== s.config.shape) return null; // a new sofa: the toast says so
+    if (!before) return null; // a new sofa: the toast says so
     const own: string[] = [];
-    fieldChanges(before.config, s.config, own);
-    pieceChanges(before.config, s.config, own);
+    if (before.config.shape !== s.config.shape) {
+      if (multi || a.sections.length > 1) return null;
+      own.push(lead ?? arrow(SHAPE_NAME[before.config.shape], SHAPE_NAME[s.config.shape]));
+      if (before.config.W !== s.config.W) own.push(arrow(`Width ${inch(before.config.W)}`, inch(s.config.W)));
+    } else if (lead) {
+      own.push(lead);
+      fieldChanges(before.config, s.config, own);
+    } else {
+      fieldChanges(before.config, s.config, own);
+      pieceChanges(before.config, s.config, own);
+    }
     // Shared fields (depth, arms, look) are said once, for the first half.
     items.push(...(multi && s.id !== b.sections[0]!.id ? own.filter((x) => !items.includes(x)).map((x) => `${sectionLabel(b, s.id)}: ${x}`) : own));
   }

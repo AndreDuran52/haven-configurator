@@ -6,12 +6,14 @@
 // gzip (engine + plan view + store + UI + react-dom; the dialogs load lazily)
 // + 15 %, rounded up. Raise it only on purpose, and say why in the PR.
 // 2026-11-06: 318 / 104 for the straight sofa; 2026-11-07: 322 / 106 for the room
-// floor; 2026-11-08: 330 / 110 for UX Phase 3 (top bar, menus, result line).
+// floor; 2026-11-08: 330 / 110 for UX Phase 3 (top bar, menus, result line);
+// 2026-11-09: 330 / 111 for Phase 3c (even seats kept even in the engine, the
+// shape switch and the copy row; their code loads lazily, main was at 109.9).
 // Andre approved up to 115 gzip.
 import { readFileSync } from 'node:fs'
 import { gzipSync } from 'node:zlib'
 
-const BUDGET = { rawKb: 330, gzipKb: 110 }
+const BUDGET = { rawKb: 330, gzipKb: 111 }
 const MARKERS = [
   { name: 'three.js', text: 'THREE.WebGLRenderer' },
   { name: 'jsPDF', text: 'jsPDF' },

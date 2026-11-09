@@ -1,6 +1,8 @@
 // The result line's words (UX Phase 3, Andre 2026-11-08).
 import { describe, expect, it } from 'vitest';
 import { addPiece, editSection, nudgeRoom, setSnug, placeRoom, resizePiece, setArmWidth, setLock, setMeasurements, setRoom, solo, standardStraight, standardU, teeLayout, type Layout } from '@/engine';
+import { setLayoutShape } from '@/engine/shapeLayout';
+import { copySide } from '@/engine/sides';
 import { describeChange } from './changes';
 
 const u = () => solo(standardU());
@@ -51,6 +53,16 @@ describe('describeChange', () => {
     const a = u();
     expect(describeChange(a, a)).toBeNull();
     expect(describeChange(a, teeLayout({ total: 229, stem: 110 }))).toBeNull();
+  });
+
+  it('a shape switched in place, and a copied side (UX Phase 3c)', () => {
+    const a = u();
+    expect(describeChange(a, setLayoutShape(a, 'L-left').layout)).toBe('U → L left · Width 188″ → 142″ · Seats 7 → 4');
+    const s = solo(standardStraight());
+    expect(describeChange(s, setLayoutShape(s, 'U').layout)).toMatch(/^Straight → U · Width 120″ → 212″ · Seats \d+ → \d+$/);
+    const uneven = edit(a, (c) => setMeasurements(c, { R: 120 }));
+    const copied = edit(uneven, (c) => copySide(c, 'left'));
+    expect(describeChange(uneven, copied, 'Copied the left side to the right')).toBe('Copied the left side to the right · Right side 120″ → 132″ · Seats 6 → 7');
   });
 
   it('long lists are cut at four', () => {
