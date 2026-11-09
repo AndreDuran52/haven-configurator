@@ -1,9 +1,9 @@
 // The side panel (plan §8; editor redesign, Andre 2026-11-06; UX Phase 3,
-// 2026-11-08): the shape picker on top, then four tabs: Size (measurements, the
-// corner wedge, arm width, the sofa's warnings), Room (the client's room and
-// its warnings), Pieces (the add-piece tray, table style) and Look (fabric,
-// wood). Room, Pieces and Look load on first open. The build number is in the
-// settings menu.
+// 2026-11-08; Phase 3b): the shape picker on top, then four tabs: Size (how
+// much floor: measurements, depth, the corner wedge, the sofa's warnings),
+// Room (where it goes), Pieces (what it's made of: the tray, "When pieces
+// change", tables, arm width) and Design (fabric, wood). Room, Pieces and
+// Design load on first open. The build number is in the settings menu.
 import { lazy, Suspense } from 'react';
 import { layoutBuiltOf, useHaven, useHavenStore, useLiveLayout, type PanelTab } from '@/state/store';
 import { ShapePicker } from './ShapePicker';
@@ -18,7 +18,7 @@ const TABS: { value: PanelTab; label: string }[] = [
   { value: 'size', label: 'Size' },
   { value: 'room', label: 'Room' },
   { value: 'pieces', label: 'Pieces' },
-  { value: 'look', label: 'Look' },
+  { value: 'look', label: 'Design' },
 ];
 
 export function Sidebar() {

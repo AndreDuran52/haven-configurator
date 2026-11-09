@@ -10,7 +10,7 @@ import { editSection, solo } from './layoutOps';
 import type { Layout } from './layoutTypes';
 import { addLoose } from './looseOps';
 import { setMeasurements } from './ops';
-import { clearRoom, fillRoomWidth, placeRoom, setRoom, setRoomGap } from './room';
+import { clearRoom, fillRoomWidth, nudgeRoom, placeRoom, setRoom, setRoomGap } from './room';
 import { teeLayout } from './tee';
 import { canon, deepFreeze } from './testing';
 
@@ -49,6 +49,30 @@ describe('placing the room', () => {
     const typedWider = editSection(typed, 'a', (c) => setMeasurements(c, { W: 200 })).layout;
     expect(room(typedWider).gaps).toMatchObject({ left: 10, right: 30 });
     expect(room(setRoomGap(typed, 'back', 12).layout).gaps).toMatchObject({ left: 10, back: 12 });
+  });
+
+  it('Phase 3b: a typed right or front distance moves the room; the opposite one follows', () => {
+    const l = uRoom(); // 26 | 26 across, 34 | 34 back to front
+    expect(room(setRoomGap(l, 'right', 10).layout).gaps).toEqual({ left: 42, right: 10, back: 34, front: 34 });
+    expect(room(setRoomGap(l, 'front', 0).layout).gaps).toEqual({ left: 26, right: 26, back: 68, front: 0 });
+    expect(setRoomGap(l, 'right', 10).layout.room!.at.mode).toBe('free');
+  });
+
+  it('Phase 3b move pad: 1″ per step, the room stays put after, and the sofa stops at a wall', () => {
+    const l = deepFreeze(uRoom());
+    const r = nudgeRoom(l, 'right').layout;
+    expect(room(r).gaps).toEqual({ left: 27, right: 25, back: 34, front: 34 });
+    expect(r.room!.at.mode).toBe('free');
+    expect(room(nudgeRoom(nudgeRoom(l, 'back').layout, 'back').layout).gaps).toMatchObject({ back: 32, front: 36 });
+    expect(room(nudgeRoom(l, 'front').layout).gaps).toMatchObject({ back: 35, front: 33 });
+    expect(room(nudgeRoom(l, 'left').layout).gaps).toMatchObject({ left: 25, right: 27 });
+    // Against the back wall: no further back, and a big step stops at the wall.
+    const wall = placeRoom(l, 'backWall').layout;
+    const stuck = nudgeRoom(wall, 'back');
+    expect(stuck.layout).toBe(wall);
+    expect(stuck.rejected?.message).toBe('The sofa is against the back wall');
+    expect(room(nudgeRoom(l, 'left', 40).layout).gaps).toMatchObject({ left: 0, right: 52 });
+    expect(nudgeRoom(solo(standardU()), 'left').rejected?.message).toBe('Add the room first');
   });
 
   it('resizing keeps the mode; a room on a T is centred on both halves', () => {

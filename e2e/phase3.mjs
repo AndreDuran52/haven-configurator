@@ -29,7 +29,7 @@ const result = (page) => page.$eval('[data-testid=result-text]', (e) => e.textCo
 const undoDepth = (page) => page.evaluate(() => window.__haven.getState().past.length)
 
 /** Visible HTML text under 14 px (the SVG plan has its own sizes). */
-const smallText = (page) =>
+export const smallText = (page) =>
   page.evaluate(() => {
     const out = []
     for (const el of document.querySelectorAll('body *')) {
@@ -45,7 +45,7 @@ const smallText = (page) =>
   })
 
 /** Save a screenshot and the same at half scale (how it reads through Zoom). */
-async function shot(browser, page, name) {
+export async function shot(browser, page, name) {
   const path = `${SHOTS}/${name}.png`
   await page.screenshot({ path })
   const vp = page.viewportSize()
@@ -70,24 +70,22 @@ export async function phase3(browser, base, check) {
     await page.keyboard.press('Escape')
     const labels = await page.$$eval('#panel-size label, #panel-size span', (els) => els.map((e) => e.textContent.trim()))
     check(['Width', 'Left side', 'Right side', 'Depth'].every((l) => labels.includes(l)), 'sofa labels: Width, Left side, Right side, Depth')
-    check((await page.getByRole('radio', { name: 'Keep sofa size' }).getAttribute('aria-checked')) === 'true', '"When pieces change: Keep sofa size | Let sofa grow"')
     const tabs = await page.$$eval('[role=tab]', (els) => els.map((e) => e.textContent.replace(/\d+$/, '')))
-    check(tabs.join(' | ') === 'Size | Room | Pieces | Look', `tabs: ${tabs.join(' | ')}`)
+    check(tabs.join(' | ') === 'Size | Room | Pieces | Design', `tabs: ${tabs.join(' | ')}`)
     const panelText = await page.textContent('aside')
     check(!/Seat width|per seat|No warnings|from pieces|build|square/i.test(panelText), 'the Size tab: no seat width, "No warnings", "from pieces", build or "square"')
     await page.getByTestId('settings').click()
     check((await page.textContent('[data-testid=seat-width]')).startsWith('28″ per seat') && (await page.getByTestId('build').count()) === 1, 'Settings: seat width (28″, snug 24″) and the build')
     await page.keyboard.press('Escape')
     await panel(page, 'Room')
-    await page.getByTestId('add-room').click()
     const roomLabels = await page.$$eval('#panel-room label, #panel-room span', (els) => els.map((e) => e.textContent.trim()))
     check(roomLabels.includes('Room width') && roomLabels.includes('Room length'), 'the Room tab: Room width, Room length')
-    await page.getByRole('button', { name: 'Undo', exact: true }).click()
     await panel(page, 'Pieces')
     check(!(await page.textContent('aside')).includes('2″'), 'Pieces: no "2″ wood top"')
-    await panel(page, 'Look')
+    check((await page.getByRole('radio', { name: 'Other seats adjust' }).getAttribute('aria-checked')) === 'true', 'Pieces: "When pieces change: Other seats adjust | Sofa size changes"')
+    await panel(page, 'Design')
     const look = await page.$$eval('aside h2', (els) => els.map((e) => e.textContent))
-    check(look.join(' | ') === 'Shape | Fabric | Wood', `Look: Fabric and Wood (${look.join(' | ')})`)
+    check(look.join(' | ') === 'Shape | Fabric | Wood', `Design: Fabric and Wood (${look.join(' | ')})`)
     await panel(page, 'Size')
     for (const vp of [LAPTOP, LAPTOP_SMALL]) {
       await page.setViewportSize(vp)
@@ -110,9 +108,10 @@ export async function phase3(browser, base, check) {
     check((await result(page)) !== null, 'the result line stays (no fade)')
     await page.getByTestId('result-undo').click()
     check((await config(page)).W === 188 && (await result(page)) === null, 'Undo inside the line: W back to 188, the line goes')
-    await page.getByRole('radio', { name: 'Let sofa grow' }).click()
+    await panel(page, 'Pieces')
+    await page.getByRole('radio', { name: 'Sofa size changes' }).click()
     await page.waitForSelector('[data-testid=result-text]')
-    check((await result(page)) === 'Let sofa grow' && (await config(page)).lockOutside === false, '"Let sofa grow" turns the lock off, and says so')
+    check((await result(page)) === 'Sofa size changes' && (await config(page)).lockOutside === false, '"Sofa size changes" turns the lock off, and says so')
     await page.getByTestId('result-dismiss').click()
     check((await result(page)) === null, '× dismisses the line')
     // Keyboard.
@@ -182,14 +181,14 @@ export async function phase3(browser, base, check) {
     await shot(browser, page, 'phase3-overall-1440')
     await page.getByRole('radio', { name: 'Detailed' }).click()
     await viewMenu(page)
-    check((await page.getByRole('menuitemcheckbox', { name: 'Pillows in 3D' }).count()) === 1 && (await page.getByRole('radio', { name: 'Sketch' }).count()) === 1, 'the View menu: Pillows in 3D, Plan style')
+    check((await page.getByRole('menuitemcheckbox', { name: 'Pillows' }).count()) === 1 && (await page.getByRole('radio', { name: 'Sketch' }).count()) === 1, 'the View menu: Pillows, Plan style')
     await page.keyboard.press('Escape')
     const bg = await page.evaluate(() => [document.querySelector('[data-plan-svg] > rect').getAttribute('fill'), document.querySelector('[data-room] rect').getAttribute('fill')])
     check(bg[0] === bg[1], `plan and room floor share one background (${bg.join(', ')})`)
     await page.getByRole('radio', { name: '3D' }).click()
     await page.waitForFunction(() => !!window.__haven3d, null, { timeout: 30000 })
     const cams = await page.$$eval('[data-testid=presets] [role=radio]', (els) => els.map((e) => e.textContent))
-    check(cams.join(' | ') === 'Overview | Front | Side', `cameras: ${cams.join(' | ')}`)
+    check(cams.join(' | ') === 'Overview | Top | Front | Side', `cameras: ${cams.join(' | ')}`)
     await page.waitForTimeout(1500)
     const px = await page.evaluate(async () => {
       const img = new Image()

@@ -41,6 +41,7 @@ export default function ThreeView() {
   const live = useLive();
   const liveLayout = useLiveLayout();
   const preset = useHaven((s) => s.ui.preset);
+  const cameraReset = useHaven((s) => s.ui.cameraReset);
   const handoff = useHaven((s) => s.ui.handoff);
   const showLooseUi = useHaven((s) => s.ui.showLoose);
   const built = builtOf(live);
@@ -141,6 +142,7 @@ export default function ThreeView() {
         <Rig
           shape={built.shape}
           preset={preset}
+          reset={cameraReset}
           points={points}
           bounds={world.box}
           offset={world.offset}

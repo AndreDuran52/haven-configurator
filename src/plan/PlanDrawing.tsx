@@ -2,7 +2,7 @@
 // dimension layout. Never reads component or store state. Returns <g> content so
 // the interactive <svg> (screen) and the export <svg> (PDF/PNG, H6) wrap the
 // exact same markup. Colours are literal values from `theme` (no CSS variables).
-// Group order: wedges, runs, gaps, loose pieces, dimensions, seats.
+// Group order: wedges, runs, pillows, gaps, loose pieces, dimensions, seats.
 import type { BuildResult, BuiltPiece, Pt, Rect } from '@/engine';
 import type { DimLayout } from './dims';
 import { DimsLayer } from './DimsLayer';
@@ -11,6 +11,7 @@ import { fmtIn } from './format';
 import { hatch, pts, woodGrain } from './geometry';
 import type { PlanTheme } from './theme';
 import { STRAIGHT_SEATS_BELOW } from './dims';
+import type { PlanPillow } from './pillowShapes';
 
 export interface PlanDrawingProps {
   built: BuildResult;
@@ -25,6 +26,8 @@ export interface PlanDrawingProps {
   gapLabelSize?: number;
   /** false for each section of a layout (the layout draws one seat label). */
   showSeats?: boolean;
+  /** Phase 3b: the throw pillows seen from above (planPillows), when the View menu's Pillows switch is on. */
+  pillows?: PlanPillow[] | null;
 }
 
 const Box = ({ box: r, ...rest }: { box: Rect } & Omit<React.SVGProps<SVGRectElement>, 'r'>) => (
@@ -33,7 +36,7 @@ const Box = ({ box: r, ...rest }: { box: Rect } & Omit<React.SVGProps<SVGRectEle
 
 const inset = (r: Rect, d: number): Rect => ({ x: r.x + d, y: r.y + d, w: r.w - 2 * d, h: r.h - 2 * d });
 
-export function PlanDrawing({ built, dims, k, theme, showWarnings, selectedId, seatsSize = 16, gapLabelSize = 11, showSeats = true }: PlanDrawingProps) {
+export function PlanDrawing({ built, dims, k, theme, showWarnings, selectedId, seatsSize = 16, gapLabelSize = 11, showSeats = true, pillows = null }: PlanDrawingProps) {
   const lw = (u: number) => +(u * k).toFixed(4); // display units -> plan inches
   const warnIds = new Set(showWarnings ? built.warnings.map((w) => w.pieceId).filter(Boolean) : []);
   const runPieces = (run: string) => built.pieces.filter((p) => p.run === run);
@@ -111,6 +114,17 @@ export function PlanDrawing({ built, dims, k, theme, showWarnings, selectedId, s
           {runPieces(run).map(piece)}
         </g>
       ))}
+      {pillows && (
+        <g data-pillows="" stroke={theme.ink} strokeWidth={lw(0.6 * theme.line)} pointerEvents="none">
+          {pillows.map((p) =>
+            p.kind === 'ball' ? (
+              <circle key={p.key} data-pillow={p.kind} cx={p.cx} cy={p.cy} r={p.w / 2} fill={p.fill} />
+            ) : (
+              <rect key={p.key} data-pillow={p.kind} x={-p.w / 2} y={-p.d / 2} width={p.w} height={p.d} rx={Math.min(p.w, p.d) * 0.3} fill={p.fill} transform={`translate(${p.cx} ${p.cy}) rotate(${p.angle})`} />
+            ),
+          )}
+        </g>
+      )}
       <g data-gaps="">
         {built.gaps.map((g) => {
           const vertical = g.run !== 'back';

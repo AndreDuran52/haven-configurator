@@ -1,8 +1,9 @@
-// H6c room floor checks (Andre, 2026-11-07): add a room from the Size tab, its
-// size, Center and Back wall, a typed gap, Fill the width, the walkway and
-// fit warnings, the v5 link in a fresh browser, 3D Top parity with the room
-// floor, the PDF header, and labels at three sizes, light and dark. Judged by
-// outcome: the layout, the link, the DOM, the PDF text.
+// H6c room floor checks (Andre, 2026-11-07; the Room tab of Phase 3b): typing
+// the room width creates the room (no Add step), its size, Center and Back
+// wall, the four typed distances (Custom), the move pad (hold = one undo
+// step), Fill the width, the walkway and fit warnings, the v5 link in a fresh
+// browser, 3D Top parity with the room floor, the PDF header, and labels at
+// three sizes. Judged by outcome: the layout, the link, the DOM, the PDF text.
 import { VIEWPORTS } from './browser.mjs'
 import { pdfText } from './h6.mjs'
 import { labelCheck, panel, setField, warnings } from './lib.mjs'
@@ -27,26 +28,46 @@ async function fresh(browser, url, viewport = VIEWPORTS.ipadLandscape, scheme = 
 }
 
 export async function room(browser, base, check) {
-  // 1. A straight sofa: add the room, size it, Back wall, a typed gap, Fill the width.
+  // 1. A straight sofa: type the room, Back wall, typed distances, the move pad, Fill the width.
   {
     const { context, page, errors } = await fresh(browser, base)
     await page.getByTestId('new-straight').click()
     await page.waitForSelector('[data-plan-svg]')
     await panel(page, 'Room')
-    await page.getByTestId('add-room').click()
+    check((await page.getByTestId('add-room').count()) === 0 && (await page.getByTestId('room-hint').count()) === 1 && (await page.inputValue('#m-roomW')) === '', 'no "Add the room" step: blank Room width and length, and a hint')
+    await setField(page, 'roomW', '200')
     await page.waitForSelector('[data-room]')
     const l0 = await layout(page)
-    check(l0.room?.w === 192 && l0.room?.d === 144 && l0.room.at.mode === 'center', `"Add the room" starts 192 × 144, centred (${JSON.stringify(l0.room)})`)
-    await setField(page, 'roomW', '200')
+    check(l0.room?.w === 200 && l0.room?.d === 144 && l0.room.at.mode === 'center', `typing the width creates the room: 200 × 144 (length suggested), centred (${JSON.stringify(l0.room)})`)
     await setField(page, 'roomD', '150')
     check(JSON.stringify(await gaps(page)) === JSON.stringify({ left: 40, right: 40, back: 53, front: 53 }), `typed 200 × 150: gaps ${JSON.stringify(await gaps(page))}`)
     await page.getByRole('radio', { name: 'Back wall' }).click()
     const g1 = await gaps(page)
     check(g1.back === undefined && g1.front === 106 && g1.left === 40, `Back wall: back 0 (not drawn), front 106 (${JSON.stringify(g1)})`)
-    await setField(page, 'gapLeft', '10')
+    await setField(page, 'gap-left', '10')
     const l1 = await layout(page)
-    check(l1.room.at.mode === 'free' && (await gaps(page)).left === 10 && (await gaps(page)).right === 70, `a typed left gap of 10: the room stays put (${JSON.stringify(l1.room.at)})`)
-    check((await page.getByRole('radio', { name: 'Placed' }).getAttribute('aria-checked')) === 'true', 'the placement reads "Placed"')
+    check(l1.room.at.mode === 'free' && (await gaps(page)).left === 10 && (await gaps(page)).right === 70, `a typed left distance of 10: the room stays put (${JSON.stringify(l1.room.at)})`)
+    check((await page.getByRole('radio', { name: 'Custom' }).getAttribute('aria-checked')) === 'true', 'the placement reads "Custom"')
+    await setField(page, 'gap-right', '20')
+    await setField(page, 'gap-front', '30')
+    const gr = await gaps(page)
+    check(gr.left === 60 && gr.right === 20 && gr.front === 30 && gr.back === 76, `typed right 20 and front 30: left 60, back 76 follow (${JSON.stringify(gr)})`)
+    // The move pad: a tap moves 1″; a hold keeps going and is one undo step.
+    await page.getByTestId('nudge-left').click()
+    check((await gaps(page)).left === 59 && (await gaps(page)).right === 21, `← moves the sofa 1″ left (${JSON.stringify(await gaps(page))})`)
+    await page.waitForTimeout(1000)
+    const depth = await page.evaluate(() => window.__haven.getState().past.length)
+    const pad = await page.getByTestId('nudge-back').boundingBox()
+    await page.mouse.move(pad.x + pad.width / 2, pad.y + pad.height / 2)
+    await page.mouse.down()
+    await page.waitForTimeout(1100)
+    await page.mouse.up()
+    const held = await gaps(page)
+    check(held.back < 76 - 3 && held.front > 30 + 3, `holding ↑ keeps moving toward the back wall (back ${held.back}, front ${held.front})`)
+    check((await page.evaluate(() => window.__haven.getState().past.length)) === depth + 1, 'the whole hold is one undo step')
+    await page.getByRole('button', { name: 'Undo', exact: true }).click()
+    check((await gaps(page)).back === 76, 'Undo puts it back in one go')
+    await setField(page, 'gap-left', '10')
     const past = await page.evaluate(() => window.__haven.getState().past.length)
     await page.getByTestId('fill-width').click()
     const l2 = await layout(page)
@@ -107,9 +128,9 @@ export async function room(browser, base, check) {
     await context.close()
   }
 
-  // 4. Labels at three sizes, light and dark.
+  // 4. Labels at three sizes (one light look since Phase 3b: no dark mode).
   for (const [vn, vp] of Object.entries(VIEWPORTS)) {
-    for (const scheme of ['light', 'dark']) {
+    for (const scheme of ['light']) {
       const { context, page } = await fresh(browser, `${base}#c=${U_ROOM}`, vp, scheme)
       await page.waitForSelector('[data-room]')
       await page.waitForTimeout(200)

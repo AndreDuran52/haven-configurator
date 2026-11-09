@@ -21,7 +21,7 @@ function fieldChanges(a: Config, b: Config, items: string[]) {
   if (legs.includes('R') && a.R !== b.R) items.push(arrow(`Right side ${inch(a.R)}`, inch(b.R)));
   if (a.D !== b.D) items.push(arrow(`Depth ${inch(a.D)}`, inch(b.D)));
   if (a.dims.A !== b.dims.A) items.push(arrow(`Arms ${inch(a.dims.A)}`, inch(b.dims.A)));
-  if (a.lockOutside !== b.lockOutside) items.push(b.lockOutside ? 'Keep sofa size' : 'Let sofa grow');
+  if (a.lockOutside !== b.lockOutside) items.push(b.lockOutside ? 'Other seats adjust' : 'Sofa size changes');
   if (a.tableFinish !== b.tableFinish) items.push(`Wood: ${finishOf(b.tableFinish).name}`);
   if (a.tableStyle !== b.tableStyle) items.push(`Tables: ${b.tableStyle === 'standard' ? 'wood top' : 'all wood'}`);
 }
@@ -85,7 +85,15 @@ function roomChanges(a: Layout, b: Layout, items: string[]) {
   if (!r0 || !r1) return;
   if (r0.w !== r1.w) items.push(arrow(`Room width ${inch(r0.w)}`, inch(r1.w)));
   if (r0.d !== r1.d) items.push(arrow(`Room length ${inch(r0.d)}`, inch(r1.d)));
-  if (JSON.stringify(r0.at) !== JSON.stringify(r1.at)) items.push(r1.at.mode === 'center' ? 'Sofa centred in the room' : r1.at.mode === 'backWall' ? 'Sofa on the back wall' : 'Sofa placed in the room');
+  if (JSON.stringify(r0.at) === JSON.stringify(r1.at)) return;
+  if (r0.at.mode === 'free' && r1.at.mode === 'free') return void moved(r0.at.x - r1.at.x, r0.at.y - r1.at.y, items);
+  items.push(r1.at.mode === 'center' ? 'Sofa centred in the room' : r1.at.mode === 'backWall' ? 'Sofa on the back wall' : 'Sofa placed in the room');
+}
+
+/** Phase 3b: the sofa moved in the room (the room moved the other way). */
+function moved(dx: number, dy: number, items: string[]) {
+  if (dx) items.push(`Sofa moved ${inch(Math.abs(dx))} ${dx > 0 ? 'right' : 'left'}`);
+  if (dy) items.push(`Sofa moved ${inch(Math.abs(dy))} ${dy > 0 ? 'toward the front' : 'toward the back'}`);
 }
 
 /** What changed from `a` to `b`, in a line; null when nothing a client would see changed. */

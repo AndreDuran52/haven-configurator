@@ -22,11 +22,11 @@ export const seats = (page) => page.textContent('[data-testid=seats]')
 export const warnings = (page) => page.$$eval('[data-testid=warnings] li', (els) => els.map((e) => e.textContent))
 export const config = (page) => page.evaluate(() => window.__haven.getState().config)
 
-/** Open a side-panel tab: 'Size', 'Room', 'Pieces' or 'Look' (editor redesign, 2026-11-06; Room since UX Phase 3). */
+/** Open a side-panel tab: 'Size', 'Room', 'Pieces' or 'Design' (editor redesign, 2026-11-06; Room since UX Phase 3; Look became Design in 3b). */
 export async function panel(page, name) {
   await page.getByRole('tab', { name: new RegExp(`^${name}`) }).click()
-  // Room, Pieces and Look load on first open: wait for their content.
-  const content = { Size: '#m-D', Room: '[data-testid=add-room], #m-roomW', Pieces: '[data-tray]', Look: '[data-testid=fabrics]' }[name]
+  // Room, Pieces and Design load on first open: wait for their content.
+  const content = { Size: '#m-D', Room: '#m-roomW', Pieces: '[data-tray]', Design: '[data-testid=fabrics]' }[name]
   await page.waitForSelector(content, { timeout: 10000 })
   await page.waitForTimeout(50)
 }

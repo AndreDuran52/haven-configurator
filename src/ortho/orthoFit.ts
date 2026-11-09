@@ -59,13 +59,12 @@ export function fitOrtho(points: readonly Vec3[], preset: PresetDef, viewW: numb
 export const PHONE_MAX_WIDTH = 480;
 export const PHONE_ELEVATION_ZOOM = 3;
 
-/** Room kept clear for the HTML overlay: the scale bar (bottom) and the height ticks (left of elevations). */
-export const OVERLAY_INSETS = { scaleBar: 44, heightTicks: 64 };
+/** Room kept clear for the HTML overlay: the height ticks (left of elevations). The scale bar is gone (Phase 3b). */
+export const OVERLAY_INSETS = { heightTicks: 64 };
 
 export function overlayInsets(preset: PresetDef): Partial<Insets> {
   const elevation = preset.elevationDeg === 0;
-  const bar = preset.name !== 'threeQuarter';
-  return { bottom: bar ? OVERLAY_INSETS.scaleBar : 0, left: elevation ? OVERLAY_INSETS.heightTicks : 0 };
+  return { bottom: 0, left: elevation ? OVERLAY_INSETS.heightTicks : 0 };
 }
 
 /** fitOrtho plus the overlay insets and the phone elevation rule (plan §7.2). */

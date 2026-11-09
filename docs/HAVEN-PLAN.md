@@ -630,7 +630,7 @@ These are deduplicated from the spec audit (ENG-, 3D-, EXP-, PLAT-, ORTHO- ids) 
 
 **Auto-fit.** Presets, rotation and resize re-fit until the user touches the camera (`controlstart`). After that, a resize keeps the user's zoom. *Measured* both ways: rotation refit 4.764 → 3.155 px/in; a user zoom of 4.58 was kept across rotation.
 
-**Spring-back orbit (Q1, Andre 2026-09-25).** "You can move around, but when you let go of the left mouse button it snaps back to the normal spot / angle (like looking at it from a top right view)." On release (`controlend`: mouse up, last finger lifted), the camera tweens back to the active preset (angle, target and fit zoom) with the same `rotateTo` / `moveTo` / `zoomTo` sequence as applying a preset; the default preset is the 3/4 (top-right). Orbiting is a way to look around, not a way to leave the camera somewhere. **To confirm on the iPad in H3:** whether a pinch-zoom also springs back (default: yes, everything returns to the preset), and whether the spring-back applies in every preset or only in 3/4 (default: every preset). With spring-back on, the auto-fit rule above always applies, because the camera always comes back to a preset. **As built (H3):** spring-back fires on camera-controls' `controlend` (a released drag, pan or pinch); a mouse-wheel zoom has no release, so it stays until the next drag or preset. On phones (≤ 480 px) in Front and Side only the angle springs back, so a horizontal pan along the elevation is kept.
+**Retired in Phase 3b (Andre, 2026-11-08):** the camera now stays where it is released; the camera buttons (even the one already on) and a double-click / double-tap return to the exact preset (Q58). The original rule, kept for the record: **Spring-back orbit (Q1, Andre 2026-09-25).** "You can move around, but when you let go of the left mouse button it snaps back to the normal spot / angle (like looking at it from a top right view)." On release (`controlend`: mouse up, last finger lifted), the camera tweens back to the active preset (angle, target and fit zoom) with the same `rotateTo` / `moveTo` / `zoomTo` sequence as applying a preset; the default preset is the 3/4 (top-right). Orbiting is a way to look around, not a way to leave the camera somewhere. **To confirm on the iPad in H3:** whether a pinch-zoom also springs back (default: yes, everything returns to the preset), and whether the spring-back applies in every preset or only in 3/4 (default: every preset). With spring-back on, the auto-fit rule above always applies, because the camera always comes back to a preset. **As built (H3):** spring-back fires on camera-controls' `controlend` (a released drag, pan or pinch); a mouse-wheel zoom has no release, so it stays until the next drag or preset. On phones (≤ 480 px) in Front and Side only the angle springs back, so a horizontal pan along the elevation is kept.
 
 ### 7.2 Presets
 
@@ -1378,7 +1378,38 @@ Andre's answers (Q50–Q53): a rectangle only (width × depth, no doors or windo
 
 **Measured:** vitest `changes.test.ts` (the result line's words); e2e `phase3.mjs` (42 checks: top bar, name menu, labels, tabs, Settings, leftovers, no text under 14 px at 1440 × 900 and 1280 × 800, the result line staying and its Undo, Let sofa grow, the keyboard, the shape guard's three buttons, Undo and Save first, grips on the selected piece only, Overall kept after a reload, the View menu, Overview | Front | Side, one background in plan, room and 3D; screenshots at 1440, 1280, iPad and phone, each also at half scale). Existing e2e updated for the new menus (Start and Reset in the name menu, presets through the store, grips after a selection).
 
-**Seat depth (Q54, open):** today D − 10 (back frame depth) − 8 (loose back cushion depth, front to back): 26″ / 22″ / 18″ at 44″ / 40″ / 36″. Hidden everywhere (the view-only summary and the PDF footer too) until Andre confirms or gives his numbers; only the "Seat depth 12″ (under 16)" warning at very shallow depths remains.
+**Seat depth (Q54):** D − 10 (back frame depth) − 8 (loose back cushion depth, front to back): 26″ / 22″ / 18″ at 44″ / 40″ / 36″. Hidden in Phase 3; **confirmed by Andre and shown again in Phase 3b.**
+
+### UX Phase 3b: the quick notes (Andre's notes, 2026-11-08; built)
+Andre's 16 notes after testing Phase 3, reviewed with him over six rounds of questions, then approved with five changes. **The order from here (one PR each, stop after each):** 1. Phase 3b (this). 2. Seat markers. 3. Phase 3c, keep my work. 4. Phase 5, options A | B | C and the hide-panel button. 5. The 3D person. 6. The look (link v6; waits on Andre's fabric list and logo). 7. Phase 4. 8. Phase 6. Later, only when Andre says: realistic rendering, lumbar pillows, drag-and-drop pillows, a spec sheet.
+
+**How a call goes (drives the order):** Andre alone, sharing his laptop over Zoom; he picks a shape, then the sizes, talking the client through it; the room is a supporting view, not the start; the client gets the PDF, then the quote. What matters most on a call: 1. how many people fit (seat markers), 2. how it sits (the 3D person), 3. the look.
+
+**As built (screen only, no link change):**
+1. **No dark mode:** one light look, matching the PDF (a dark-mode computer gets it too).
+2. **Look → Design** (the tab; its content is Fabric and Wood).
+3. **Hold ± to keep going** on every ± (Width, sides, Depth, the room fields and distances, the wedge, arm width, seat width, the move pad): a 400 ms pause, then a repeat from 150 ms speeding up to 60 ms. **One undo step per hold** (the repeats commit inside the history's 800 ms coalescing window), and the result line describes the whole hold. A refused step ends the hold. `src/ui/Stepper.tsx`.
+4. **The panel, one question per tab:**
+   - **Size** (how much floor?): Width, Left side, Right side, Depth; the depth chips **36″ · 40″ · 44″ · Other** ("Other" is chosen for any other depth and puts the cursor in Depth); the **seat depth** under them; the corner wedge; the sofa's warnings.
+   - **Room** (where does it go?): no "Add the room" step: blank **Room width** and **Room length** fields, and typing either creates the room (the other starts at the sofa plus 3 ft each side and 8 ft in front, rounded up to the foot). Then **Center · Back wall · Custom**, the four **distances to the walls** (Left, Right, Back, Front; each typed, the opposite one follows), the **move pad** ← → ↑ ↓ (1″ a tap, hold to keep going; the sofa stops at a wall), Fill the width, Remove and the room's warnings. Engine: `setRoomGap` takes any wall, new `nudgeRoom`.
+   - **Pieces** (what is it made of?): Add a piece; **When pieces change: Other seats adjust | Sofa size changes** (Andre's wording; it covers adding, deleting and resizing a piece, and arm width); Tables; Arm width.
+   - **Design:** Fabric, Wood.
+   - Seat width stays in Settings until the seat markers phase.
+5. **3D:** the cameras are **Overview, Top, Front, Side** (Top is back). **No snap-back:** the camera stays where it is released; a camera button (even the one already on) or a **double-click / double-tap** returns to the exact preset (the Q1 spring-back is retired). The **scale bar is gone** from the live 3D (Andre read it as a "4 ft" tag); Front and Side keep the height ticks; the PDF keeps its own graphic scale.
+6. **One Pillows switch** (View menu) draws the throw pillows in the **plan** (top-down: a turned rounded square per pillow, a circle per ball, from the same anchors as the 3D) and in 3D; the **PDF follows it**. The plan's pillow geometry loads lazily (out of the entry chunk).
+7. **Seat depth shown again:** sofa depth − 18 (the 10″ back frame and the 8″ back cushion never change; only the seat in front of them does): 26″ / 22″ / 18″ at 44″ / 40″ / 36″. On the Size tab under the depth chips, in the view-only summary and in the PDF footer.
+8. **Fix (a Phase 3 regression):** the top bar clipped its own menus (the project-name menu and Settings opened invisibly under the panel). The bar now clips sideways only (`overflow-x: clip`), so its menus drop down over the page; phones still never scroll sideways.
+- **Entry budget:** unchanged, 330 kB raw / 110 kB gzip (measured 325.0 / 108.9).
+
+**Measured:** vitest `Stepper.test.tsx` (tap, pause, repeat speed, one undo step, release and cancel stop, keyboard), `pillowShapes.test.ts` (one plan shape per 3D pillow, sizes, inside the sofa), `room.test.ts` (right and front distances, the move pad, stopping at a wall), `changes.test.ts` ("Sofa size changes", "Sofa moved 2″ right"); e2e `phase3b.mjs` (the top bar's menus on top at 1440 and 390, no dark mode, the tabs, depth chips and seat depth, Other, hold to repeat with one undo step and the result line, seat width hold, the Pieces tab, Design, pillows in the plan and the switch, Overview | Top | Front | Side, Top looks straight down, no scale bar, the camera stays, a double-click returns, no text under 14 px on every tab at 1440 and 1280, screenshots at half scale), `room.mjs` (no Add step, typed distances, Custom, the move pad and its hold), `ortho.mjs` (touch: the pinch and the orbit stay, a double-tap and the camera button return), `straight.mjs` (the PDF's seat depth).
+
+**Decided for the next phases (Andre, 2026-11-08):**
+- **Seat markers:** numbered circles (1, 2, 3…) on each seat in the plan and the 3D Top view, switched in the View menu; a wedge is always 1 seat. **One seat number everywhere:** the top bar always equals the markers (a test checks it) and the PDF prints the same. "Seats 7" (comfortable, 28″) by default; "Seats 8 · snug" with Snug on; a non-standard seat width says so, e.g. "Seats 9 · 21″ seats". Seat width moves next to the markers (a Seating section in the View menu).
+- **Phase 3c, keep my work:** switching shape **converts in place, no prompt** (U → L drops a leg and that end gets an arm; L → U adds a mirror of the existing leg; Straight → L or U puts corners at the ends with standard legs; the result line says what changed, Undo brings it back); **Copy left to right** and **Copy right to left** on a U (a mirror copy, then each side edits on its own); seats even around a table stay even when a leg grows; a table **±** that grows from the middle.
+- **Phase 5:** options **A | B | C** in a project; the PDF prints the **current option** with its letter; a hide-panel button.
+- **The 3D person:** type the client's height (e.g. 5'7″); a plain, faceless, neutral-grey figure with proportions from standard body measurements scaled by height (knee height, thigh length, lower leg); **Lounge | Upright** (Upright adds a square back pillow). **Before that PR is done:** the Side view of a 5'7″ person at 44″ and at 36″ deep, with the numbers used, goes to Andre to check against a real person on a real Haven.
+- **The look (link v6):** pillow colours **Colour 1, Colour 2** (with a "Same colour" switch) and **Ball**; per corner or arm end: None / 2 squares / 2 squares + ball; **Seats: Stitch line | No line** as a client choice that tables follow (saved in the project, the link and the sheet); Andre's fabric list (names, colours, a swatch photo each) and logo (SVG or a large PNG) in the top bar and on the PDF.
+- **Not now:** realistic rendering, lumbar pillows, drag-and-drop pillows, a spec sheet, room walls in 3D, pinning the sofa to corners or dragging it in the room. Undo and Redo stay top left (next to the name, as in Canva, Google Docs and Office).
 
 ### H7: Cloud saves + tracker hand-off (optional, later; Andre decides, do not start until told)
 The configurator is complete without H7. Options, in order of cost:
@@ -1504,7 +1535,7 @@ Answer in a word. **Q1 is answered (camera, spring-back orbit), and Q9, Q10, Q12
 
 | # | Question | Default |
 |---|---|---|
-| **Q1** | "Orthographic" means the 3D camera (flat, to-scale views you can still orbit), or a drafting sheet (plan + front + side laid out together)? *camera / drafting / both* | **Answered 2026-09-25: camera**, with a **spring-back orbit**: you can orbit and move around, and on release the view springs back to its preset (the default is the top-right 3/4 view). See §7.1. H3 (not H3-alt) |
+| **Q1** | "Orthographic" means the 3D camera (flat, to-scale views you can still orbit), or a drafting sheet (plan + front + side laid out together)? *camera / drafting / both* | **Answered 2026-09-25: camera**, with a **spring-back orbit**: you can orbit and move around, and on release the view springs back to its preset (the default is the top-right 3/4 view). See §7.1. H3 (not H3-alt). **The spring-back was retired in Phase 3b (Q58).** |
 | Q2 | Where does it live? | **Answered 2026-09-25:** standalone app, own GitHub repo, own Vercel project, own Claude Code environment (§3) |
 | Q3 | Haven before or after the other app's order-intake work? | **Not applicable** (separate repo; no shared milestone sequence) |
 | Q4 | Keep a perspective "photo" toggle in 3D as well? *yes / no* | no |
@@ -1557,9 +1588,17 @@ Answer in a word. **Q1 is answered (camera, spring-back orbit), and Q9, Q10, Q12
 | Q51 | Where the sofa sits | **Answered:** centred by default; Center or Back wall (a typed gap places it) |
 | Q52 | Fill the width | **Answered:** the sofa grows or shrinks to the room less the side gaps |
 | Q53 | Room warnings | **Answered:** doesn't fit the room; walkway under 30″ |
-| Q54 | Seat depth formula | **Open (2026-11-08):** D − 10 − 8 (26 / 22 / 18″ at 44 / 40 / 36″ deep)? Hidden everywhere (the view-only summary and the PDF footer too) until confirmed; only the under-16″ warning remains |
-| Q55 | Lock wording | **Answered:** "When pieces change: Keep sofa size \| Let sofa grow" |
+| Q54 | Seat depth formula | **Answered (2026-11-08):** the back frame (10″) and back cushion (8″) never change, only the seat: D − 18 = 26 / 22 / 18″ at 44 / 40 / 36″ deep. Shown again since Phase 3b |
+| Q55 | Lock wording | **Answered, then changed (Phase 3b):** "When pieces change: Other seats adjust \| Sofa size changes", on the Pieces tab (was "Keep sofa size \| Let sofa grow") |
 | Q56 | Seat sizes on the plan | **Answered:** only on the selected piece; on every piece in Detailed |
+| Q57 | Dark mode | **Answered (Phase 3b):** none; one light look matching the PDF |
+| Q58 | 3D snap-back | **Answered (Phase 3b):** off; the camera stays; the camera buttons and a double-click return to a preset (supersedes Q1's spring-back) |
+| Q59 | Shape switching | **Answered (for Phase 3c):** converts in place, no prompt (U → L drops a leg and gives that end an arm; L → U mirrors the leg; Straight → L/U adds corners and standard legs) |
+| Q60 | Same both sides of the U | **Answered (for Phase 3c):** Copy left to right, Copy right to left; each side edits on its own after |
+| Q61 | Seat count | **Answered (for seat markers):** one number everywhere; comfortable by default, "· snug" with Snug, "· 21″ seats" for a non-standard width; a wedge is 1 |
+| Q62 | Options | **Answered (for Phase 5):** A \| B \| C in a project; the PDF prints the current option only |
+| Q63 | The 3D person | **Answered:** typed height, plain grey figure, Lounge \| Upright; Andre checks a 5'7″ Side view at 44″ and 36″ before the PR is done |
+| Q64 | Pillows, seat line, fabrics, logo | **Answered (for the look, link v6):** Colour 1, Colour 2, Same colour, Ball; None / 2 squares / 2 squares + ball per spot; Seats: Stitch line \| No line; waits on Andre's fabric list and logo |
 
 ---
 

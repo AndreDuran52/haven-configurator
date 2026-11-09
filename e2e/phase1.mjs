@@ -1,7 +1,7 @@
 // UX Phase 1 checks (Andre, 2026-10-02): no partial commits while typing, no
 // lost work (unreadable saved list, reload of an open project), Plan and 3D
 // agree at 44 and 38 deep for every shape. Fresh browser contexts only: never
-// Andre's data. Screenshots: iPad landscape/portrait, laptop, phone, light/dark.
+// Andre’s data. Screenshots: iPad landscape/portrait, laptop, phone (light only since Phase 3b).
 import { VIEWPORTS } from './browser.mjs'
 import { config, dimTexts, openApp } from './lib.mjs'
 import { planShapes, topParityIoU } from './parity.mjs'
@@ -125,8 +125,8 @@ export async function phase1(browser, base, check) {
     await context.close()
   }
 
-  // 5. Screenshots: editor and home, iPad landscape/portrait, laptop, phone, light and dark.
-  for (const scheme of ['light', 'dark']) {
+  // 5. Screenshots: editor and home, iPad landscape/portrait, laptop, phone (one light look since Phase 3b).
+  for (const scheme of ['light']) {
     for (const [vName, vp] of Object.entries({ ...VIEWPORTS, laptop: LAPTOP })) {
       const context = await browser.newContext({ viewport: vp, hasTouch: true, colorScheme: scheme })
       const page = await context.newPage()

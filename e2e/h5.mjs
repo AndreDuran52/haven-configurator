@@ -78,7 +78,7 @@ export async function h5(browser, base, check) {
     if (vName === 'ipadLandscape') {
       const n0 = await page.evaluate(() => window.__haven3d.points().length)
       await viewMenu(page)
-      await page.getByRole('menuitemcheckbox', { name: 'Pillows in 3D' }).click()
+      await page.getByRole('menuitemcheckbox', { name: 'Pillows' }).click()
       await page.waitForTimeout(300)
       const n1 = await page.evaluate(() => window.__haven3d.points().length)
       const left = await page.evaluate(() => window.__haven3d.meshNames('pillow:').length)
@@ -92,7 +92,7 @@ export async function h5(browser, base, check) {
   // 2. Every fabric and finish: renders in 3D and round-trips through the link.
   {
     const { context, page } = await openApp(browser, base)
-    await panel(page, 'Look')
+    await panel(page, 'Design')
     const fabrics = await page.$$eval('[data-testid=fabrics] [role=radio]', (els) => els.map((e) => e.getAttribute('aria-label')))
     const finishes = await page.$$eval('[data-testid=finishes] [role=radio]', (els) => els.map((e) => e.getAttribute('aria-label')))
     await page.getByRole('radio', { name: '3D' }).click()

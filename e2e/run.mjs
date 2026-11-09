@@ -10,6 +10,7 @@ import { h6 } from './h6.mjs'
 import { h6b } from './h6b.mjs'
 import { phase1 } from './phase1.mjs'
 import { phase3 } from './phase3.mjs'
+import { phase3b } from './phase3b.mjs'
 import { reporter } from './lib.mjs'
 import { ortho } from './ortho.mjs'
 import { shapes } from './shapes.mjs'
@@ -37,6 +38,7 @@ try {
   await straight(browser, BASE, check)
   await room(browser, BASE, check)
   await phase3(browser, BASE, check)
+  await phase3b(browser, BASE, check)
 } finally {
   await browser.close()
   await server.close()

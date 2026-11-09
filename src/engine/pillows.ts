@@ -21,6 +21,9 @@ export interface PillowAnchor extends OrientedBox {
   tone: PillowTone;
 }
 
+/** Pillow fabrics from the showroom photos: taupe and oatmeal linen squares, cream bouclé and mocha velvet balls (the 3D and the plan). */
+export const PILLOW_COLOR: Record<PillowTone, string> = { taupe: '#9a897c', oatmeal: '#e2dbcf', cream: '#eee8de', mocha: '#7c675b' };
+
 /**
  * 20″ down pillows, leaning back on the back cushions. 12″ deep: Andre's
  * Blender pillow (2026-09-27) as modelled (about 12½″; "thicker, like the og

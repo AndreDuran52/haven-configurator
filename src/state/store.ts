@@ -26,6 +26,8 @@ export interface UiState {
   view: 'plan' | '3d';
   /** The active 3D preset (plan §7.2); the default is the 3/4 (top right). */
   preset: PresetName;
+  /** Phase 3b: bumped by each camera button press, so pressing the one already on returns to it. */
+  cameraReset: number;
   /** Set once by the first Plan -> 3D switch: 3D opens at the plan's scale and centre (plan §7.2). */
   handoff: PlanFit | null;
   seen3d: boolean;
@@ -152,6 +154,7 @@ export function createHavenStore(initial: Layout | Config, ui: Partial<UiState> 
       ui: {
         view: 'plan',
         preset: DEFAULT_PRESET,
+        cameraReset: 0,
         handoff: null,
         seen3d: false,
         planFit: null,

@@ -29,7 +29,7 @@ export function ViewSummary() {
     ...shape,
     ['Depth', fmtIn(b.D)],
     ...(layout.room ? [['Room', `${fmtIn(layout.room.w)} x ${fmtIn(layout.room.d)}`] as [string, string]] : []),
-    // Seat depth stays hidden until Andre confirms the formula (plan Q54, 2026-11-08).
+    ['Seat depth', fmtIn(b.seatDepth)], // sofa depth − 18 (Andre confirmed, Phase 3b)
     ['Seats', lb.seats.label.replace(/^Seats /, '')],
     ['Fabric', fabricOf(c.fabric).name],
     ...(hasTable ? [['Tables', `${c.tableStyle === 'standard' ? 'Wood top on fabric' : 'All wood'}, ${finishOf(c.tableFinish).name.toLowerCase()}`] as [string, string]] : []),
