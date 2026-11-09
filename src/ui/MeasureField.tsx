@@ -1,18 +1,13 @@
 // A typed measurement (plan §8): text input with inputMode=decimal, 16 px font
 // (no iOS zoom), accepts 188 / 188.5 / 188 1/2 / 15'8". Nothing changes while
 // typing (Andre, UX Phase 1: "38" must never show "3"); blur or Enter commits;
-// Escape cancels. A refused value reverts and shows the minimum ("min 158″").
-// ±1″ steppers commit, coalesced by key; holding one repeats (one undo step).
-import { useRef, useState } from 'react';
+// Escape cancels (useTypedValue). A refused value reverts and shows the minimum
+// ("min 158″"). ±1″ steppers commit, coalesced by key; holding one repeats
+// (one undo step).
 import type { Config, EditResult, Layout, LayoutResult, Rejection } from '@/engine';
-import { fmtIn, parseInches } from '@/plan/format';
 import { useHavenStore } from '@/state/store';
 import { Stepper } from './Stepper';
-
-/** Blank when there is no value yet (the room before its size is typed). */
-const show = (n: number) => (Number.isFinite(n) ? fmtIn(n, { mark: false }) : '');
-/** The same shown value (NaN = blank). */
-const same = (a: number, b: number) => a === b || (!Number.isFinite(a) && !Number.isFinite(b));
+import { showInches as show, useTypedValue, type TypedRun } from './useTypedValue';
 
 export function MeasureField({
   name,
@@ -48,21 +43,14 @@ export function MeasureField({
   /** Where ± starts from when the field is blank. */
   start?: number;
 }) {
+
   const store = useHavenStore();
-  const [text, setText] = useState(show(value));
-  const [editing, setEditing] = useState(false);
-  // Synchronous twin of `editing`: Escape finishes, then blurs; the blur must not commit.
-  const active = useRef(false);
-  // An error belongs to the value it was shown for: any other change to the field clears it.
-  const [errorState, setErrorState] = useState<{ text: string | null; at: number } | null>(null);
   const committed = () => {
     const s = store.getState();
     return readLayout ? readLayout(s.layout) : read(s.config);
   };
-  const setError = (text: string | null) => setErrorState(text ? { text, at: committed() } : null);
-  const error = errorState && same(errorState.at, value) ? errorState.text : null;
   /** The op on the committed state, and how to commit it (a section edit can still be refused by the other half). */
-  const run = (v: number): { rejected: Rejection | null; commit: () => Rejection | null } => {
+  const run = (v: number): TypedRun => {
     const s = store.getState();
     if (layoutOp) {
       const r = layoutOp(s.layout, v);
@@ -71,11 +59,6 @@ export function MeasureField({
     const r = apply(s.config, v);
     return { rejected: r.rejected, commit: () => s.commit(r.config, { key: `measure:${name}` }) };
   };
-  const tryValue = (raw: string) => {
-    const v = parseInches(raw);
-    return v === null ? null : run(v);
-  };
-
   // The minimum may belong to another measurement (D 44 needs W 158): name it then.
   const message = (r: { rejected: Rejection | null }) => {
     const min = r.rejected?.min;
@@ -85,44 +68,8 @@ export function MeasureField({
     const [k, v] = Object.entries(min)[0] ?? [];
     return k !== undefined && v !== undefined ? `Needs ${k === 'C' ? 'wedge' : k} ≥ ${show(v)}″` : (r.rejected?.message ?? null);
   };
+  const { error: err, nudge, input } = useTypedValue({ value, committed, run, message, start });
 
-  const onChange = (raw: string) => {
-    setText(raw);
-    setError(null);
-  };
-
-  const finish = (commit: boolean) => {
-    active.current = false;
-    setEditing(false);
-    if (!commit) {
-      setText(show(committed()));
-      return;
-    }
-    const r = tryValue(text);
-    if (r && !r.rejected) {
-      const refused = r.commit();
-      setError(refused ? message({ rejected: refused }) : null);
-      if (refused) setText(show(committed()));
-      return;
-    }
-    setText(show(committed()));
-    setError(r ? message(r) : 'Not a size');
-  };
-
-  /** One ± step on the committed value; false when refused (a hold stops there). */
-  const nudge = (d: number) => {
-    const c = committed();
-    const r = run((Number.isFinite(c) ? c : (start ?? NaN)) + d);
-    if (r.rejected) {
-      setError(message(r));
-      return false;
-    }
-    const refused = r.commit();
-    setError(refused ? message({ rejected: refused }) : null);
-    return !refused;
-  };
-
-  const err = error;
   return (
     <div className="flex flex-col gap-1" data-field={name}>
       <div className="flex items-center gap-2">
@@ -136,28 +83,8 @@ export function MeasureField({
           <input
             id={`m-${name}`}
             name={name}
-            value={editing ? text : show(value)}
-            inputMode="decimal"
             placeholder={placeholder}
-            enterKeyHint="done"
-            autoComplete="off"
-            aria-invalid={!!err}
-            onFocus={(e) => {
-              setText(show(value));
-              active.current = true;
-              setEditing(true);
-              setError(null);
-              e.currentTarget.select();
-            }}
-            onChange={(e) => onChange(e.target.value)}
-            onBlur={() => active.current && finish(true)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') e.currentTarget.blur();
-              if (e.key === 'Escape') {
-                finish(false);
-                e.currentTarget.blur();
-              }
-            }}
+            {...input}
             className="h-11 w-full rounded-lg border border-line bg-panel px-3 pr-7 text-base tabular-nums placeholder:text-ink-muted"
           />
           <span className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-sm text-ink-muted">″</span>

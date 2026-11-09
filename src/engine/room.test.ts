@@ -119,9 +119,17 @@ describe('warnings', () => {
     expect(buildLayout(l).warnings.map((w) => w.message).some((m) => m.includes('left wall'))).toBe(false);
   });
 
-  it('past a wall: the worst overshoot is named', () => {
-    const l = setRoom(uRoom(), { w: 180 }).layout;
-    expect(buildLayout(l).warnings.find((w) => w.code === 'roomTooSmall')?.message).toBe('The sofa is 4″ past the left wall');
+  it('bigger than the room: one plain line, not a negative gap at each wall (Andre, 2026-11-09)', () => {
+    const l = setRoom(uRoom(), { w: 176, d: 120 }).layout; // the U is 188 × 132
+    const ws = buildLayout(l).warnings;
+    expect(ws.filter((w) => w.code === 'roomTooBig').map((w) => w.message)).toEqual(['Sofa is 12″ wider than the room', 'Sofa is 12″ deeper than the room']);
+    expect(ws.some((w) => w.code === 'roomTooSmall')).toBe(false);
+  });
+
+  it('past a wall (a sofa that fits, placed past it): the worst overshoot is named', () => {
+    const l = uRoom(); // 188 wide in a 240 room
+    const shifted: Layout = { ...l, room: { w: 240, d: 200, at: { mode: 'free', x: 4, y: -34 } } }; // the room starts 4″ right of the sofa
+    expect(buildLayout(shifted).warnings.find((w) => w.code === 'roomTooSmall')?.message).toBe('The sofa is 4″ past the left wall');
     const c = addLoose(standardStraight(), 'coffeeTable');
     const withTable = setRoom(solo(c.config), { w: 200, d: 90 }).layout;
     expect(buildLayout(withTable).warnings.find((w) => w.code === 'roomTooSmall')?.message).toMatch(/^The coffee table is \d+(\.5)?″ past the front wall$/);

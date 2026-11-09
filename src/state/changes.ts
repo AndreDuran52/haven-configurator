@@ -3,7 +3,7 @@
 // "Table 20″ → 24″ · Seats 26½″ | 26½″ → 24½″ | 24½″" or "Width 188″ → 200″".
 // Pure: compares the layout before the edit (or before a coalesced burst) with
 // the layout after it. Seats are shown as their cushions (an arm is not seat).
-import { buildLayout, cushionOf, finishOf, sectionLabel, type Config, type Layout, type RunPiece } from '@/engine';
+import { buildLayout, cushionOf, finishOf, sectionLabel, SEAT_WARN, TABLE_DEFAULT, type Config, type Layout, type RunPiece } from '@/engine';
 import { fmtIn } from '@/plan/format';
 
 const inch = (x: number) => `${fmtIn(x, { mark: false })}″`;
@@ -39,7 +39,9 @@ function pieceChanges(a: Config, b: Config, items: string[]) {
       if (seen.has(p.id)) return;
       const q = before.get(p.id);
       if (!q) {
-        if (p.kind === 'table' || !after.some((t) => t.kind === 'table' && p.joinedBy === t.id)) items.push(`Added ${KIND[p.kind].toLowerCase()} ${inch(sizeOf(p, b.dims.A))}`);
+        // A new table under the standard width stepped down to fit (tablePlace.ts): say why.
+        const why = p.kind === 'table' && p.length < TABLE_DEFAULT ? ` (${inch(TABLE_DEFAULT)} would leave a seat under ${inch(SEAT_WARN)})` : '';
+        if (p.kind === 'table' || !after.some((t) => t.kind === 'table' && p.joinedBy === t.id)) items.push(`Added ${KIND[p.kind].toLowerCase()} ${inch(sizeOf(p, b.dims.A))}${why}`);
         return;
       }
       const s0 = sizeOf(q, a.dims.A);

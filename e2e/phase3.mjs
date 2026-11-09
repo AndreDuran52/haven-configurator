@@ -85,7 +85,8 @@ export async function phase3(browser, base, check) {
     check((await page.getByRole('radio', { name: 'Other seats adjust' }).getAttribute('aria-checked')) === 'true', 'Pieces: "When pieces change: Other seats adjust | Sofa size changes"')
     await panel(page, 'Design')
     const look = await page.$$eval('aside h2', (els) => els.map((e) => e.textContent))
-    check(look.join(' | ') === 'Shape | Fabric | Wood', `Design: Fabric and Wood (${look.join(' | ')})`)
+    // Tables (Wood top on fabric base | All wood) joined Design on 2026-11-09; the Standard U has a table.
+    check(look.join(' | ') === 'Shape | Fabric | Tables | Wood', `Design: Fabric, Tables and Wood (${look.join(' | ')})`)
     await panel(page, 'Size')
     for (const vp of [LAPTOP, LAPTOP_SMALL]) {
       await page.setViewportSize(vp)

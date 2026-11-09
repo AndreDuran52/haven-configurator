@@ -8,7 +8,6 @@ import { planShapes, topParityIoU } from './parity.mjs'
 const SHOTS = 'test-results'
 const T1 = '1UW188L132R132D44_bt32s36_la72_ra72.wh'
 const T3A = '1UW188L132R132D44_bs68_ls40t32_ra72.j9'
-const T3B = '1UW188L132R132D44_bs68_ls13jt32a27j_ra72.wr'
 
 async function open(browser, base, path = '', viewport = VIEWPORTS.ipadLandscape) {
   const context = await browser.newContext({ viewport, hasTouch: true, deviceScaleFactor: 2 })
@@ -88,27 +87,32 @@ export async function h4(browser, base, check) {
     await context.close()
   }
 
-  // 2. Tests 3a and 3b by touch; G1: dragging the 3b table back restores the Standard U, also after a reload.
+  // 2. A table dragged by touch lands between cushions (Andre, 2026-11-09): the left leg's corner
+  // seam (no split: the old 3b), kept after a reload; dragged back, the Standard U again; then 3a.
   {
     const { context, page, errors, drag } = await open(browser, base)
     const id = await tableId(page)
     const t = await centreOf(page, `[data-piece="${id}"]`)
     const d0 = await undoDepth(page)
-    const to3b = await anchor(page, id, { run: 'left', at: 'split' })
+    check((await page.evaluate((tid) => window.__plan.anchors(tid).some((a) => a.placement.at === 'split'), id)) === false, 'no "split a seat" anchors while dragging a table')
+    const corner = await anchor(page, id, { run: 'left', at: 'seam', seam: 0 })
     let during = []
-    await drag(line(t, to3b, 16), { during: async () => (during = await warnings(page)) })
-    check((await code(page)) === T3B, `table drag by touch gives 3b (${await code(page)})`)
-    check(during.some((w) => /Seat .*\(under 23\)/.test(w)), `the 3b warning shows during the drag (${during.join('; ')})`)
-    check((await undoDepth(page)) === d0 + 1 && (await page.textContent('[data-testid=seats]')).includes('6'), 'one undo step; Seats 6')
+    await drag(line(t, corner, 16), { during: async () => (during = await warnings(page)) })
+    const c1 = await config(page)
+    const runOf = (c, run) => c.runs[run].map((p) => p.kind + p.length).join(' ')
+    check(runOf(c1, 'left') === 'table32 oneArm40' && runOf(c1, 'back') === 'armless68', `table drag by touch: left leg table 32 | seat 26 + arm, back seat 68 (${runOf(c1, 'left')} / ${runOf(c1, 'back')})`)
+    check(!during.some((w) => /Seat .*\(under 23\)/.test(w)), `no seat under 23″ during the drag (${during.join('; ')})`)
+    check((await undoDepth(page)) === d0 + 1, 'one undo step')
+    const moved = await code(page)
     await page.waitForTimeout(400) // URL sync (300 ms)
     await page.reload({ waitUntil: 'networkidle' })
     await page.waitForSelector('[data-plan-svg]')
-    check((await code(page)) === T3B, '3b survives a reload (j marker in the link)')
+    check((await code(page)) === moved, 'it survives a reload')
     const id2 = await tableId(page)
     const t2 = await centreOf(page, `[data-piece="${id2}"]`)
     const back = await anchor(page, id2, { run: 'back', at: 'seam', seam: 0 })
     await drag(line(t2, back, 16))
-    check((await code(page)) === T1, `dragging it back to the back run restores the Standard U after the reload (G1) (${await code(page)})`)
+    check((await code(page)) === T1, `dragging it back to the back run restores the Standard U after the reload (${await code(page)})`)
     // 3a: in place of the left arm.
     const id3 = await tableId(page)
     const t3 = await centreOf(page, `[data-piece="${id3}"]`)
@@ -190,14 +194,28 @@ export async function h4(browser, base, check) {
     const n = (c) => Object.values(c.runs).flat().filter((p) => p.kind === 'armless').length
     check(n(await config(page)) === 2 && (await undoDepth(page)) === d0 + 1 && !(await page.$('[data-pins]')), 'tapping a pin adds an armless seat in one step')
     await page.getByRole('button', { name: 'Undo', exact: true }).click()
-    // Drag a table chip into the right leg.
+    // Drag a table chip into the right leg (near its corner): a 32″ table between cushions, no split.
     const chip = await centreOf(page, '[data-tray-item=table]')
     const r = (await config(page)).runs.right[0]
-    const rp = await centreOf(page, `[data-piece="${r.id}"]`)
-    await drag(line(chip, rp, 16))
+    const rb0 = await page.$eval(`[data-piece="${r.id}"]`, (e) => e.getBoundingClientRect().toJSON())
+    await drag(line(chip, [rb0.left + rb0.width / 2, rb0.top + 30], 16))
+    const legLine = (await config(page)).runs.right.map((p) => p.kind + p.length).join(' ')
+    check(legLine === 'table32 oneArm40' && (await undoDepth(page)) === d0 + 1, `dragging "Table" from the tray into the right leg: a 32″ table at the corner seam, seat 26 + arm (${legLine})`)
+    await page.getByRole('button', { name: 'Undo', exact: true }).click()
+    // An old layout (old links still load as they were): a 20″ table between two 19″ seats.
+    await page.evaluate(() => {
+      const s = window.__haven.getState()
+      const c = structuredClone(s.config)
+      const n = c.nextId
+      c.runs.right = [
+        { id: c.runs.right[0].id, kind: 'armless', length: 19 },
+        { id: `p${n}`, kind: 'table', length: 20 },
+        { id: `p${n + 1}`, kind: 'oneArm', length: 33, arm: 'end' },
+      ]
+      c.nextId = n + 2
+      s.commit(c)
+    })
     const rc = await config(page)
-    const legLine = rc.runs.right.map((p) => p.kind + p.length).join(' ')
-    check(legLine === 'armless19 table20 oneArm33' && (await undoDepth(page)) === d0 + 1, `dragging "Table" from the tray into the right leg: a 20″ table, seats 19 | 19 (${legLine})`)
     // Balance (Andre, 2026-11-06): the menu shows the seats, a chip keeps them equal, Even seats after a hand resize.
     const bt = rc.runs.right.find((p) => p.kind === 'table').id
     await tap(...(await centreOf(page, `[data-piece="${bt}"]`)))

@@ -1,14 +1,12 @@
 // Balance seats around a table (Andre, 2026-11-06). A table between two seats
-// keeps them equal: a new table dropped into a seat starts at 20″ (TABLE_MID),
-// resizing it takes the change from both seats, "Even seats" re-shares their
-// cushions, and an arm-width change keeps an even pair even. The extra 0.5″ of
-// an odd total goes to the side away from the arm (as G1).
+// keeps them equal: a new table dropped between two seats takes its width from
+// both (placement.ts shareSeam, 2026-11-09), resizing it takes the change from
+// both seats, "Even seats" re-shares their cushions, and an arm-width change
+// keeps an even pair even. The extra 0.5″ of an odd total goes to the side away
+// from the arm (as G1).
 import { ABSORB_FLOOR, cushionOf, isSeat, splitHalf } from './pieces';
 import { edit, findPiece, noRoom, notAllowed, type Outcome } from './edit';
 import type { Config, EditResult, RunPiece } from './types';
-
-/** A new table dropped into the middle of a seat starts at this width. */
-export const TABLE_MID = 20;
 
 /** The seats either side of the table at index i, or null. */
 export function seatPair(pieces: RunPiece[], i: number): [RunPiece, RunPiece] | null {

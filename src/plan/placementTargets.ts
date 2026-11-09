@@ -1,7 +1,8 @@
 // Where a tray piece can go (plan §8 "Add-piece tray"): every seam and seat
 // split of every run where addPiece succeeds, with the new piece's centre as
-// the pin / snap anchor. Pure; computed once per tray gesture.
-import { addPiece, buildHaven, isSeat, openEnds, runIds, type Config, type Facing, type Placement, type Pt } from '@/engine';
+// the pin / snap anchor. A table goes between cushions only (tableTargets,
+// Andre 2026-11-09). Pure; computed once per tray gesture.
+import { addPiece, buildHaven, isSeat, newTableCentre, openEnds, runIds, tableTargets, type Config, type Facing, type Placement, type Pt } from '@/engine';
 
 export type TrayKind = 'armless' | 'oneArmL' | 'oneArmR' | 'table' | 'ottoman' | 'coffeeTable';
 export type RunTrayKind = Exclude<TrayKind, 'ottoman' | 'coffeeTable'>;
@@ -19,6 +20,16 @@ export interface PlacementTarget {
 const FACING: Partial<Record<RunTrayKind, Facing>> = { oneArmL: 'LAF', oneArmR: 'RAF' };
 
 export function placementTargets(config: Config, kind: RunTrayKind): PlacementTarget[] {
+  if (kind === 'table') {
+    const seen = new Set<string>();
+    return tableTargets(config).flatMap((t) => {
+      const key = JSON.stringify(t.config.runs);
+      const anchor = newTableCentre(config, t.config);
+      if (seen.has(key) || !anchor) return [];
+      seen.add(key);
+      return [{ placement: t.placement, anchor, config: t.config }];
+    });
+  }
   const engineKind = kind === 'oneArmL' || kind === 'oneArmR' ? 'oneArm' : kind;
   const out: PlacementTarget[] = [];
   const seen = new Set<string>();

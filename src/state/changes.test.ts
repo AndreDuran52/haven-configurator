@@ -1,6 +1,6 @@
 // The result line's words (UX Phase 3, Andre 2026-11-08).
 import { describe, expect, it } from 'vitest';
-import { addPiece, editSection, nudgeRoom, placeRoom, resizePiece, setArmWidth, setLock, setMeasurements, setRoom, solo, standardU, teeLayout, type Layout } from '@/engine';
+import { addPiece, editSection, nudgeRoom, placeRoom, resizePiece, setArmWidth, setLock, setMeasurements, setRoom, solo, standardStraight, standardU, teeLayout, type Layout } from '@/engine';
 import { describeChange } from './changes';
 
 const u = () => solo(standardU());
@@ -12,14 +12,20 @@ describe('describeChange', () => {
     expect(describeChange(u(), edit(u(), (c) => setMeasurements(c, { D: 40 })))).toMatch(/^Depth 44″ → 40″/);
   });
 
-  it('a table dropped into a seat: the table and its two even seats', () => {
-    const a = u();
-    const b = edit(a, (c) => addPiece(c, 'table', { run: 'left', at: 'split', pieceId: c.runs.left![0]!.id }));
-    expect(describeChange(a, b)).toBe('Seats 19″ | 19″ · Added table 20″ · Seats 7 → 5');
+  it('a table dropped between two seats: one line for the pair, then the table (2026-11-09)', () => {
+    const a = solo(standardStraight()); // 14+46 | 46+14
+    const b = edit(a, (c) => addPiece(c, 'table', { run: 'back', at: 'seam', seam: 1 }));
+    expect(describeChange(a, b)).toBe('Seats 46″ | 46″ → 30″ | 30″ · Added table 32″ · Seats 3 → 2');
   });
 
-  it('resizing that table: one line for the pair', () => {
-    const a = edit(u(), (c) => addPiece(c, 'table', { run: 'left', at: 'split', pieceId: c.runs.left![0]!.id }));
+  it('a table that stepped down says why', () => {
+    const a = solo(standardU({ W: 170, L: 140, R: 140, wedgeC: 55, dims: { A: 12 } })); // a leg of one 73″ seat: split at 24″
+    const b = edit(a, (c) => addPiece(c, 'table', { run: 'left', at: 'split', pieceId: c.runs.left![0]!.id }));
+    expect(describeChange(a, b)).toMatch(/Added table 24″ \(32″ would leave a seat under 23″\)/);
+  });
+
+  it('resizing a table between two seats: one line for the pair', () => {
+    const a = edit(u(), (c) => addPiece(c, 'table', { run: 'left', at: 'split', pieceId: c.runs.left![0]!.id }, { length: 20 }));
     const t = a.sections[0]!.config.runs.left!.find((p) => p.kind === 'table')!.id;
     const b = edit(a, (c) => resizePiece(c, t, 24));
     expect(describeChange(a, b)).toBe('Seats 19″ | 19″ → 17″ | 17″ · Table 20″ → 24″');

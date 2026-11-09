@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { anchoredTargets, blankConfig, buildHaven, moveTable, snapTable, standardU, type Pt } from '@/engine';
-import { canon, test3b } from '@/engine/testing';
+import { anchoredTargets, blankConfig, buildHaven, snapTable, standardU, type Pt } from '@/engine';
 import { gripPoints, hitTest, lineTolPx } from './hitTest';
 import { nearestTarget, placementTargets } from './placementTargets';
 import { reorderIndex } from './usePlanGestures';
@@ -43,17 +42,17 @@ describe('hitTest (plan §8)', () => {
 });
 
 describe('table snapping (tableSnap, §5.4)', () => {
-  it('dropping on the 3b anchor gives 3b; hysteresis keeps the current target', () => {
+  it('a table snaps to seams only (no split where a seam fits); dropping on an anchor gives it; hysteresis keeps the current target', () => {
     const c = standardU();
     const id = c.runs.back!.find((p) => p.kind === 'table')!.id;
     const targets = anchoredTargets(c, id);
-    const split = targets.find((t) => t.placement.run === 'left' && t.placement.at === 'split')!;
-    expect(canon(moveTable(c, id, split.placement).config)).toEqual(canon(test3b()));
-    expect(snapTable(c, id, split.anchor).placement).toEqual(split.placement);
-    const other = targets.find((t) => t !== split && t.placement.run === 'left')!;
-    const mid: Pt = [(split.anchor[0] + other.anchor[0]) / 2, (split.anchor[1] + other.anchor[1]) / 2 + 0.1];
-    expect(nearestTarget(targets, mid, split, 6)).toBe(split);
-    expect(nearestTarget(targets, other.anchor, split, 6)).toBe(other);
+    expect(targets.some((t) => t.placement.at === 'split')).toBe(false);
+    const corner = targets.find((t) => t.placement.run === 'left' && t.placement.at === 'seam' && t.placement.seam === 0)!;
+    expect(snapTable(c, id, corner.anchor).placement).toEqual(corner.placement);
+    const other = targets.find((t) => t !== corner && t.placement.run === 'left')!;
+    const mid: Pt = [(corner.anchor[0] + other.anchor[0]) / 2, (corner.anchor[1] + other.anchor[1]) / 2 + 0.1];
+    expect(nearestTarget(targets, mid, corner, 6)).toBe(corner);
+    expect(nearestTarget(targets, other.anchor, corner, 6)).toBe(other);
     expect(nearestTarget(targets, [1e4, 1e4], null, 6, 60)).toBeNull();
   });
 });

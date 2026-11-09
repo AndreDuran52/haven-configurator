@@ -37,6 +37,9 @@ export function RoomGaps({ room, k, theme, frontX, size = 14 }: { room: RoomFit;
       {lines.map(({ wall, a, b }) => {
         const g = room.gaps[wall];
         if (g === 0) return null;
+        // A sofa bigger than the room that way: no negative numbers (the warning says by how much).
+        const big = wall === 'left' || wall === 'right' ? s.w > r.w : s.h > r.h;
+        if (big) return null;
         const color = g < 0 ? theme.bad : wall !== 'back' && g < WALKWAY_MIN ? theme.warn : theme.dim;
         const vertical = a[0] === b[0];
         const cx = (a[0] + b[0]) / 2;

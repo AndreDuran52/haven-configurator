@@ -1,8 +1,9 @@
 // UX Phase 3b checks (Andre's notes, 2026-11-08; shared over Zoom from a
 // laptop): no dark mode, Look → Design, the Size tab's depth chips (36 · 40 ·
 // 44 · Other) with the seat depth (sofa depth − 18), hold ± to repeat (one undo
-// step), "When pieces change: Other seats adjust | Sofa size changes" and arm
-// width on the Pieces tab, one Pillows switch for the plan, the 3D cameras
+// step), "When pieces change: Other seats adjust | Sofa size changes" on the
+// Pieces tab (arm width on Size and Tables on Design since 2026-11-09), one
+// Pillows switch for the plan, the 3D cameras
 // Overview | Top | Front | Side, no 3D snap-back (a double-click returns to the
 // preset), no scale bar, no interface text under 14 px on any tab, and the
 // top bar's menus opening on top of the page (a Phase 3 regression: the bar
@@ -75,7 +76,7 @@ export async function phase3b(browser, base, check) {
     check((await page.evaluate(() => document.activeElement?.id)) === 'm-D', '"Other" puts the cursor in the Depth field')
     await page.keyboard.press('Escape')
     const sizeText = await page.textContent('#panel-size')
-    check(!/When pieces change|Arm width/.test(sizeText), 'the Size tab: no "When pieces change", no arm width')
+    check(!/When pieces change/.test(sizeText) && /Arm width/.test(sizeText), 'the Size tab: arm width with the measurements (2026-11-09), no "When pieces change"')
     check(errors.length === 0, `no console errors ${errors.join('; ')}`)
     await context.close()
   }
@@ -112,22 +113,24 @@ export async function phase3b(browser, base, check) {
     await context.close()
   }
 
-  // 3. Pieces: the lock wording and arm width; Design: Fabric and Wood.
+  // 3. Pieces: Add a piece and the lock wording only; arm width in Size; Design: Fabric, Tables, Wood (2026-11-09).
   {
     const { context, page, errors } = await fresh(browser, base)
+    await page.getByRole('button', { name: 'Arm width minus 0.5' }).click()
+    check((await config(page)).dims.A === 13.5, 'arm width − on the Size tab: 13½″')
     await panel(page, 'Pieces')
     const heads = await page.$$eval('#panel-pieces h2', (els) => els.map((e) => e.textContent))
-    check(heads.join(' | ') === 'Add a piece | When pieces change | Tables | Arm width', `Pieces: ${heads.join(' | ')}`)
+    check(heads.join(' | ') === 'Add a piece | When pieces change', `Pieces: ${heads.join(' | ')}`)
     const lock = await page.$$eval('[aria-label="When pieces change"] [role=radio]', (els) => els.map((e) => `${e.textContent}${e.getAttribute('aria-checked') === 'true' ? '*' : ''}`))
     check(lock.join(' | ') === 'Other seats adjust* | Sofa size changes', `"When pieces change": ${lock.join(' | ')}`)
     await page.getByRole('radio', { name: 'Sofa size changes' }).click()
     check((await config(page)).lockOutside === false, '"Sofa size changes" turns the lock off')
-    await page.getByRole('button', { name: 'Arm width minus ½' }).click()
-    check((await config(page)).dims.A === 13.5, 'arm width − on the Pieces tab: 13½″')
     await shot(browser, page, 'phase3b-pieces-1440')
     await panel(page, 'Design')
     const look = await page.$$eval('#panel-look h2', (els) => els.map((e) => e.textContent))
-    check(look.join(' | ') === 'Fabric | Wood', `Design: ${look.join(' | ')}`)
+    check(look.join(' | ') === 'Fabric | Tables | Wood', `Design: ${look.join(' | ')}`)
+    const styles = await page.$$eval('[aria-label="Table style"] [role=radio]', (els) => els.map((e) => e.textContent))
+    check(styles.join(' | ') === 'Wood top on fabric base | All wood' && !(await page.textContent('#panel-look')).includes('Solid wood'), `Tables: ${styles.join(' | ')}, no line underneath`)
     check(errors.length === 0, `no console errors ${errors.join('; ')}`)
     await context.close()
   }

@@ -8,7 +8,8 @@ import { armEndFor, capEnd, detach, endCapState, endIndex, openEnds, runSum } fr
 import { blockOf, insertPiece, removeTable, resizeSide, setArm, sideRange } from './placement';
 import { edit, findPiece, noRoom, notAllowed, type Outcome } from './edit';
 import { moveTableIn } from './tableOps';
-import { TABLE_MID, resizeBetweenSeats } from './balance';
+import { resizeBetweenSeats } from './balance';
+import { addTable } from './tablePlace';
 import type { Config, EditResult, EndCap, Placement, RunEnd, RunId, RunPiece } from './types';
 
 export function resizePiece(config: Config, id: string, length: number): EditResult {
@@ -75,17 +76,18 @@ export interface AddOptions {
   arm?: RunEnd;
 }
 
-/** §5.4 defaults: armless 36, one-arm 50 (36 + 14), table 32. */
+/** §5.4 defaults: armless 36, one-arm 50 (36 + 14); a table: addTable (32″, stepping down to fit). */
 export function addPiece(
   config: Config,
   kind: 'armless' | 'oneArm' | 'table',
   placement: Placement,
   opts: AddOptions = {},
 ): EditResult {
+  // A new table with no width given: 32″, stepping down to fit (tablePlace.ts, Andre 2026-11-09).
+  if (kind === 'table' && opts.length === undefined) return addTable(config, placement);
   return edit(config, (d, alloc): Outcome => {
     const A = d.dims.A;
-    // A new table dropped into a seat starts at 20″ so the seats either side stay usable (balance.ts).
-    const length = half(opts.length ?? (kind === 'table' && placement.at === 'split' ? TABLE_MID : defaultLength(kind, A)));
+    const length = half(opts.length ?? defaultLength(kind, A));
     const piece: RunPiece = { id: alloc('p'), kind, length };
     if (kind === 'oneArm') piece.arm = opts.arm ?? capEnd(openEnds(d.shape, placement.run)) ?? 'end';
     if (!(length > 0)) return notAllowed('Length must be positive');

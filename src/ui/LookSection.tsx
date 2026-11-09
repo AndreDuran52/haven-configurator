@@ -1,9 +1,15 @@
-// Look (plan §10 H5; UX Phase 3, Andre 2026-11-08): Fabric and Wood, each its
-// own section with big swatches and names (both are in the share link). The
-// pillows and the plan style moved to the View menu over the plan.
-import { FABRICS, FINISHES, setFabric, setTableFinish, type EditResult } from '@/engine';
-import { useHavenStore, useLive } from '@/state/store';
-import { Section } from './controls';
+// The Design tab (plan §10 H5; UX Phase 3; Andre 2026-11-09): the finish
+// choices. Fabric; Tables (Wood top on fabric base | All wood) when the sofa
+// has a table; Wood. All are in the share link. A later "Seats: Stitch line |
+// No line" goes here too. The pillows and the plan style are in the View menu.
+import { FABRICS, FINISHES, setFabric, setTableFinish, setTableStyle, type EditResult, type TableStyle } from '@/engine';
+import { useHavenStore, useLive, useLiveLayout } from '@/state/store';
+import { Section, Segmented } from './controls';
+
+const TABLE_STYLES: { value: TableStyle; label: string }[] = [
+  { value: 'standard', label: 'Wood top on fabric base' },
+  { value: 'allWood', label: 'All wood' },
+];
 
 function Swatch({ color, label, on, onClick }: { color: string; label: string; on: boolean; onClick: () => void }) {
   return (
@@ -25,6 +31,7 @@ function Swatch({ color, label, on, onClick }: { color: string; label: string; o
 export function LookSection() {
   const store = useHavenStore();
   const live = useLive();
+  const hasTable = useLiveLayout().sections.some((s) => Object.values(s.config.runs).some((ps) => ps?.some((p) => p.kind === 'table')));
   const apply = (r: EditResult) => {
     const s = store.getState();
     if (r.rejected) s.toast(r.rejected.message);
@@ -39,6 +46,11 @@ export function LookSection() {
           ))}
         </div>
       </Section>
+      {hasTable && (
+        <Section title="Tables">
+          <Segmented label="Table style" value={live.tableStyle} options={TABLE_STYLES} onChange={(v) => apply(setTableStyle(store.getState().config, v))} />
+        </Section>
+      )}
       <Section title="Wood">
         <div role="radiogroup" aria-label="Wood finish" className="flex flex-wrap gap-2" data-testid="finishes">
           {FINISHES.map((f) => (

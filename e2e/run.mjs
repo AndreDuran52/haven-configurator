@@ -3,6 +3,7 @@
 import { preview } from 'vite'
 import { launchBrowser } from './browser.mjs'
 import { fixes } from './fixes.mjs'
+import { fixes2 } from './fixes2.mjs'
 import { h2 } from './h2.mjs'
 import { h4 } from './h4.mjs'
 import { h5 } from './h5.mjs'
@@ -39,6 +40,7 @@ try {
   await room(browser, BASE, check)
   await phase3(browser, BASE, check)
   await phase3b(browser, BASE, check)
+  await fixes2(browser, BASE, check)
 } finally {
   await browser.close()
   await server.close()

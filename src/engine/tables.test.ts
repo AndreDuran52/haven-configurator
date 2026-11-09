@@ -32,16 +32,23 @@ describe('tables', () => {
     expect(desc(c, 'left')).toEqual(['armless 13.5', 'table 32', 'oneArm 27=13+14@end']);
   });
 
-  it('absorber tie-break: nearest seat, then the LARGER cushion, then the lower index', () => {
+  it('a table between two seats: both give up its width equally (Andre, 2026-11-09), a split group too', () => {
     const g = standardU({ W: 272 }); // back [T][60][60] (split group)
     const uneven = op.dragSeam(g, 'back', 2, 10);
     expect(desc(uneven, 'back')).toEqual(['table 32', 'armless 70', 'armless 50']);
     expect(desc(op.addPiece(uneven, 'table', { run: 'back', at: 'seam', seam: 2 }), 'back')).toEqual([
-      'table 32', 'armless 38', 'table 32', 'armless 50',
+      'table 32', 'armless 44', 'table 32', 'armless 44',
     ]);
     const even = op.addPiece(g, 'table', { run: 'back', at: 'seam', seam: 2 });
-    expect(desc(even, 'back')).toEqual(['table 32', 'armless 28', 'table 32', 'armless 60']);
+    expect(desc(even, 'back')).toEqual(['table 32', 'armless 44', 'table 32', 'armless 44']);
     expect(even.runs.back!.every((p) => p.splitGroup === undefined)).toBe(true);
+  });
+
+  it('absorber tie-break (a seat added at a seam): nearest seat, then the LARGER cushion, then the lower index', () => {
+    const uneven = op.dragSeam(standardU({ W: 272 }), 'back', 2, 10); // [T][70][50]
+    expect(desc(op.addPiece(uneven, 'armless', { run: 'back', at: 'seam', seam: 2 }), 'back')).toEqual([
+      'table 32', 'armless 34', 'armless 36', 'armless 50',
+    ]);
   });
 
   it('several tables: end cap "table" adds one; same-run seam moves are pure reorders', () => {
@@ -126,26 +133,26 @@ describe('table dragging', () => {
   it('snaps to the nearest anchor, resolved on the drag-start config', () => {
     const u = U();
     expect(desc(snap(u, [115, 22]), 'back')).toEqual(['armless 36', 'table 32']); // the other seam
-    expect(desc(snap(u, [95, 22]), 'back')).toEqual(['armless 18', 'table 32', 'armless 18']); // split the back seat
-    expect(desc(snap(u, [22, 92]), 'left')).toEqual(['armless 13', 'table 32', 'oneArm 27=13+14@end']); // = 3b
+    expect(desc(snap(u, [95, 22]), 'back')).toEqual(['armless 36', 'table 32']); // no split: the nearest seam
+    expect(desc(snap(u, [22, 92]), 'left')).toEqual(['table 32', 'oneArm 40=26+14@end']); // the corner seam (26 ≥ 23)
     expect(desc(snap(u, [22, 125]), 'left')).toEqual(['armless 40', 'table 32']); // arm centre: replaceArm = 3a
     expect(desc(snap(u, [22, 150]), 'left')).toEqual(['oneArm 40=26+14@end', 'table 32']); // beyond the end: outside the arm
     expect(raw.snapTable(u, tableId(u), [76, 22]).result.config).toBe(u); // on its own spot: nothing changes
   });
 
-  it('anchors: the open-end seam next to an arm exists only as "outside the arm"; hysteresis keeps the current target', () => {
+  it('anchors: seams only (no split where a seam fits); the open-end seam next to an arm exists only as "outside the arm"; hysteresis keeps the current target', () => {
     const u = U();
     const t = raw.anchoredTargets(u, tableId(u)).filter((a) => a.placement.run === 'left');
     expect(t.map((a) => [a.placement.at, a.anchor])).toEqual([
       ['seam', [22, 76]],
-      ['split', [22, 89]],
       ['replaceArm', [22, 125]],
       ['seam', [22, 148]],
     ]);
-    const current = { run: 'left', at: 'split', pieceId: idAt(u, 'left', 0) } as const;
-    // (22, 81) is 5 nearer the seam-0 anchor than the split one: within 6" hysteresis, keep the split
-    expect(raw.snapTable(u, tableId(u), [22, 81], current).placement).toEqual(current);
-    expect(raw.snapTable(u, tableId(u), [22, 78], current).placement).toEqual({ run: 'left', at: 'seam', seam: 0 });
+    expect(raw.anchoredTargets(u, tableId(u)).some((a) => a.placement.at === 'split')).toBe(false);
+    const current = { run: 'left', at: 'seam', seam: 0 } as const;
+    // (22, 103) is 5 nearer the replaceArm anchor than seam 0: within 6" hysteresis, keep seam 0
+    expect(raw.snapTable(u, tableId(u), [22, 103], current).placement).toEqual(current);
+    expect(raw.snapTable(u, tableId(u), [22, 106], current).placement).toEqual({ run: 'left', at: 'replaceArm' });
   });
 
   it('while dragging from 3b the warning is live, and the drop back on the back run restores the Standard U', () => {

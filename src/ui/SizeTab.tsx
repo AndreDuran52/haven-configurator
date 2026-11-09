@@ -2,11 +2,12 @@
 // 2026-11-06; UX Phase 3; Phase 3b, 2026-11-08): a T's own panel, Width / Left
 // side / Right side / Depth, the depth chips 36 · 40 · 44 · Other with the
 // seat depth under them (sofa depth − 18: the back frame and back cushion
-// never change), the corner wedge, and the sofa's warnings. "When pieces
-// change" and arm width are on the Pieces tab; the room has its own tab; the
-// seat width for the seat count is in the settings menu.
+// never change), the arm width (it changes the footprint and the seats;
+// Andre 2026-11-09), the corner wedge, and the sofa's warnings. "When pieces
+// change" is on the Pieces tab; the room has its own tab; the seat width for
+// the seat count is in the settings menu.
 import { lazy, Suspense } from 'react';
-import { DEPTH_PRESETS, setMeasurements, type EditResult } from '@/engine';
+import { DEPTH_PRESETS, setArmWidth, setMeasurements, type EditResult } from '@/engine';
 import { fmtIn } from '@/plan/format';
 import { builtOf, layoutBuiltOf, useHavenStore, useLive, useLiveLayout } from '@/state/store';
 import { Button, Section } from './controls';
@@ -74,6 +75,7 @@ export function SizeTab() {
           Seat depth <span className="font-semibold tabular-nums">{fmtIn(builtOf(live).seatDepth, { mark: false })}″</span>
           <span className="text-ink-muted"> (front edge to the back cushion)</span>
         </p>
+        <MeasureField name="A" label="Arm width" labelClass="w-24" step={0.5} value={live.dims.A} read={(c) => c.dims.A} apply={setArmWidth} />
       </Section>
       {!straight && (
         <Section title="Corner wedge">

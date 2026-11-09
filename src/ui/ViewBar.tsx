@@ -1,9 +1,11 @@
 // The bar over the plan / 3D box (plan §7.2; UX Phase 3, Andre 2026-11-08):
 // Plan | 3D; in the plan, Dimensions Overall | Detailed; in 3D the cameras
 // Overview, Top, Front, Side (3/4 and Iso are one Overview; Top is back since
-// Phase 3b); and a small View menu (Pillows in the plan and 3D, plan style).
-// A camera button returns to its exact view even when it's already on. In the
-// entry chunk: it imports only three-free modules (ortho/presets), so no three.js.
+// Phase 3b); and a small View menu (Pillows in the plan and 3D; Plan style in
+// the plan only). Rule for every menu (Andre, 2026-11-09): only options that do
+// something in the current view. A camera button returns to its exact view even
+// when it's already on. In the entry chunk: it imports only three-free modules
+// (ortho/presets), so no three.js.
 import { isElevation, type PresetName } from '@/ortho/presets';
 import { writeDimsMode } from '@/state/prefs';
 import { useHaven, useHavenStore, useLive } from '@/state/store';
@@ -92,7 +94,8 @@ export function ViewBar() {
           {() => (
             <>
               <Toggle label="Pillows" on={pillows} onChange={(on) => setUi({ pillows: on })} testId="pillows" />
-              <div className="flex flex-col gap-1.5 px-3 py-2">
+              {view === 'plan' && (
+              <div className="flex flex-col gap-1.5 px-3 py-2" data-testid="plan-style">
                 <span className="text-[15px] font-medium text-ink">Plan style</span>
                 <div role="radiogroup" aria-label="Plan style" className="flex gap-1 rounded-lg border border-line bg-panel-2 p-0.5">
                   {(['cad', 'sketch'] as const).map((v) => (
@@ -102,6 +105,7 @@ export function ViewBar() {
                   ))}
                 </div>
               </div>
+              )}
             </>
           )}
         </Menu>

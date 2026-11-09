@@ -1,7 +1,7 @@
 // H2 done-when checks (plan §10), judged by outcome in the DOM.
 import { mkdirSync } from 'node:fs'
 import { enterEditor, VIEWPORTS } from './browser.mjs'
-import { config, dimTexts, labelCheck, openApp, panel, seats, setField, slide, warnings, projectMenu } from './lib.mjs'
+import { config, dimTexts, labelCheck, openApp, seats, setField, slide, warnings, projectMenu } from './lib.mjs'
 
 const SHOTS = 'test-results'
 
@@ -75,8 +75,8 @@ export async function h2(browser, base, check) {
   // footprint, so it reads seat 62 | arm 10; one Undo brings it back.
   {
     const { context, page } = await openApp(browser, base)
-    await panel(page, 'Pieces') // arm width is on the Pieces tab since Phase 3b
-    for (let i = 0; i < 8; i++) await page.getByRole('button', { name: 'Arm width minus ½' }).click()
+    // Arm width is on the Size tab (Andre, 2026-11-09): a measure field, ½″ steps.
+    for (let i = 0; i < 8; i++) await page.getByRole('button', { name: 'Arm width minus 0.5' }).click()
     const t = await dimTexts(page)
     const c = await config(page)
     check(c.dims.A === 10 && t.filter((x) => x === '10"').length === 2 && t.filter((x) => x === '62"').length === 2 && c.L === 132, `arm width 10: legs read 62 | 10, L holds 132 (A ${c.dims.A}, ${t.join(' ')})`)
