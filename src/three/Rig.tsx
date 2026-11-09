@@ -208,6 +208,7 @@ export function Rig({
         zoom: camera.zoom,
         heightY: (h) => toScreen([t.x, h, t.z])[1],
         leftX: Math.min(...points.map((p) => toScreen(p)[0])),
+        project: toScreen,
         resting: resting.current,
       });
     };

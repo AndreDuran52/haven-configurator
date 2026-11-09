@@ -1,4 +1,4 @@
-// The camera state the HTML overlay (scale bar, height ticks) draws from,
+// The camera state the HTML overlay (height ticks, seat markers) draws from,
 // published by the Rig on every controls update. Kept outside React state so a
 // camera move never re-renders the canvas tree.
 export interface ViewState {
@@ -7,6 +7,8 @@ export interface ViewState {
   heightY: (h: number) => number;
   /** screen x of the sofa's left end in the current view */
   leftX: number;
+  /** a world point to screen (CSS px) in the current view (the seat markers in Top) */
+  project: (p: [number, number, number]) => [number, number];
   resting: boolean;
 }
 

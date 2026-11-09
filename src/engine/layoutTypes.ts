@@ -47,6 +47,8 @@ export interface Layout {
   sections: Section[];
   /** The client's room; absent when none is set (never an undefined-valued key). */
   room?: Room;
+  /** Count the seats snug (24″) instead of comfortable (28″) (link v6, Andre 2026-11-09); absent when off. */
+  snug?: true;
 }
 
 /** Fields every joined section shares (one depth, corner, look and seat count per sofa). */

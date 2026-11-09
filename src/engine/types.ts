@@ -240,6 +240,9 @@ export interface Warning {
 export interface SeatCount {
   comfortable: number;
   snug: number;
+  /** The one number shown everywhere (Andre, 2026-11-09): comfortable, or snug when the layout counts snug. */
+  count: number;
+  /** "Seats 7", "Seats 8 · snug", "Seats 9 · 21″ seats". */
   label: string;
 }
 

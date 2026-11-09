@@ -50,7 +50,7 @@ export async function phase3b(browser, base, check) {
     await page.keyboard.press('Escape')
     if (vp === LAPTOP) {
       await page.getByTestId('settings').click()
-      check(await onTop(page, '[aria-label="Seat width minus 1"]'), `${vp.width}: the Settings menu is on top (clickable)`)
+      check(await onTop(page, '[data-testid=build]'), `${vp.width}: the Settings menu is on top (clickable)`)
       await page.keyboard.press('Escape')
     }
     check(!(await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)), `${vp.width}: no sideways scroll`)
@@ -100,8 +100,9 @@ export async function phase3b(browser, base, check) {
     check(line.startsWith(`Width 188″ → ${W}″`), `the result line covers the whole hold: "${line}"`)
     await page.getByRole('button', { name: 'Undo', exact: true }).click()
     check((await config(page)).W === 188, 'one Undo: back to 188')
-    // The seat width in Settings repeats too.
-    await page.getByTestId('settings').click()
+    // The seat width (in the View menu's Seating since 2026-11-09) repeats too.
+    await viewMenu(page)
+    await page.waitForSelector('[aria-label="Seat width minus 1"]')
     const minus = await page.getByRole('button', { name: 'Seat width minus 1' }).boundingBox()
     await page.mouse.move(minus.x + minus.width / 2, minus.y + minus.height / 2)
     await page.mouse.down()

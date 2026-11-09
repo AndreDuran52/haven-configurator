@@ -191,6 +191,6 @@ describe('link v5', () => {
     const bad = body.replace('w240', 'w10');
     expect(decodeLayout(`5${bad}.${checksum(`5${bad}`)}`)).toEqual({ error: 'damaged' });
     expect(decode(GOLDEN_V5.uCenter!)).toEqual({ error: 'newer' });
-    expect(decodeLayout(`6${GOLDEN_V5.uCenter!.slice(1)}`)).toEqual({ error: 'newer' });
+    expect(decodeLayout(`7${GOLDEN_V5.uCenter!.slice(1)}`)).toEqual({ error: 'newer' });
   });
 });

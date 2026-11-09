@@ -7,13 +7,13 @@ import { codes, idAt, op, piece, raw, tableId, U, valid } from './testing';
 import type { Config } from './types';
 
 describe('seat count and warnings', () => {
-  it('"Seats 7–8" when comfortable and snug differ; seat width is a setting (G8 snug width too)', () => {
+  it('one sofa counts comfortable ("Seats 7"), keeping the snug count beside it; a non-standard seat width says so (2026-11-09)', () => {
     const c = op.setMeasurements(U(), { D: 36 }); // back stretch 52: 1 @28, 2 @24
-    expect(valid(c).seats).toEqual({ comfortable: 7, snug: 8, label: 'Seats 7–8' });
-    expect(valid(op.setSeatWidth(c, 24)).seats.label).toBe('Seats 8');
-    expect(valid(op.setSeatWidth(c, 22)).seats).toEqual({ comfortable: 10, snug: 10, label: 'Seats 10' });
-    expect(valid({ ...c, snugWidth: 26 }).seats.label).toBe('Seats 7–8'); // 52/26 = 2
-    expect(valid({ ...c, snugWidth: 28 }).seats.label).toBe('Seats 7');
+    expect(valid(c).seats).toEqual({ comfortable: 7, snug: 8, count: 7, label: 'Seats 7' });
+    expect(valid(op.setSeatWidth(c, 24)).seats.label).toBe('Seats 8 · 24″ seats');
+    expect(valid(op.setSeatWidth(c, 22)).seats).toEqual({ comfortable: 10, snug: 10, count: 10, label: 'Seats 10 · 22″ seats' });
+    expect(valid({ ...c, snugWidth: 26 }).seats.snug).toBe(8); // 52/26 = 2
+    expect(valid({ ...c, snugWidth: 28 }).seats.snug).toBe(7);
   });
 
   it('warning messages (amber, never blocking)', () => {

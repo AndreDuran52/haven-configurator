@@ -5,7 +5,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperti
 import { Box3, NeutralToneMapping, Vector3, type DirectionalLight, type Texture } from 'three';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { ContactShadows } from '@react-three/drei';
-import { BACK_CUSHION, pillowAnchors, planCentre, type BuildResult } from '@/engine';
+import { BACK_CUSHION, pillowAnchors, planCentre, seatMarkers, type BuildResult } from '@/engine';
 import { fitPoints, FLOOR_THICKNESS, FLOOR_TOP } from '@/ortho/fitPoints';
 import { isElevation } from '@/ortho/presets';
 import { builtOf, layoutBuiltOf, useHaven, useHavenStore, useLive, useLiveLayout } from '@/state/store';
@@ -49,6 +49,9 @@ export default function ThreeView() {
   const showLoose = showLooseUi || !isElevation(preset);
   const parts = useMemo(() => buildParts(built, live.tableStyle), [built, live.tableStyle]);
   const showPillows = useHaven((s) => s.ui.pillows);
+  // The numbered seat markers in Top (Andre, 2026-11-09): the same count as "Seats N", at seat height.
+  const showMarkers = useHaven((s) => s.ui.markers && s.ui.preset === 'top');
+  const snug = useHaven((s) => !!s.layout.snug);
   const pillows = useMemo(() => (showPillows ? pillowAnchors(built) : []), [built, showPillows]);
   // Andre's Blender pillows: the procedural ones show until they load.
   const [models, setModels] = useState<SoftModels | null>(null);
@@ -61,6 +64,13 @@ export default function ThreeView() {
   }, []);
   const points = useMemo(() => fitPoints(built, { loose: showLoose, pillows: showPillows }), [built, showLoose, showPillows]);
   const world = useMemo(() => worldBounds(built), [built]);
+  const markers = useMemo(
+    () =>
+      showMarkers
+        ? seatMarkers(built, { snug, seatWidth: live.seatWidth, snugWidth: live.snugWidth }).map(([x, y]): [number, number, number] => [x + world.offset[0], built.heights.seatHeight, y + world.offset[1]])
+        : null,
+    [showMarkers, built, snug, live.seatWidth, live.snugWidth, world],
+  );
   const mats = useMemo(() => makeMaterials(live.fabric, live.tableFinish), [live.fabric, live.tableFinish]);
   useEffect(() => () => mats.dispose(), [mats]);
   const view = useMemo(() => createViewStore(), []);
@@ -153,7 +163,7 @@ export default function ThreeView() {
       </Canvas>
       </div>
       )}
-      <Overlay view={view} preset={preset} heights={built.heights} />
+      <Overlay view={view} preset={preset} heights={built.heights} markers={markers} />
     </div>
   );
 }

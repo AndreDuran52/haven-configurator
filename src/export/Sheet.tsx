@@ -5,13 +5,14 @@
 // 100 %; the 3D views are JPEG renders (illustrations, not to scale).
 // Text is WinAnsi-safe (straight quotes): jsPDF's Helvetica has no ″ or ′.
 import type { BuildResult, Config, LayoutBuild } from '@/engine';
-import { fabricOf, finishOf, type Layout } from '@/engine';
+import { fabricOf, finishOf, layoutSeatMarkers, type Layout } from '@/engine';
 import { DimsLayer } from '@/plan/DimsLayer';
 import { soloSource } from '@/plan/dims';
 import { layoutDimSource, layoutSeatsAt } from '@/plan/layoutDims';
 import { fmtIn } from '@/plan/format';
 import { PlanDrawing } from '@/plan/PlanDrawing';
 import { planPillows } from '@/plan/pillowShapes';
+import { SeatMarkersLayer } from '@/plan/SeatMarkersLayer';
 import { LIGHT, SKETCH } from '@/plan/theme';
 import { PRESET_LABELS, type PresetName } from '@/ortho/presets';
 import { fitPlan, headerLine } from './fit';
@@ -41,6 +42,8 @@ export interface SheetProps {
   look: 'cad' | 'sketch';
   /** Phase 3b: the plan shows the pillows when the View menu's Pillows switch is on. */
   pillows?: boolean;
+  /** The numbered seat markers, when the View menu's Seat markers switch is on (Andre, 2026-11-09). */
+  markers?: boolean;
   meta: { title: string; date: string; link: string };
 }
 
@@ -105,7 +108,7 @@ export function Sheet(p: SheetProps) {
           <g transform={`translate(${plan.ox.toFixed(3)} ${plan.oy.toFixed(3)}) scale(${plan.S})`} data-plan-scale={plan.S}>
             {lb.room && <RoomFloor room={lb.room} k={1 / plan.S} theme={theme} />}
             {lb.solo ? (
-              <PlanDrawing built={b} dims={plan.dims} k={1 / plan.S} theme={theme} showWarnings={false} seatsSize={10} gapLabelSize={7} pillows={p.pillows ? planPillows(b) : null} />
+              <PlanDrawing built={b} dims={plan.dims} k={1 / plan.S} theme={theme} showWarnings={false} seatsSize={10} gapLabelSize={7} pillows={p.pillows ? planPillows(b) : null} seatsLabel={lb.seats.label} />
             ) : (
               <>
                 {/* The root last: with a shared back it owns the frame down the stem (as on screen). */}
@@ -121,6 +124,7 @@ export function Sheet(p: SheetProps) {
               </>
             )}
             {lb.room && <RoomGaps room={lb.room} k={1 / plan.S} theme={theme} frontX={frontXOf(lb.sections)} size={7} />}
+            {p.markers && <SeatMarkersLayer points={layoutSeatMarkers(lb.sections, { snug: !!p.layout.snug, seatWidth: p.config.seatWidth, snugWidth: p.config.snugWidth })} k={1 / plan.S} theme={theme} r={7} size={8} />}
           </g>
         </g>
       )}

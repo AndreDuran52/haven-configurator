@@ -3,7 +3,7 @@
 import { buildHaven } from './buildHaven';
 import type { Joint, Layout, Section, SharedKey } from './layoutTypes';
 import { SHARED_KEYS } from './layoutTypes';
-import { formatSeats } from './seating';
+import { seatTotals } from './seating';
 import { roomFit, sofaRect, type RoomFit } from './roomFit';
 import type { BuildResult, Bounds, Config, Pt, Rect, SeatCount, Warning } from './types';
 
@@ -156,7 +156,8 @@ export function buildLayout(l: Layout, build: (c: Config) => BuildResult = build
           .map((s) => shiftBounds(s.built.bounds, s.offset))
           .reduce((a, b) => ({ minX: Math.min(a.minX, b.minX), minY: Math.min(a.minY, b.minY), maxX: Math.max(a.maxX, b.maxX), maxY: Math.max(a.maxY, b.maxY) })),
     overall: { W: box.w, depth: box.h },
-    seats: solo ? sections[0]!.built.seats : { comfortable, snug, label: formatSeats(comfortable, snug) },
+    // One number everywhere: comfortable, or snug when the layout counts snug (Andre, 2026-11-09).
+    seats: seatTotals(comfortable, snug, { snug: !!l.snug, seatWidth: sections[0]!.config.seatWidth, snugWidth: sections[0]!.config.snugWidth }),
     warnings,
     errors,
     exportBlocked: errors.length > 0 || sections.some((s) => s.built.exportBlocked),

@@ -34,7 +34,7 @@ import { openEnd, runIds } from './layout';
 import { ARM_MAX, ARM_MIN, WEDGE_RANGE } from './pieces';
 import type { Config, HavenDims, LoosePiece, RunId, RunPiece, Runs, Shape, TableFinish, TableStyle } from './types';
 
-export const LINK_VERSION = 5;
+export const LINK_VERSION = 6;
 
 /** Append-only: a fabric's index is its link code. */
 /** Append-only: a fabric's index is its link code (every FABRICS key must be here). */
@@ -151,9 +151,10 @@ export function decode(link: string): DecodeResult {
   if (version > LINK_VERSION) return { error: 'newer' };
   if (checksum(`${m[1]}${m[2]}`) !== m[3]) return { error: 'damaged' };
   if (version >= 3 && /_P/.test(m[2]!)) return { error: 'newer' };
-  // A room (v5) belongs to the layout: decodeLayout reads it.
+  // A room (v5) and the snug count (v6) belong to the layout: decodeLayout reads them.
   if (version >= 5 && /_M/.test(m[2]!)) return { error: 'newer' };
-  const decoders: Record<number, (b: string) => Config | null> = { 1: (b) => decodeBody(b, 1), 2: (b) => decodeBody(b, 2), 3: (b) => decodeBody(b, 3), 4: (b) => decodeBody(b, 4), 5: (b) => decodeBody(b, 5) };
+  if (version >= 6 && /_N$/.test(m[2]!)) return { error: 'newer' };
+  const decoders: Record<number, (b: string) => Config | null> = { 1: (b) => decodeBody(b, 1), 2: (b) => decodeBody(b, 2), 3: (b) => decodeBody(b, 3), 4: (b) => decodeBody(b, 4), 5: (b) => decodeBody(b, 5), 6: (b) => decodeBody(b, 6) };
   const config = decoders[version]?.(m[2]!) ?? null;
   // Later versions: migrations[v](config), chained up to the current schema.
   if (!config || !inRange(config) || buildHaven(config).errors.length > 0) return { error: 'damaged' };

@@ -14,6 +14,8 @@ export interface SheetRequest {
   views: SheetViews;
   look: 'cad' | 'sketch';
   pillows: boolean;
+  /** The numbered seat markers on the plan (the View menu's switch). */
+  markers?: boolean;
   /** Typed at export time; never stored in the link. */
   title: string;
   link: string;
@@ -82,6 +84,7 @@ export async function makeSheet(req: SheetRequest): Promise<SheetFile> {
     renders,
     look: req.look,
     pillows: req.pillows,
+    markers: !!req.markers,
     meta: { title: req.title.trim(), date: date.toLocaleDateString('en-US', { dateStyle: 'long' }), link: req.link },
   });
   const [{ jsPDF }] = await Promise.all([import('jspdf'), import('svg2pdf.js')]);

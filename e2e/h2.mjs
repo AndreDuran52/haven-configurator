@@ -24,12 +24,12 @@ export async function h2(browser, base, check) {
     await context.close()
   }
 
-  // 2. D = 36: back 52, legs 80, Seats 7–8 (test 2).
+  // 2. D = 36: back 52, legs 80, Seats 7 (test 2; one seat number since 2026-11-09: comfortable unless Snug).
   {
     const { context, page } = await openApp(browser, base)
     await setField(page, 'D', 36)
     const t = await dimTexts(page)
-    check(t.includes('52"') && t.filter((x) => x === '66"').length === 2 && (await seats(page)) === 'Seats 7–8', 'D = 36: back 52, legs 80 (seat 66 | arm 14), Seats 7–8')
+    check(t.includes('52"') && t.filter((x) => x === '66"').length === 2 && (await seats(page)) === 'Seats 7', 'D = 36: back 52, legs 80 (seat 66 | arm 14), Seats 7')
     await context.close()
   }
 

@@ -37,6 +37,8 @@ export interface UiState {
   look: 'cad' | 'sketch';
   /** Show the pillows in 3D (plan §10 H5); UI only, not in links. */
   pillows: boolean;
+  /** Numbered seat markers in the plan and 3D Top (Andre, 2026-11-09); off when a layout opens; the PDF follows. */
+  markers: boolean;
   selectedId: string | null;
   /** Tap-to-place (plan §8): a tray piece waiting for a "+" pin. */
   placing: TrayKind | null;
@@ -161,6 +163,7 @@ export function createHavenStore(initial: Layout | Config, ui: Partial<UiState> 
         showLoose: false,
         look: 'cad',
         pillows: true,
+        markers: false,
         selectedId: null,
         placing: null,
         dragging: null,

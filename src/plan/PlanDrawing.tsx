@@ -26,6 +26,8 @@ export interface PlanDrawingProps {
   gapLabelSize?: number;
   /** false for each section of a layout (the layout draws one seat label). */
   showSeats?: boolean;
+  /** The layout's one seat label ("Seats 8 · snug"; Andre 2026-11-09); default: this sofa's own. */
+  seatsLabel?: string;
   /** Phase 3b: the throw pillows seen from above (planPillows), when the View menu's Pillows switch is on. */
   pillows?: PlanPillow[] | null;
 }
@@ -36,7 +38,8 @@ const Box = ({ box: r, ...rest }: { box: Rect } & Omit<React.SVGProps<SVGRectEle
 
 const inset = (r: Rect, d: number): Rect => ({ x: r.x + d, y: r.y + d, w: r.w - 2 * d, h: r.h - 2 * d });
 
-export function PlanDrawing({ built, dims, k, theme, showWarnings, selectedId, seatsSize = 16, gapLabelSize = 11, showSeats = true, pillows = null }: PlanDrawingProps) {
+export function PlanDrawing({ built, dims, k, theme, showWarnings, selectedId, seatsSize = 16, gapLabelSize = 11, showSeats = true, pillows = null, seatsLabel }: PlanDrawingProps) {
+  const seatsText = seatsLabel ?? built.seats.label;
   const lw = (u: number) => +(u * k).toFixed(4); // display units -> plan inches
   const warnIds = new Set(showWarnings ? built.warnings.map((w) => w.pieceId).filter(Boolean) : []);
   const runPieces = (run: string) => built.pieces.filter((p) => p.run === run);
@@ -101,7 +104,7 @@ export function PlanDrawing({ built, dims, k, theme, showWarnings, selectedId, s
     usualSeatsAt,
     built.pieces.filter((p) => p.kind === 'ottoman' || p.kind === 'coffeeTable').map((p) => p.bbox),
     lw(seatsSize),
-    built.seats.label.length,
+    seatsText.length,
     built.D,
     built.shape === 'straight' ? built.D + 40 : Math.max(built.shape !== 'L-right' ? built.L : 0, built.shape !== 'L-left' ? built.R : 0),
   );
@@ -161,7 +164,7 @@ export function PlanDrawing({ built, dims, k, theme, showWarnings, selectedId, s
       </g>
       <g data-loose="">{loose.map(piece)}</g>
       {dims && <DimsLayer dims={dims} theme={theme} />}
-      {showSeats && <g data-seats="">{text(seatsAt[0], seatsAt[1], built.seats.label, lw(seatsSize), { bold: true, fill: theme.ink })}</g>}
+      {showSeats && <g data-seats="">{text(seatsAt[0], seatsAt[1], seatsText, lw(seatsSize), { bold: true, fill: theme.ink })}</g>}
     </g>
   );
 }

@@ -2,14 +2,18 @@
 // Plan | 3D; in the plan, Dimensions Overall | Detailed; in 3D the cameras
 // Overview, Top, Front, Side (3/4 and Iso are one Overview; Top is back since
 // Phase 3b); and a small View menu (Pillows in the plan and 3D; Plan style in
-// the plan only). Rule for every menu (Andre, 2026-11-09): only options that do
+// the plan only; Seating: seat markers, Snug, seat width). Rule for every menu (Andre, 2026-11-09): only options that do
 // something in the current view. A camera button returns to its exact view even
 // when it's already on. In the entry chunk: it imports only three-free modules
 // (ortho/presets), so no three.js.
+import { lazy, Suspense } from 'react';
 import { isElevation, type PresetName } from '@/ortho/presets';
 import { writeDimsMode } from '@/state/prefs';
 import { useHaven, useHavenStore, useLive } from '@/state/store';
 import { Menu } from './Menu';
+// The Seating section loads when the menu first opens (it stays out of the entry chunk).
+const SeatingSection = lazy(() => import('./SeatingSection').then((m) => ({ default: m.SeatingSection })));
+import { Toggle } from './Toggle';
 
 /** The 3D cameras offered (UX Phase 3; Top again in 3b): Overview is the 3/4 view. */
 const CAMERAS: { preset: PresetName; label: string }[] = [
@@ -23,17 +27,6 @@ const CAMERAS: { preset: PresetName; label: string }[] = [
 const pill = (on: boolean) =>
   `min-h-11 min-w-11 rounded-lg px-2 min-[480px]:px-3 text-[15px] font-semibold ${on ? 'bg-ink text-canvas' : 'bg-transparent text-ink hover-hover:bg-panel-2'}`;
 const group = 'pointer-events-auto flex gap-0.5 rounded-xl border border-line bg-panel p-1 shadow-sm min-[480px]:gap-1';
-
-function Toggle({ on, label, onChange, testId }: { on: boolean; label: string; onChange: (on: boolean) => void; testId?: string }) {
-  return (
-    <button type="button" role="menuitemcheckbox" aria-checked={on} onClick={() => onChange(!on)} className="flex min-h-11 items-center justify-between gap-4 rounded-lg px-3 text-[15px] font-medium text-ink hover-hover:bg-panel-2" data-testid={testId}>
-      {label}
-      <span className={`relative h-6 w-10 shrink-0 rounded-full ${on ? 'bg-accent' : 'bg-line'}`} aria-hidden>
-        <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white shadow ${on ? 'left-4.5' : 'left-0.5'}`} />
-      </span>
-    </button>
-  );
-}
 
 export function ViewBar() {
   const store = useHavenStore();
@@ -106,6 +99,9 @@ export function ViewBar() {
                 </div>
               </div>
               )}
+              <Suspense fallback={null}>
+                <SeatingSection view={view} preset={preset} />
+              </Suspense>
             </>
           )}
         </Menu>
