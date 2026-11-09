@@ -124,9 +124,11 @@ export function MenuBody({ sel }: { sel: Selection }) {
     { value: 'table', label: 'Table' },
     { value: 'open', label: 'Open' },
   ];
+  // Plain words (Phase 3c round 2): which end this is, not "this run".
+  const endName = config.shape === 'straight' ? 'This end' : sel.run === 'back' ? 'End of the back' : 'End of this side';
   const endCap = nearEnd && capState && capState !== 'unfilled' && (
     <div className="flex flex-col gap-1">
-      <p className="text-sm font-semibold tracking-wide text-ink-muted uppercase">End of this run</p>
+      <p className="text-sm font-semibold tracking-wide text-ink-muted uppercase">{endName}</p>
       <Segmented
         label="End cap"
         value={(capState === 'armTable' ? 'table' : capState) as EndCap}

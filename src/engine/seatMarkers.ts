@@ -1,13 +1,21 @@
 // Where the numbered seat markers go (Andre, 2026-11-09): one circle per seat
 // the count gives, so the markers and the "Seats N" label always agree. Each
 // straight stretch of cushion (broken by a table, a gap, an arm or a corner,
-// exactly as seatStretches) gets floor(length / width) markers spread evenly
+// exactly as seatStretches) gets seatsIn(length, width) markers (one per width,
+// and one for a stretch of 23″ or more that is narrower, Q76) spread evenly
 // along it, across the middle of the seat; each corner wedge is one seat, at
 // the middle of its seat area (the wedge less its back frames). The order runs
 // round the sofa from its left end to its right end: the left leg from its open
 // end, the left corner, the back left to right, the right corner, the right leg
 // to its open end. Pure; plan inches.
 import type { BuildResult, BuiltPiece, Pt, Rect } from './types';
+
+/**
+ * seating.ts seatsIn, repeated here on purpose: an import would pull this file
+ * into the entry chunk (it loads with the markers). seats.test.ts checks the
+ * markers always equal the count. Q76: 23″ or more seats one.
+ */
+const seatsIn = (len: number, width: number): number => Math.floor(len / width) || (len >= 23 ? 1 : 0);
 
 export interface SeatCountMode {
   snug: boolean;
@@ -55,7 +63,7 @@ function runMarkers(b: BuildResult, runId: string, width: number): Pt[] {
     const len = stretch.reduce((s, p) => s + (p.cushion ?? 0), 0);
     const rects = stretch.map((p) => p.cushionRect).filter((r): r is Rect => !!r);
     stretch = [];
-    const n = Math.floor(len / width);
+    const n = seatsIn(len, width);
     if (!n || !rects.length) return;
     const x = run.axis === 'x';
     const a0 = Math.min(...rects.map((r) => (x ? r.x : r.y)));

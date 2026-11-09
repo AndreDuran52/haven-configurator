@@ -71,6 +71,14 @@ describe('describeChange', () => {
     expect(describeChange(a, b)).toBe('Sides 132″ → 140″ · Seat 58″ → 66″ (both sides)');
   });
 
+  it('Mirror sides: a table added on one side reads once, not as removed and added pieces (round 2)', async () => {
+    const { mirrorSides } = await import('@/engine/sides');
+    const { addTable } = await import('@/engine');
+    const c = standardU({ L: 150, R: 150 });
+    const b = mirrorSides(c, addTable(c, { run: 'left', at: 'seam', seam: 0 }).config);
+    expect(describeChange(solo(c), solo(b))).toBe('Added table 32″ (both sides) · Seat 76″ → 44″ (both sides) · Seats 7 → 5');
+  });
+
   it('long lists are cut at four', () => {
     const a = u();
     const b = edit(a, (c) => setMeasurements(c, { W: 200, L: 140, R: 140, D: 40 }));

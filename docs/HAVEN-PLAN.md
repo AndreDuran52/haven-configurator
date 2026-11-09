@@ -1456,6 +1456,17 @@ Andre's answers: **"the seats stay"** when the shape changes (Q69), and the tabl
 
 **Measured:** vitest `shapeConvert.test.ts` (Andre's examples; all 12 switches between the standard sofas keep the back's seats and tables and switch back to the same sofa; many sofas × every shape valid; L → U copies the leg; loose pieces, room, Snug; a T refused), `keepWork.test.ts` (copy both ways with fresh ids and table joins, independent after; Mirror sides: either side's change copied, ids kept, a table on both sides, other shapes untouched; even pairs through the side, width and corner; the ± from the middle, 16–40, the 23″ stop, lock off, an end table), updated `shapesLock.test.ts` (E19, G2, E26), `straight.test.ts`, `changes.test.ts`; e2e `keep.mjs` (no prompt, the result line, one Undo, U → L left → U and U → L right → U give the same link, L right → L left mirrors, Straight → U → Straight, Mirror sides off by default, on copies the left, Left side 140 makes both 140 with "Sides 132″ → 140″", a table on both sides, off again on reload; a table dropped at either end takes the arm's place with the size kept; a table dropped on a 90″ seat's middle gives 29 | 32 | 29; the Tables ± with a hold as one undo step, even seats after Right side +10, no text under 14 px, screenshots), updated `phase3.mjs` (the guard only on a T), `phase3b.mjs` (the Tables heading), `h4.mjs` (the menu ±: + refused under 23″, − from the middle, Even seats).
 
+**Round 2 (Andre, 2026-11-09, after testing the fixes; built):**
+- **The room plan has no lines across the floor** (Q74): with a room, the sofa's own dimensions (chains, overalls, the D callout) sit outside the walls and their extension lines start at the wall, not at the sofa (`Group.extFromFrame`, set by `withRoom`, `src/plan/roomDims.ts`; `src/plan/dimLayout.ts`). Inside the room only the four sofa-to-wall gaps are drawn. The PDF follows.
+- **Inside the U** (Q75): what clients ask, the clear width between the two sides (W − 2D) and the depth from the back seat's front to the end of the shorter side (min(L, R) − D). Two plain dimension lines in the opening on the plan (always, Overall and Detailed; `src/plan/insideDims.ts`), a line on the Size tab ("Inside the U 100″ wide × 129″ deep") and the PDF footer ("Inside 100″ × 129″").
+- **A seat of 23″ or more seats one** (Q76): a stretch narrower than the seat width (28″, or 24″ snug) but at least 23″ counts as one person and gets a marker (`seatsIn`, `src/engine/seating.ts`; the markers repeat it). The seats either side of a table no longer vanish from the count: 152″ sides with a table in the middle (23 | 32 | 23) read Seats 7, not 3. Two engine tests changed with it (T4 and E21: a 26″ leg seat now counts 1).
+- **No tables touching**: a new or moved table is never offered a spot right next to another table (`noNewTouch`, `src/engine/tablePlace.ts`); old layouts that have touching tables still open as they were.
+- **Mirror sides result line**: with both sides alike before and after, the left side's changes are said once with "(both sides)" (the right side's copy can carry new ids and read as removed and added pieces).
+- **Wording**: the tap menu's end section reads "End of this side", "End of the back", or "This end" on a straight sofa (it said "End of this run").
+- **Against a wall is not a walkway**: under 6″ from a side or front wall (`AGAINST_WALL`, `src/engine/roomFit.ts`) gives no walkway warning and is not drawn amber; 6–29″ warns as before.
+- **Entry budget:** 332 kB raw / 111 kB gzip (measured 330.8 / 110.8; the seat-marker rule is repeated in `seatMarkers.ts` so that file stays out of the entry chunk).
+
+
 ### H7: Cloud saves + tracker hand-off (optional, later; Andre decides, do not start until told)
 The configurator is complete without H7. Options, in order of cost:
 - **(a) Stay local (default).** Layouts live on each device; share links and PDFs move them between devices and people. Nothing to build.
@@ -1653,6 +1664,9 @@ Answer in a word. **Q1 is answered (camera, spring-back orbit), and Q9, Q10, Q12
 | Q71 | Mirror sides | **Answered and built (2026-11-09):** one switch, off until switched on (off again when another layout opens; not in the link); switched on with different sides, the left copies to the right |
 | Q72 | A table at the end of a side | **Answered and built (2026-11-09):** it takes the arm's place (seat \| table), never seat \| arm \| table |
 | Q73 | A table in the middle of a seat | **Answered and built (2026-11-09):** allowed when both halves stay 23″ or more |
+| Q74 | Dimensions with a room | **Answered and built (2026-11-09):** the sofa's dimensions outside the room, no lines across the floor; inside only the four wall gaps |
+| Q75 | Inside the U | **Answered and built (2026-11-09):** width between the sides and depth to the end of the shorter side, on the plan, the Size tab and the PDF |
+| Q76 | Narrow seats | **Answered and built (2026-11-09):** a seat of 23″ or more counts as one person (and gets a marker) |
 
 ---
 

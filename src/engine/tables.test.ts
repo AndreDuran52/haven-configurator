@@ -11,7 +11,7 @@ describe('tables', () => {
     expect(desc(c, 'back')).toEqual(['armless 68']);
     const b = valid(c);
     expect(runOf(b, 'left').endCap).toBe('armTable');
-    expect([b.seats.label, b.seats.snug]).toEqual(['Seats 6', 7]); // the 26" left stretch is 0 comfortable / 1 snug
+    expect([b.seats.label, b.seats.snug]).toEqual(['Seats 7', 7]); // the 26" left stretch is 1 either way (23″ or more, Q76)
     // end-cap menu from armTable
     expect(desc(op.setEndCap(c, 'left', 'table'), 'left')).toEqual(['armless 40', 'table 32']);
     expect(desc(op.setEndCap(c, 'left', 'arm'), 'left')).toEqual(['oneArm 72=58+14@end']);

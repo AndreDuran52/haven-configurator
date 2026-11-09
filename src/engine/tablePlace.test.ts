@@ -10,7 +10,7 @@ import { setArmWidth } from './ops';
 import { cushionOf, isSeat } from './pieces';
 import { addPiece } from './pieceOps';
 import { anchoredTargets, moveTable } from './tableOps';
-import { addTable, centralTable, NO_TABLE_ROOM, tableFits, tableTargets } from './tablePlace';
+import { addTable, centralTable, NO_TABLE_ROOM, tableFits, tableTargets, touchingTables } from './tablePlace';
 import { deepFreeze, desc, valid } from './testing';
 import type { Config } from './types';
 
@@ -84,6 +84,14 @@ describe('where the tray offers a new table', () => {
     const end = t.find((x) => x.placement.run === 'left' && x.placement.at === 'replaceArm')!;
     expect(desc(end.config, 'left')).toEqual(['armless 40', 'table 32']); // seat | table: the arm's place
     for (const x of t) expect(seatsUnder23(x.config)).toEqual([]);
+  });
+
+  it('never right next to another table (Phase 3c round 2): a second table goes elsewhere or is refused', () => {
+    const long = standardU({ L: 150, R: 150 });
+    const first = addTable(long, { run: 'left', at: 'seam', seam: 0 }).config; // table 32 | seat at the corner
+    for (const t of tableTargets(first)) expect(touchingTables(t.config), JSON.stringify(t.placement)).toBe(0);
+    const leftTable = first.runs.left!.find((p) => p.kind === 'table')!;
+    for (const a of anchoredTargets(first, leftTable.id)) expect(touchingTables(moveTable(first, leftTable.id, a.placement).config)).toBe(0);
   });
 
   it('the middle of a seat, when both halves stay 23″ or more (Q73)', () => {

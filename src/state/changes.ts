@@ -74,7 +74,10 @@ function pieceChanges(a: Config, b: Config, out: string[]) {
     for (const q of a.runs[run] ?? []) if (!now.has(q.id) && q.kind !== 'gap') items.push(`Removed ${KIND[q.kind].toLowerCase()}`);
   }
   // Mirror sides (Phase 3c): the same change on both sides reads once, "(both sides)".
-  const same = byRun.left.length > 0 && byRun.left.join('|') === byRun.right.join('|');
+  // With the sides alike before and after (Mirror sides on), the right side's copy may carry new ids
+  // and read as removed and added pieces: the left side's changes say it for both (round 2).
+  const mirrored = a.shape === 'U' && b.shape === 'U' && sidesMatch(a) && sidesMatch(b);
+  const same = mirrored || (byRun.left.length > 0 && byRun.left.join('|') === byRun.right.join('|'));
   out.push(...byRun.back, ...(same ? byRun.left.map((x) => `${x} (both sides)`) : [...byRun.left, ...byRun.right]));
   const items = out;
   const loose = new Set(b.loose.map((l) => l.id));
@@ -107,6 +110,10 @@ function moved(dx: number, dy: number, items: string[]) {
   if (dx) items.push(`Sofa moved ${inch(Math.abs(dx))} ${dx > 0 ? 'right' : 'left'}`);
   if (dy) items.push(`Sofa moved ${inch(Math.abs(dy))} ${dy > 0 ? 'toward the front' : 'toward the back'}`);
 }
+
+/** Both sides of a U alike (sizes and pieces, ids aside). */
+const look = (p: RunPiece) => `${p.kind}:${p.length}:${p.arm ?? ''}`;
+const sidesMatch = (c: Config) => c.L === c.R && (c.runs.left ?? []).map(look).join() === (c.runs.right ?? []).map(look).join();
 
 const SHAPE_NAME: Record<Config['shape'], string> = { U: 'U', 'L-left': 'L left', 'L-right': 'L right', straight: 'Straight' };
 

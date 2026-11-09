@@ -226,4 +226,89 @@ export async function keep(browser, base, check) {
     check(errors.length === 0, `no console errors ${errors.join('; ')}`)
     await context.close()
   }
+
+  // 6. Round 2 (Andre, 2026-11-09): the room plan has no line across the floor (Q74); inside the U on the plan,
+  //    the Size tab and the PDF (Q75); 23″ seats count and get markers (Q76); no touching tables; a sofa
+  //    against a wall is not a walkway.
+  {
+    const { context, page, errors } = await fresh(browser, base)
+    await page.getByTestId('new-standardU').click()
+    await page.waitForSelector('[data-plan-svg]')
+    await page.getByRole('switch', { name: 'Mirror sides' }).click()
+    await setField(page, 'L', 173)
+    await panel(page, 'Room')
+    await setField(page, 'roomW', 266)
+    await setField(page, 'roomD', 276)
+    await page.waitForTimeout(250)
+    // Every dimension line inside the room lies on the sofa (the inside-U lines); none on the floor around it.
+    const floor = await page.evaluate(() => {
+      const r = document.querySelector('[data-room] rect')
+      const room = { x: +r.getAttribute('x'), y: +r.getAttribute('y'), w: +r.getAttribute('width'), h: +r.getAttribute('height') }
+      const c = window.__haven.getState().config
+      const sofa = { x: 0, y: 0, w: c.W, h: Math.max(c.L, c.R) }
+      const inRoom = (x, y) => x > room.x + 0.5 && x < room.x + room.w - 0.5 && y > room.y + 0.5 && y < room.y + room.h - 0.5
+      const onSofa = (x, y) => x >= sofa.x - 0.5 && x <= sofa.w + 0.5 && y >= sofa.y - 0.5 && y <= sofa.h + 0.5
+      return [...document.querySelectorAll('[data-plan-svg] [data-dims] line')]
+        .map((l) => [+l.getAttribute('x1'), +l.getAttribute('y1'), +l.getAttribute('x2'), +l.getAttribute('y2')])
+        .filter(([x1, y1, x2, y2]) => (inRoom(x1, y1) && !onSofa(x1, y1)) || (inRoom(x2, y2) && !onSofa(x2, y2))).length
+    })
+    check(floor === 0, `a 266 × 276 room: no dimension line on the floor between the walls and the sofa (${floor})`)
+    check((await page.$$('[data-room-gap]')).length === 4, 'inside the room: the four sofa-to-wall gaps')
+    const dimTexts = await page.$$eval('[data-plan-svg] [data-dims] [data-dim-text]', (els) => els.map((e) => e.textContent))
+    check(dimTexts.includes('100"') && dimTexts.includes('129"'), `inside the U on the plan: 100" across, 129" deep (${dimTexts.filter((t) => t === '100"' || t === '129"').join(', ')})`)
+    await shot(browser, page, 'round2-room-1440')
+    await panel(page, 'Size')
+    const sizeLine = await page.textContent('[data-testid=inside-u]')
+    check(sizeLine === 'Inside the U 100″ wide × 129″ deep', `the Size tab: "${sizeLine}"`)
+    // 23″ seats either side of a table in the middle of a 152″ side count and get a marker.
+    await setField(page, 'L', 152)
+    await page.getByRole('switch', { name: 'Mirror sides' }).click() // off: one table, on the left only
+    await panel(page, 'Pieces')
+    const lb = await page.$eval(`[data-piece="${(await config(page)).runs.left[0].id}"]`, (e) => e.getBoundingClientRect().toJSON())
+    const chip = await page.locator('[data-tray-item=table]').boundingBox()
+    const from = [chip.x + chip.width / 2, chip.y + chip.height / 2]
+    const to = [lb.left + lb.width / 2, lb.top + (lb.height * 46) / 92]
+    await page.mouse.move(...from)
+    await page.mouse.down()
+    for (let i = 1; i <= 16; i++) await page.mouse.move(from[0] + ((to[0] - from[0]) * i) / 16, from[1] + ((to[1] - from[1]) * i) / 16)
+    await page.mouse.up()
+    await page.waitForTimeout(300)
+    const c = await config(page)
+    await page.evaluate(() => window.__haven.getState().setUi({ markers: true }))
+    await page.waitForSelector('[data-plan-svg] [data-marker]')
+    const markers = await page.$$eval('[data-plan-svg] [data-marker]', (els) => els.length)
+    const top = await page.textContent('[data-testid=seats]')
+    check(run(c, 'left') === 'armless23 table32 oneArm37' && top === `Seats ${markers}` && markers === 7, `23 | 32 | 23 on the left: ${top}, ${markers} markers (${run(c, 'left')})`)
+    // A second table never lands right next to the first.
+    for (let i = 0; i < 3; i++) await page.locator('[data-tray-item=table]').click()
+    await page.waitForTimeout(250)
+    const touching = await page.evaluate(() => Object.values(window.__haven.getState().config.runs).some((ps) => ps.some((p, i) => i > 0 && p.kind === 'table' && ps[i - 1].kind === 'table')))
+    check(!touching, 'three more Table taps: no two tables touching')
+    check(errors.length === 0, `no console errors ${errors.join('; ')}`)
+    await context.close()
+  }
+
+  // 7. The PDF footer has the inside of the U; a sofa 2″ from the side walls is against them (no walkway warning).
+  {
+    const { context, page, errors } = await fresh(browser, base, `#c=${U}`)
+    await panel(page, 'Room')
+    await setField(page, 'roomW', 192)
+    await page.waitForTimeout(250)
+    const warns = await page.$$eval('[data-testid=warnings] li', (els) => els.map((e) => e.textContent))
+    const short = await page.$$eval('[data-room-gap][data-short]', (els) => els.map((e) => e.getAttribute('data-room-gap')))
+    check(!warns.some((w) => w.startsWith('Walkway 2″')) && !short.includes('left') && !short.includes('right'), `2″ from each side wall: no walkway warning, not amber (${warns.join('; ')})`)
+    await page.getByTestId('share').click()
+    await page.waitForSelector('[data-testid=sheet-views]')
+    await page.getByTestId('make-pdf').click()
+    await page.waitForSelector('[data-testid=made]', { timeout: 60000 })
+    const [dl] = await Promise.all([page.waitForEvent('download'), page.getByTestId('download-pdf').click()])
+    const path = 'test-results/round2.pdf'
+    await dl.saveAs(path)
+    const { pdfText } = await import('./h6.mjs')
+    const pdf = await pdfText(path)
+    const footer = pdf.items.map((i) => i.str).join(' ')
+    check(footer.includes('Inside 100" × 88"'), `the PDF footer has "Inside 100" × 88"" (${footer.slice(footer.indexOf('Seats'), footer.indexOf('Seats') + 90)})`)
+    check(errors.length === 0, `no console errors ${errors.join('; ')}`)
+    await context.close()
+  }
 }

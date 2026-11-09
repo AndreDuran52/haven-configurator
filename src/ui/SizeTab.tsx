@@ -38,6 +38,7 @@ export function SizeTab() {
   const hasLeft = live.shape !== 'L-right' && !straight;
   const hasRight = live.shape !== 'L-left' && !straight;
   const other = !(DEPTH_PRESETS as readonly number[]).includes(live.D);
+  const inside = !joined && live.shape === 'U' ? builtOf(live).opening : null;
 
   return (
     <>
@@ -82,6 +83,13 @@ export function SizeTab() {
           Seat depth <span className="font-semibold tabular-nums">{fmtIn(builtOf(live).seatDepth, { mark: false })}″</span>
           <span className="text-ink-muted"> (front edge to the back cushion)</span>
         </p>
+        {inside && (
+          // Inside the U (Phase 3c round 2, Q75): what clients ask, between the sides and back to front.
+          <p className="pl-26 text-[15px] text-ink" data-testid="inside-u">
+            Inside the U <span className="font-semibold tabular-nums">{fmtIn(inside.width, { mark: false })}″</span> wide ×{' '}
+            <span className="font-semibold tabular-nums">{fmtIn(inside.depth, { mark: false })}″</span> deep
+          </p>
+        )}
         <MeasureField name="A" label="Arm width" labelClass="w-24" step={0.5} value={live.dims.A} read={(c) => c.dims.A} apply={setArmWidth} />
       </Section>
       {!straight && (

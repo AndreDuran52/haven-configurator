@@ -12,11 +12,11 @@ import type { Layout } from './layoutTypes';
 import { setMeasurements, setSeatWidth } from './ops';
 import { setRoom } from './room';
 import { layoutSeatMarkers, seatMarkers } from './seatMarkers';
-import { seatsLabel } from './seating';
-import { addTable, centralTable } from './tablePlace';
+import { seatsIn, seatsLabel } from './seating';
+import { addTable, centralTable, tableTargets } from './tablePlace';
 import { teeLayout } from './tee';
 import { buildHaven } from './buildHaven';
-import { deepFreeze } from './testing';
+import { deepFreeze, desc } from './testing';
 import type { Config } from './types';
 
 const mode = (l: Layout) => ({ snug: !!l.snug, seatWidth: l.sections[0]!.config.seatWidth, snugWidth: l.sections[0]!.config.snugWidth });
@@ -31,6 +31,16 @@ describe('the seat label', () => {
     expect(seatsLabel(10, { snug: true, seatWidth: 28, snugWidth: 22 })).toBe('Seats 10 · 22″ seats');
     expect(seatsLabel(9, { snug: true, seatWidth: 21, snugWidth: 24 })).toBe('Seats 9 · 21″ seats'); // snug can't be wider than a seat
     expect(seatsLabel(5, { snug: false, seatWidth: 26.5, snugWidth: 24 })).toBe('Seats 5 · 26.5″ seats');
+  });
+
+  it('a seat of 23″ or more seats one even when narrower than 28″ (Q76); longer stretches one per width', () => {
+    expect([23, 22.5, 27.5, 50, 56].map((len) => seatsIn(len, 28))).toEqual([1, 0, 1, 1, 2]);
+    expect([22, 23, 46, 48].map((len) => seatsIn(len, 24))).toEqual([0, 1, 1, 2]);
+    // Andre's sofa: 152″ sides, a 32″ table in the middle of each (23 | 32 | 23): 7 seats, a marker on each.
+    const split = tableTargets(standardU({ L: 152, R: 152 })).filter((t) => t.placement.at === 'split' && t.placement.run === 'left')[0]!;
+    expect(desc(split.config, 'left')).toEqual(['armless 23', 'table 32', 'oneArm 37=23+14@end']);
+    const l = solo(split.config);
+    expect(buildLayout(l).seats.count).toBe(markers(l).length);
   });
 
   it('the layout picks the number: the Standard U at 36″ deep is 7 comfortable, 8 snug', () => {
@@ -99,6 +109,10 @@ describe('the markers agree with the count', () => {
     if (!t.rejected) configs.push(t.config);
     const t2 = addTable(c, { run: 'back', at: 'seam', seam: 0 });
     if (!t2.rejected) configs.push(t2.config);
+  }
+  // Q76: seats of 23–27″ either side of a table in the middle of a side (Andre's 152″ sides: 23 | 32 | 23).
+  for (const L of [140, 148, 152, 156]) {
+    for (const t of tableTargets(standardU({ L, R: L }))) if (t.placement.at === 'split') configs.push(t.config);
   }
   for (const c of [...configs]) for (const w of [21, 24, 30]) configs.push(setSeatWidth(c, w).config);
 

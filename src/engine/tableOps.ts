@@ -5,7 +5,7 @@ import { settle } from './absorb';
 import { endCapState, endIndex, openEnds, runIds, type Alloc } from './layout';
 import { insertPiece, takeTable } from './placement';
 import { edit, findPiece, noRoom, notAllowed, type Outcome } from './edit';
-import { tableFits } from './tablePlace';
+import { noNewTouch, tableFits } from './tablePlace';
 import type { BuildResult, Config, EditResult, Placement, Pt, RunEnd, RunId } from './types';
 
 /** Snap hysteresis: a new anchor must be this much nearer than the current one (§5.4). */
@@ -84,7 +84,7 @@ export function anchoredTargets(config: Config, id: string): { placement: Placem
     /** The move, if it is allowed and leaves every seat it shrinks at 23″ or more. */
     const fits = (placement: Placement) => {
       const r = moveTable(config, id, placement);
-      return !r.rejected && tableFits(config, r.config) ? r : null;
+      return !r.rejected && tableFits(config, r.config) && noNewTouch(config, r.config) ? r : null;
     };
     for (let seam = 0; seam <= ps.length; seam++) {
       if (armSeams.includes(seam)) continue;

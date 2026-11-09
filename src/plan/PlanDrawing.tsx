@@ -6,6 +6,7 @@
 import type { BuildResult, BuiltPiece, Pt, Rect } from '@/engine';
 import type { DimLayout } from './dims';
 import { DimsLayer } from './DimsLayer';
+import { withInsideDims } from './insideDims';
 import { clearSeatsAt } from './seatsLabel';
 import { fmtIn } from './format';
 import { hatch, pts, woodGrain } from './geometry';
@@ -163,7 +164,8 @@ export function PlanDrawing({ built, dims, k, theme, showWarnings, selectedId, s
         })}
       </g>
       <g data-loose="">{loose.map(piece)}</g>
-      {dims && <DimsLayer dims={dims} theme={theme} />}
+      {/* With the U's inside width and depth (Phase 3c round 2, Q75); not for a section of a T. */}
+      {dims && <DimsLayer dims={showSeats ? withInsideDims(built, dims) : dims} theme={theme} />}
       {showSeats && <g data-seats="">{text(seatsAt[0], seatsAt[1], seatsText, lw(seatsSize), { bold: true, fill: theme.ink })}</g>}
     </g>
   );

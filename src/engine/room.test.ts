@@ -113,6 +113,17 @@ describe('warnings', () => {
     expect(codes(tight)).not.toContain('walkwayUnder30');
   });
 
+  it('under 6″ from a wall the sofa is against it: no walkway warning (Phase 3c round 2); 6″ warns', () => {
+    const l = setRoom(uRoom(), { w: 192 }).layout; // a 188″ U centred: 2″ each side
+    expect(room(l).gaps.left).toBe(2);
+    expect(codes(l)).not.toContain('walkwayUnder30');
+    const six = setRoom(uRoom(), { w: 200 }).layout; // 6″ each side
+    expect(buildLayout(six).warnings.filter((w) => w.code === 'walkwayUnder30').map((w) => w.message)).toEqual([
+      'Walkway 6″ between the sofa and the left wall (under 30)',
+      'Walkway 6″ between the sofa and the right wall (under 30)',
+    ]);
+  });
+
   it('a sofa touching a wall is meant: no walkway warning at 0″', () => {
     const l = setRoomGap(setRoom(solo(standardStraight()), { w: 200, d: 150 }).layout, 'left', 0).layout;
     expect(room(l).gaps.left).toBe(0);

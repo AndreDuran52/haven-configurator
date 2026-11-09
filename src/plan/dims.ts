@@ -85,6 +85,12 @@ export interface Group {
   /** perpendicular coordinate of the object edge this group measures from (plan inches, outward-positive in side frame) */
   edgeU: number
   segs: Seg[]
+  /**
+   * Extension lines start at the frame edge (the room's wall), not at edgeU:
+   * set on the sofa's own dimensions when a room surrounds them, so no line
+   * crosses the floor (Andre, Phase 3c round 2, Q74).
+   */
+  extFromFrame?: boolean
 }
 
 // ---------------------------------------------------------------------------

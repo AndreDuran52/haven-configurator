@@ -1,7 +1,9 @@
 // H6c (Andre, 2026-11-07): the plan's dimensions with a room. The frame grows
-// to the room so the whole floor is in view; the sofa's own dimensions are
-// kept on the sofa's edges (their extension lines run out past the walls),
-// and the room's width and depth are the outermost dimensions (bottom, right).
+// to the room so the whole floor is in view; the sofa's own dimensions sit
+// outside the walls, their extension lines starting at the wall so no line
+// crosses the floor (Phase 3c round 2, Q74: inside the room only the four
+// sofa-to-wall gaps are drawn), and the room's width and depth are the
+// outermost dimensions (bottom, right).
 import type { RoomFit } from '@/engine';
 import { fmtFtIn, fmtIn } from './format';
 import type { DimSource, Frame, Group } from './dims';
@@ -24,7 +26,8 @@ export function withRoom(src: DimSource, room: RoomFit | null): DimSource {
     frame,
     groups: (p) => [
       // edgeU is measured outward from the frame edge: a moved edge pushes the sofa's own edges inward.
-      ...src.groups(p).map((g) => ({ ...g, edgeU: g.edgeU - shift(g.side, f, frame) })),
+      // Their extension lines start at the wall, so none crosses the floor (Andre, Phase 3c round 2, Q74).
+      ...src.groups(p).map((g) => ({ ...g, edgeU: g.edgeU - shift(g.side, f, frame), extFromFrame: true })),
       { side: 'bottom', role: 'overall', edgeU: r.y + r.h - frame.y1, segs: [{ s0: r.x, s1: r.x + r.w, label: label(r.w, p.feetInches), weight: 600, dashed: false }] },
       { side: 'right', role: 'overall', edgeU: r.x + r.w - frame.x1, segs: [{ s0: r.y, s1: r.y + r.h, label: label(r.h, p.feetInches), weight: 600, dashed: false }] },
     ],

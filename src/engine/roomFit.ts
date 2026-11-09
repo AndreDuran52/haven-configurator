@@ -11,6 +11,11 @@ export const ROOM_MIN = 24;
 export const ROOM_MAX = 1200;
 /** A walkway between the sofa (or a coffee table) and a wall narrower than this warns. */
 export const WALKWAY_MIN = 30;
+/** Closer to a wall than this, the sofa is against it: not a walkway, no warning (Andre, Phase 3c round 2). */
+export const AGAINST_WALL = 6;
+
+/** A gap to the side or front wall that is a walkway too narrow to walk through: AGAINST_WALL up to WALKWAY_MIN. */
+export const isShortWalkway = (gap: number): boolean => gap >= AGAINST_WALL && gap < WALKWAY_MIN;
 
 export type Wall = 'left' | 'right' | 'back' | 'front';
 export type Gaps = Record<Wall, number>;
@@ -64,7 +69,7 @@ export function gapsOf(r: Rect, room: Rect): Gaps {
 
 const WALL_NAME: Record<Wall, string> = { left: 'left wall', right: 'right wall', back: 'back wall', front: 'front wall' };
 
-/** Gaps, and the room warnings: bigger than the room, past a wall, and walkways under 30″ (never behind the sofa; a sofa touching a wall is meant). */
+/** Gaps, and the room warnings: bigger than the room, past a wall, and walkways of 6–29″ (never behind the sofa; a sofa touching a wall, or under 6″ from it, is meant to be against it). */
 export function roomFit(room: Room, sofa: Rect, loose: { id: string; kind: LooseKind; rect: Rect }[]): RoomFit {
   const rect = roomRect(room, sofa);
   const gaps = gapsOf(sofa, rect);
@@ -89,7 +94,7 @@ export function roomFit(room: Room, sofa: Rect, loose: { id: string; kind: Loose
   if (w) warnings.push({ code: 'roomTooSmall', message: `${w.what} is ${fmt(w.by)}″ past the ${WALL_NAME[w.wall]}` });
   const walk = (g: Gaps, what: string, pieceId?: string) => {
     for (const wall of ['left', 'right', 'front'] as const) {
-      if (g[wall] > 0 && g[wall] < WALKWAY_MIN) {
+      if (isShortWalkway(g[wall])) {
         warnings.push({ code: 'walkwayUnder30', message: `Walkway ${fmt(g[wall])}″ between the ${what} and the ${WALL_NAME[wall]} (under ${WALKWAY_MIN})`, ...(pieceId ? { pieceId } : {}) });
       }
     }

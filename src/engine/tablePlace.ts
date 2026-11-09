@@ -54,16 +54,33 @@ export interface TableTarget {
   config: Config;
 }
 
+/** How many pairs of tables sit right next to each other (no seat between), every run. */
+export function touchingTables(c: Config): number {
+  let n = 0;
+  for (const run of runIds(c.shape)) {
+    const ps = c.runs[run] ?? [];
+    for (let i = 1; i < ps.length; i++) if (ps[i]!.kind === 'table' && ps[i - 1]!.kind === 'table') n++;
+  }
+  return n;
+}
+
+/**
+ * A placement never puts a table right next to another one (Andre, Phase 3c
+ * round 2: two tables touching read as one long table). Layouts that already
+ * have touching tables are left as they are; only new spots are checked.
+ */
+export const noNewTouch = (before: Config, after: Config): boolean => touchingTables(after) <= touchingTables(before);
+
 /**
  * Every place a new table can go: each seam where it fits, except beyond an
  * arm (there the table takes the arm's place instead), and the middle of each
- * seat whose two halves stay 23″ or more.
+ * seat whose two halves stay 23″ or more; never right next to another table.
  */
 export function tableTargets(config: Config): TableTarget[] {
   const out: TableTarget[] = [];
   const add = (placement: Placement) => {
     const r = addTable(config, placement);
-    if (!r.rejected) out.push({ placement, config: r.config });
+    if (!r.rejected && noNewTouch(config, r.config)) out.push({ placement, config: r.config });
   };
   for (const run of runIds(config.shape)) {
     const ps = config.runs[run] ?? [];

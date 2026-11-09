@@ -54,15 +54,25 @@ export function seatTotals(comfortable: number, snug: number, o: { snug: boolean
   return { comfortable, snug, count, label: seatsLabel(count, o) };
 }
 
-/** Each wedge = 1; each stretch = floor(len / seatWidth) .. floor(len / min(snugWidth, seatWidth)) (G8). One sofa counts comfortable; the layout picks snug. */
+/**
+ * People on one stretch of cushion: one per `width` (28″ comfortable, 24″
+ * snug), and a stretch of 23″ or more that is narrower than that still seats
+ * one (Andre, Phase 3c round 2, Q76: the seats either side of a table must count).
+ */
+export function seatsIn(len: number, width: number): number {
+  const n = Math.floor(len / width);
+  return n === 0 && len >= SEAT_WARN ? 1 : n;
+}
+
+/** Each wedge = 1; each stretch = seatsIn(len, seatWidth) .. seatsIn(len, min(snugWidth, seatWidth)) (G8, Q76). One sofa counts comfortable; the layout picks snug. */
 export function seatCount(c: Config): SeatCount {
   const wedges = corners(c.shape).length;
   const snugWidth = Math.min(c.snugWidth, c.seatWidth);
   let comfortable = wedges;
   let snug = wedges;
   for (const len of seatStretches(c)) {
-    comfortable += Math.floor(len / c.seatWidth);
-    snug += Math.floor(len / snugWidth);
+    comfortable += seatsIn(len, c.seatWidth);
+    snug += seatsIn(len, snugWidth);
   }
   return seatTotals(comfortable, snug, { snug: false, seatWidth: c.seatWidth, snugWidth: c.snugWidth });
 }
