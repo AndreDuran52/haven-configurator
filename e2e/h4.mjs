@@ -231,8 +231,9 @@ export async function h4(browser, base, check) {
     const menu = page.locator('[data-tap-menu]')
     await menu.getByRole('button', { name: 'Width plus 1' }).click()
     await page.waitForTimeout(150)
-    const plusToast = (await page.textContent('[data-testid=toast]').catch(() => '')) ?? ''
-    check(legs(await config(page)) === 'armless21 table20 oneArm31' && /can’t go under 23″/.test(plusToast), `table +: refused, the seats are under 23″ ("${plusToast}")`)
+    // A measure field says why under itself (as "min 158″" does), not in a toast.
+    const plusWhy = (await page.textContent(`[data-error="menu-table-${bt}"]`).catch(() => '')) ?? ''
+    check(legs(await config(page)) === 'armless21 table20 oneArm31' && /can’t go under 23″/.test(plusWhy), `table +: refused, the seats are under 23″ ("${plusWhy}")`)
     await menu.getByRole('button', { name: 'Width minus 1' }).click()
     check(legs(await config(page)) === 'armless21.5 table19 oneArm31.5', `table −: ½″ back to each seat, from the middle (${legs(await config(page))})`)
     await page.keyboard.press('Escape')
