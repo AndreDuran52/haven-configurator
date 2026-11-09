@@ -8,8 +8,9 @@ import { layoutErrors, offsets, sectionLabel, sharedDiff } from './layoutBuild';
 import { addLoose, defaultLoosePosition, insideRegion } from './looseOps';
 import { half, LOOSE_DEFAULTS } from './pieces';
 import type { Layout, Section } from './layoutTypes';
+import { backShift, setShape } from './shape';
 import { resetWedge, setArmWidth, setFabric, setLock, setMeasurements, setSeatWidth, setTableFinish, setTableStyle, setWedge } from './ops';
-import type { Config, EditResult, LooseKind, Rejection } from './types';
+import type { Config, EditResult, LooseKind, Rejection, Shape } from './types';
 
 export interface LayoutResult {
   layout: Layout;
@@ -150,4 +151,22 @@ export function setSnug(l: Layout, on: boolean): LayoutResult {
   if (on) return { layout: { ...l, snug: true }, rejected: null };
   const { snug: _off, ...rest } = l;
   return { layout: rest, rejected: null };
+}
+
+/**
+ * Switch the sofa's shape in place (UX Phase 3c, Andre 2026-11-09): the seats
+ * stay, the room and Snug stay, and a placed (Custom) room moves with the seats
+ * so they stay where they were in it. A T is custom work: it starts fresh.
+ */
+export function setLayoutShape(l: Layout, shape: Shape): LayoutResult {
+  if (!isSolo(l)) return refused(l, { code: 'notAllowed', message: 'A T starts fresh' });
+  const c = rootConfig(l);
+  const r = setShape(c, shape);
+  if (r.rejected) return refused(l, r.rejected);
+  const out = replaceSection(l, l.sections[0]!.id, r.config);
+  const room = l.room;
+  if (out.rejected || out.layout === l || room?.at.mode !== 'free') return out;
+  const isL = (s: Shape) => s === 'L-left' || s === 'L-right';
+  const x = isL(c.shape) && isL(shape) ? half(c.W - room.at.x - room.w) : half(room.at.x + backShift(c, r.config));
+  return { layout: { ...out.layout, room: { ...room, at: { ...room.at, x } } }, rejected: null };
 }

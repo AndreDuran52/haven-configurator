@@ -66,13 +66,17 @@ export function resizeBetweenSeats(d: Config, pieces: RunPiece[], i: number, len
   return true;
 }
 
-/** Ids of tables whose two seats are even now (kept even through an arm-width change). */
+/**
+ * Ids of tables whose two seats are even now, kept even through an arm-width,
+ * measurement or corner change. A seat that is part of a split long seat is
+ * left to the split (it re-shares its own parts).
+ */
 export function evenPairs(d: Config): string[] {
   const out: string[] = [];
   for (const pieces of Object.values(d.runs)) {
     pieces!.forEach((p, i) => {
       const pair = seatPair(pieces!, i);
-      if (pair && isEven(pair[0], pair[1], d.dims.A)) out.push(p.id);
+      if (pair && !pair[0].splitGroup && !pair[1].splitGroup && isEven(pair[0], pair[1], d.dims.A)) out.push(p.id);
     });
   }
   return out;

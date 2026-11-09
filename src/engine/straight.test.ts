@@ -63,12 +63,11 @@ describe('straight sofa: the shape', () => {
     expect(setMeasurements(c, { L: 100 }).config.L).toBe(44);
   });
 
-  it('no corner: the wedge slider and shape change in place are refused (same reference)', () => {
+  it('no corner: the wedge slider is refused (same reference); the shape converts in place (3c)', () => {
     const c = standardStraight();
     expect(setWedge(c, 70).config).toBe(c);
-    expect(setShape(c, 'U').rejected?.message).toBe('Start a new sofa for that shape');
-    const u = standardU();
-    expect(setShape(u, 'straight').config).toBe(u);
+    expect(setShape(c, 'U').config.shape).toBe('U');
+    expect(setShape(standardU(), 'straight').config.shape).toBe('straight');
   });
 });
 
