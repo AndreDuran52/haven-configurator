@@ -226,6 +226,7 @@ export type WarningCode =
   | 'coffeeOverlap'
   /** H6c: the sofa or a loose piece goes past a wall of the room. */
   | 'roomTooSmall'
+  | 'roomTooBig'
   /** H6c: under 30″ between the sofa (or a coffee table) and a side or front wall. */
   | 'walkwayUnder30';
 

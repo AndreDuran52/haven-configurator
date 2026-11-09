@@ -37,7 +37,7 @@ Layout: `src/{engine, ortho, state, plan, three, ui, export}` (plan §4). The sh
 
 Each milestone: `git fetch`, branch from `origin/main` (`h0b-scaffold`, `h1-engine`, `h2-plan-view`, `h3-ortho`, `h4-editing`, `h5-look`, `h6-exports`), build only that §10 block, meet its done-when list, open a PR, **stop**. Andre previews (localhost or the Vercel preview; from H2 on, installed on the iPad) and it merges on Andre's word. Tick the box below in the same PR.
 
-**Current status: UX Phase 3b built** (plan §10 "UX Phase 3b", Andre's notes 2026-11-08). The app is shared over Zoom from a laptop: laptop first (1440 × 900, 1280 × 800), no interface text under 14 px, no pale grey, heavy plan lines; check screenshots at half scale. One light look (no dark mode). Colours: blue only for the selected piece on the plan, tan for buttons and selected panel states, amber only for warnings. **Next, in order (one PR each):** seat markers (one seat number everywhere), Phase 3c (keep my work: shape conversion in place, Copy left to right / right to left, even seats, table ±), Phase 5 (options A | B | C, hide panel; no Present mode), the 3D person (show Andre the 5'7″ Side views at 44″ and 36″ before the PR is done), the look (link v6; waits on Andre's fabric list and logo), Phase 4 (hover, selection, "Both corners"), Phase 6 (picture tray, three one-taps). Seat depth = D − 18 (Q54, confirmed). No login (plan Q18). H7/H8 only when Andre asks.
+**Current status: fixes before the seat markers built** (plan §10 "Fixes before the seat markers", Andre 2026-11-09: arm width in Size, Tables in Design, menus show only what works in the view, plan pillows = the 3D outline, Room rows, tables between cushions at 32″ stepping down). The app is shared over Zoom from a laptop: laptop first (1440 × 900, 1280 × 800), no interface text under 14 px, no pale grey, heavy plan lines; check screenshots at half scale. One light look (no dark mode). Colours: blue only for the selected piece on the plan, tan for buttons and selected panel states, amber only for warnings. **Next, in order (one PR each):** seat markers (one seat number everywhere), Phase 3c (keep my work: shape conversion in place, Copy left to right / right to left, even seats, table ±), Phase 5 (options A | B | C, hide panel; no Present mode), the 3D person (show Andre the 5'7″ Side views at 44″ and 36″ before the PR is done), the look (link v6; waits on Andre's fabric list and logo), Phase 4 (hover, selection, "Both corners"), Phase 6 (picture tray, three one-taps). Seat depth = D − 18 (Q54, confirmed). No login (plan Q18). H7/H8 only when Andre asks.
 
 - [x] H0 Docs hand-off (plan, spec, prototypes, evidence in `docs/`)
 - [x] H0b Scaffold (Vite, strict TS, oxlint guards, vitest, bundle budget, manifest, Vercel)
@@ -61,13 +61,14 @@ Each milestone: `git fetch`, branch from `origin/main` (`h0b-scaffold`, `h1-engi
 - [x] H6c Room floor (rectangle, Center / Back wall / typed gaps, Fill the width, fit and walkway warnings; plan, PDF, 3D floor; link v5; 2026-11-07)
 - [x] UX Phase 3: understandable edits (Keep sofa size | Let sofa grow, result line, shape guard, top bar, labels and Room tab, Settings, grips on the selection, Overall | Detailed, View menu, Overview / Front / Side, one background; 2026-11-08)
 - [x] UX Phase 3b: the quick notes (no dark mode, Design tab, hold ± to repeat, Size · Room · Pieces · Design panels, Room tab without an Add step plus four distances and a move pad, Overview / Top / Front / Side, no snap-back, no scale bar, Pillows in the plan, seat depth shown again, top-bar menus no longer clipped; 2026-11-08)
+- [x] Fixes before the seat markers (arm width in Size, Tables in Design, View menu per view, plan pillows from the 3D model, Room rows Side to side / Front to back, tables between cushions: 32″ stepping down, both seats shrink equally, Table tapped goes to the middle; 2026-11-09)
 - [ ] Seat markers (numbered circles in the plan and 3D Top; one seat number everywhere; Snug; seat width beside them)
 - [ ] UX Phase 3c: keep my work (shape conversion in place, Copy left to right / right to left, even seats, table ±)
 - [ ] UX Phase 5: options A | B | C (PDF prints the current option), hide panel (no Present mode)
 - [ ] The 3D person (typed height, Lounge | Upright; 5'7″ Side views at 44″ and 36″ to Andre first)
 - [ ] The look (link v6: pillow colours and counts, Seats: Stitch line | No line, fabric list, logo; waits on Andre)
 - [ ] UX Phase 4: hover, selection outline + size pill, "Both corners"
-- [ ] UX Phase 6: picture tray, one-taps (Table in the middle, Table at the end, Add a seat)
+- [ ] UX Phase 6: picture tray, one-taps (Table at the end, Add a seat; "Table in the middle" came early, 2026-11-09)
 - [ ] H7 Cloud saves + tracker hand-off (optional; do not start unless Andre asks)
 - [ ] H8 Blender round-trip (later; do not start unless Andre asks)
 

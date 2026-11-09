@@ -1322,7 +1322,7 @@ Andre's answers (Q45–Q49): close freeform; hide the T from the menus (saved T'
 
 **Built (one PR, two commits):**
 - **Balance seats around a table** (`src/engine/balance.ts`):
-  - a new table dropped into a seat (tray tap or drag, no explicit width) starts at **20″** (`TABLE_MID`) and the seat's cushion is shared equally either side (the extra ½″ away from the arm, as G1). A table placed at a seam or at an end keeps 32″; a moved table keeps its width;
+  - ~~a new table dropped into a seat starts at 20″ (`TABLE_MID`)~~ **Replaced 2026-11-09** (see "Fixes before the seat markers"): a table goes between cushions, starts at 32″ and steps down to 28 / 24 / 20″ so no seat goes under 23″; between two seats both shrink equally. Old layouts load as they were;
   - resizing a table with a seat on each side (lock on) takes the change from both seats equally; refused if one would go under 6″. Lock off: the run grows as before;
   - `evenTableSeats` ("Even seats"): the two seats share their cushions again, the run unchanged;
   - an arm-width change keeps a pair that was even (within ½″) even;
@@ -1410,6 +1410,24 @@ Andre's 16 notes after testing Phase 3, reviewed with him over six rounds of que
 - **The 3D person:** type the client's height (e.g. 5'7″); a plain, faceless, neutral-grey figure with proportions from standard body measurements scaled by height (knee height, thigh length, lower leg); **Lounge | Upright** (Upright adds a square back pillow). **Before that PR is done:** the Side view of a 5'7″ person at 44″ and at 36″ deep, with the numbers used, goes to Andre to check against a real person on a real Haven.
 - **The look (link v6):** pillow colours **Colour 1, Colour 2** (with a "Same colour" switch) and **Ball**; per corner or arm end: None / 2 squares / 2 squares + ball; **Seats: Stitch line | No line** as a client choice that tables follow (saved in the project, the link and the sheet); Andre's fabric list (names, colours, a swatch photo each) and logo (SVG or a large PNG) in the top bar and on the PDF.
 - **Not now:** realistic rendering, lumbar pillows, drag-and-drop pillows, a spec sheet, room walls in 3D, pinning the sofa to corners or dragging it in the room. Undo and Redo stay top left (next to the name, as in Canva, Google Docs and Office).
+
+### Fixes before the seat markers (Andre, 2026-11-09; built)
+Andre tested Phase 3b and asked for five fixes as one PR before the seat markers.
+1. **Panel:** **Arm width** moved to Size, under Depth (it changes the footprint and the seats; a typed field with ½″ steps). **Tables: Wood top on fabric base | All wood** moved to Design (between Fabric and Wood; the line under it is gone). Pieces keeps Add a piece, When pieces change and anything about a table's size. **"Seats: Stitch line | No line"**, when built, goes in Design too.
+2. **View menu rule:** every menu shows only options that do something in the current view. Plan style shows in the plan only; in 3D the View menu has Pillows only.
+3. **Pillows in the plan** are the 3D pillow's own top-down outline: baked from Andre's Blender model by `scripts/pillow-outline.mjs` into `src/plan/pillowOutline.ts` (the node transform, `squareUp`, `fitToBox` 20 × 20 × 12, the 10° lean, then a convex hull), turned to each anchor's facing exactly as the 3D turns the model. From above a pillow is 20 × about 13″ (the model is 12″ thick; Andre chose "match the 3D", Q65). Drawn light: a 40 % tint of the pillow colour and a thin outline; they take no clicks. Each plan pillow's box matches its 3D mesh's box within 0.01″ (balls within 0.1″).
+4. **Room tab:** "Sofa position: Center | Back wall | Custom", then two rows, **Side to side ← Left · Right →** and **Front to back ↑ Back · Front ↓**. The arrows move the sofa 1″ a click (hold to keep going, one Undo per hold); a number can be typed and the other one follows. Any arrow or typed gap makes it Custom. A sofa bigger than the room in a direction shows one line on that row ("Sofa is 12″ wider than the room"); the engine warning reads the same (`roomTooBig`) and the plan draws no negative gaps on that axis. "N″ past the left wall" stays for a sofa that fits but sits past a wall.
+5. **Table placement** (`src/engine/tablePlace.ts`):
+   - a table goes **between cushions** (at a seam), never cut into a seat, except in a run with no seam where one fits (then one centred split of its largest seat; with the 23″ rule this practically never happens);
+   - **"Other seats adjust":** dropped between two seats, both shrink equally (`sharePair`), so the table sits centred: straight 120″ with 10″ arms + a table = 10 | 34 | 32 | 34 | 10 (14 | 30 | 32 | 30 | 14 with the default 14″ arms). Next to a corner, an open end or another table, the seat on the other side takes it, as before (the Standard U back stays 60 | 32 | 36 | 60);
+   - **"Sofa size changes":** the seats keep their size and the sofa grows by the table;
+   - a new table starts at **32″**; if that leaves a seat under 23″ it steps down to 28, 24, then 20″, and the result line says why ("Added table 24″ (32″ would leave a seat under 23″)"); if none fits: **"Not enough seat for a table here."**;
+   - the tray's **Table tapped** (not dragged) goes straight to the most central seam where it fits (nearest the middle of the back run): "Table in the middle", pulled forward from Phase 6;
+   - **moving** a table follows the same rules and keeps its width (Q66): spots that would leave a seat it shrinks under 23″ are not offered; a move within the same run is still a pure reorder;
+   - unchanged: the table's 18″ height, the backrest stopping at the table, decoding (old links and saved layouts load exactly as they were; only new edits use the rule).
+- **Entry budget:** 330 kB raw / 110 kB gzip (measured 327.6 / 109.7).
+
+**Measured:** vitest `tablePlace.test.ts` (Andre's straight 10 | 34 | 32 | 34 | 10, 14″ arms, lock off grows by 32, corner and open-end seams, step-down to 28 and 24, the refusal, tray targets, "Table in the middle", moves keep their width, the Standard U and its link unchanged), updated `tables.test.ts`, `tableBalance.test.ts`, `hitTest.test.ts`, `changes.test.ts`, `room.test.ts` (bigger than the room), `pillowShapes.test.ts` (the baked outline, one shape per pillow, turned not stretched); e2e `fixes2.mjs` (the View menu in Plan and 3D, every plan pillow against its 3D mesh, the Room rows, arrows, typed gaps, one Undo per hold, Center; Table tapped on Andre's straight, the result line, Undo, a sofa with no room refused cleanly), updated `h4.mjs`, `straight.mjs`, `room.mjs`, `h2.mjs`, `phase3b.mjs`.
 
 ### H7: Cloud saves + tracker hand-off (optional, later; Andre decides, do not start until told)
 The configurator is complete without H7. Options, in order of cost:
@@ -1581,7 +1599,7 @@ Answer in a word. **Q1 is answered (camera, spring-back orbit), and Q9, Q10, Q12
 | Q44 | Order, and the entry budget | **Answered:** B1 fixes, redesign, freeform; budget may rise to 115 kB gzip |
 | Q45 | Freeform (PR #15) | **Answered (2026-11-06):** dropped, closed unmerged; custom layouts go to CAD and Blender |
 | Q46 | The T | **Answered:** hidden from the menus; saved T's and T links still open, edit and print |
-| Q47 | A table dropped mid-seat | **Answered:** seats always even; the table starts at 20″ (Andre: "do what you think is best"); "Try 10″ arms" when 20″ is still tight |
+| Q47 | A table dropped mid-seat | **Answered, then replaced (2026-11-09):** a table goes between cushions, 32″ stepping down to 28 / 24 / 20 so no seat goes under 23″; both seats shrink equally (was: 20″ in the middle of a seat) |
 | Q48 | Shapes vs pieces | **Answered:** shapes to start (Straight, L, U), pieces to finish; a straight sofa added (link v4) |
 | Q49 | Order | **Answered:** balance + straight, then the room floor (H6c, link v5), then UX Phases 3–6 |
 | Q50 | Room shape | **Answered (2026-11-07):** a rectangle, width × depth; no doors or windows |
@@ -1599,6 +1617,8 @@ Answer in a word. **Q1 is answered (camera, spring-back orbit), and Q9, Q10, Q12
 | Q62 | Options | **Answered (for Phase 5):** A \| B \| C in a project; the PDF prints the current option only |
 | Q63 | The 3D person | **Answered:** typed height, plain grey figure, Lounge \| Upright; Andre checks a 5'7″ Side view at 44″ and 36″ before the PR is done |
 | Q64 | Pillows, seat line, fabrics, logo | **Answered (for the look, link v6):** Colour 1, Colour 2, Same colour, Ball; None / 2 squares / 2 squares + ball per spot; Seats: Stitch line \| No line; waits on Andre's fabric list and logo |
+| Q65 | Pillow depth in the plan | **Answered (2026-11-09):** match the 3D exactly (20 × about 13″ from above, the 12″ model leaning); the 3D is unchanged |
+| Q66 | Moving a table where its width would leave a seat under 23″ | **Answered (2026-11-09):** it keeps its width; such spots are not offered |
 
 ---
 

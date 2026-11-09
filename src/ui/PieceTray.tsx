@@ -1,11 +1,13 @@
-// Add-piece tray (plan §8): Armless 36, One-arm L/R, Table (20 in a seat, 32 at a seam), Ottoman, Coffee
-// table. Tap to place (primary on iPad): "+" pins appear at every valid target.
+// Add-piece tray (plan §8): Armless 36, One-arm L/R, Table, Ottoman, Coffee
+// table. Tap to place (primary on iPad): "+" pins appear at every valid target;
+// a tapped Table goes straight to the most central seam (Andre, 2026-11-09:
+// 32″, stepping down to fit, between cushions).
 // Or drag a chip into the plan (through the plan's CTM): the nearest target
 // previews as a draft and the drop commits it (one undo step). Since the editor
 // redesign (2026-11-06) it lives in the Pieces tab, each chip with a grip, and
 // the trash for a table drag is a bar over the plan (TrashBar).
 import { useRef, useState } from 'react';
-import { addLooseInLayout, LOOSE_DEFAULTS, rootConfig, SNAP_HYSTERESIS, type Config, type Layout } from '@/engine';
+import { addLooseInLayout, centralTable, LOOSE_DEFAULTS, rootConfig, SNAP_HYSTERESIS, type Config, type Layout } from '@/engine';
 import { clientToLocal, planOffset, planSvg } from '@/plan/planScreen';
 import { isLooseTray, nearestTarget, placementTargets, type PlacementTarget, type TrayKind } from '@/plan/placementTargets';
 import { useHaven, useHavenStore } from '@/state/store';
@@ -74,6 +76,14 @@ export function PieceTray() {
       // The new piece is the root's: edit it there (a T's left half).
       s.setSection(r.layout.sections[0]!.id);
       s.setUi({ placing: null, selectedId: newestLoose(r.layout) });
+      return;
+    }
+    // "Table in the middle" (Andre, 2026-11-09): a tapped Table goes straight to the most central seam where it fits.
+    if (kind === 'table') {
+      const r = centralTable(s.config);
+      if (r.rejected) return s.toast(r.rejected.message);
+      s.commit(r.config);
+      s.setUi({ placing: null, selectedId: null });
       return;
     }
     const next = placing === kind ? null : kind;

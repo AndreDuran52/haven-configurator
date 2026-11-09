@@ -40,6 +40,8 @@ export interface Haven3dApi {
   capture: (opts?: { silhouette?: boolean; only?: string }) => string;
   /** names of the visible meshes that start with `prefix` */
   meshNames: (prefix: string) => string[];
+  /** exact world bounds (over every vertex) of the visible meshes whose names start with `prefix` */
+  bounds: (prefix: string) => { name: string; min: number[]; max: number[] }[];
   /** which of Andre's Blender models are loaded and in use */
   models: () => { square: boolean; ball: boolean };
 }
@@ -84,6 +86,24 @@ export function installTestApi(ctx: TestApiContext): () => void {
     },
     offset: ctx.offset,
     points: ctx.points,
+    bounds: (prefix) => {
+      const out: { name: string; min: number[]; max: number[] }[] = [];
+      const v = new Vector3();
+      scene.updateMatrixWorld(true);
+      scene.traverseVisible((o) => {
+        const m = o as Mesh;
+        if (!m.isMesh || !o.name.startsWith(prefix)) return;
+        const pos = m.geometry.getAttribute('position');
+        const min = [Infinity, Infinity, Infinity];
+        const max = [-Infinity, -Infinity, -Infinity];
+        for (let i = 0; i < pos.count; i++) {
+          v.fromBufferAttribute(pos, i).applyMatrix4(m.matrixWorld);
+          v.toArray().forEach((x, k) => ((min[k] = Math.min(min[k]!, x)), (max[k] = Math.max(max[k]!, x))));
+        }
+        out.push({ name: o.name, min, max });
+      });
+      return out;
+    },
     meshNames: (prefix) => {
       const out: string[] = [];
       scene.traverseVisible((o) => {

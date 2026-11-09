@@ -12,9 +12,10 @@ import {
   splitHalf,
 } from './pieces';
 import { settle, type Anchor } from './absorb';
-import { armEndFor, capEnd, clearJoin, detach, endCapState, endIndex, openEnds, runSum, seat, type Alloc } from './layout';
+import { armEndFor, capEnd, clearJoin, detach, dissolveGroup, endCapState, endIndex, openEnds, runSum, seat, type Alloc } from './layout';
 import { noRoom, notAllowed, type Outcome } from './edit';
 import { ARM_MESSAGE, armInvariantOk } from './rules';
+import { sharePair } from './balance';
 import type { Config, Placement, RunId, RunPiece } from './types';
 
 /**
@@ -67,6 +68,22 @@ export function removeTable(d: Config, run: RunId, index: number, alloc: Alloc):
   return settle(d, run, anchor, table.length, alloc) ? true : noRoom();
 }
 
+/**
+ * A table dropped between two seats (Andre, 2026-11-09): with the lock on, both
+ * seats give up the table's width equally (sharePair), so it sits centred
+ * between them (a split group they belong to dissolves: its seats are no
+ * longer equal). 'fallback' when a side is not a seat (a corner, an open end,
+ * a table, a gap): the absorber decides, as before.
+ */
+function shareSeam(pieces: RunPiece[], at: number, width: number, A: number): Outcome | 'fallback' {
+  const a = pieces[at - 1];
+  const b = pieces[at + 1];
+  if (!a || !b || !isSeat(a) || !isSeat(b)) return 'fallback';
+  dissolveGroup(pieces, a.splitGroup);
+  dissolveGroup(pieces, b.splitGroup);
+  return sharePair(a, b, cushionOf(a, A) + cushionOf(b, A) - width, A) ? true : noRoom();
+}
+
 export function insertPiece(d: Config, alloc: Alloc, piece: RunPiece, placement: Placement): Outcome {
   const run = placement.run;
   const pieces = d.runs[run];
@@ -76,6 +93,10 @@ export function insertPiece(d: Config, alloc: Alloc, piece: RunPiece, placement:
     pieces.splice(at, 0, piece);
     // G11 before room: an arm in the wrong place is refused as such.
     if (!armInvariantOk(pieces, openEnds(d.shape, run))) return notAllowed(ARM_MESSAGE);
+    if (piece.kind === 'table' && d.lockOutside) {
+      const shared = shareSeam(pieces, at, piece.length, d.dims.A);
+      if (shared !== 'fallback') return shared;
+    }
     return settle(d, run, { piece: at }, -piece.length, alloc, exclude) ? true : noRoom();
   };
   if (placement.at === 'seam') {

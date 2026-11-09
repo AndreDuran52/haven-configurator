@@ -115,12 +115,13 @@ export function PlanDrawing({ built, dims, k, theme, showWarnings, selectedId, s
         </g>
       ))}
       {pillows && (
-        <g data-pillows="" stroke={theme.ink} strokeWidth={lw(0.6 * theme.line)} pointerEvents="none">
+        // Light, so they never compete with the dimensions: a soft tint and a thin outline.
+        <g data-pillows="" strokeWidth={lw(0.45 * theme.line)} fillOpacity={0.4} pointerEvents="none">
           {pillows.map((p) =>
             p.kind === 'ball' ? (
-              <circle key={p.key} data-pillow={p.kind} cx={p.cx} cy={p.cy} r={p.w / 2} fill={p.fill} />
+              <circle key={p.key} data-pillow={p.kind} data-pillow-key={p.key} cx={p.cx} cy={p.cy} r={p.r} fill={p.fill} stroke={theme.dim} />
             ) : (
-              <rect key={p.key} data-pillow={p.kind} x={-p.w / 2} y={-p.d / 2} width={p.w} height={p.d} rx={Math.min(p.w, p.d) * 0.3} fill={p.fill} transform={`translate(${p.cx} ${p.cy}) rotate(${p.angle})`} />
+              <polygon key={p.key} data-pillow={p.kind} data-pillow-key={p.key} points={pts(p.points)} fill={p.fill} stroke={theme.dim} strokeLinejoin="round" />
             ),
           )}
         </g>

@@ -64,18 +64,26 @@ export function gapsOf(r: Rect, room: Rect): Gaps {
 
 const WALL_NAME: Record<Wall, string> = { left: 'left wall', right: 'right wall', back: 'back wall', front: 'front wall' };
 
-/** Gaps, and the room warnings: past a wall, and walkways under 30″ (never behind the sofa; a sofa touching a wall is meant). */
+/** Gaps, and the room warnings: bigger than the room, past a wall, and walkways under 30″ (never behind the sofa; a sofa touching a wall is meant). */
 export function roomFit(room: Room, sofa: Rect, loose: { id: string; kind: LooseKind; rect: Rect }[]): RoomFit {
   const rect = roomRect(room, sofa);
   const gaps = gapsOf(sofa, rect);
   const looseGaps = loose.map((l) => ({ id: l.id, kind: l.kind, gaps: gapsOf(l.rect, rect) }));
   const warnings: Warning[] = [];
-  // The worst overshoot of anything past a wall.
+  // A sofa bigger than the room in a direction says so plainly (Andre,
+  // 2026-11-09), instead of a negative gap at each wall.
+  const wider = sofa.w - rect.w;
+  const deeper = sofa.h - rect.h;
+  if (wider > 0) warnings.push({ code: 'roomTooBig', message: `Sofa is ${fmt(wider)}″ wider than the room` });
+  if (deeper > 0) warnings.push({ code: 'roomTooBig', message: `Sofa is ${fmt(deeper)}″ deeper than the room` });
+  // The worst overshoot of anything past a wall (the sofa only where it fits).
   let worst: { by: number; wall: Wall; what: string } | null = null;
   const past = (g: Gaps, what: string) => {
     for (const w of Object.keys(g) as Wall[]) if (g[w] < 0 && (!worst || -g[w] > worst.by)) worst = { by: -g[w], wall: w, what };
   };
-  past(gaps, 'The sofa');
+  const across = wider > 0 ? 0 : 1;
+  const along = deeper > 0 ? 0 : 1;
+  past({ left: gaps.left * across, right: gaps.right * across, back: gaps.back * along, front: gaps.front * along }, 'The sofa');
   for (const l of looseGaps) past(l.gaps, l.kind === 'ottoman' ? 'The ottoman' : 'The coffee table');
   const w = worst as { by: number; wall: Wall; what: string } | null;
   if (w) warnings.push({ code: 'roomTooSmall', message: `${w.what} is ${fmt(w.by)}″ past the ${WALL_NAME[w.wall]}` });
