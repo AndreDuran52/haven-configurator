@@ -29,6 +29,8 @@ export interface Haven3dApi {
   state: () => { preset: PresetName; azimuthDeg: number; polarDeg: number; zoom: number; target: number[]; frames: number; resting: boolean; minZoom: number; maxZoom: number; size: number[] };
   apply: (name: PresetName, animate: boolean) => void;
   setTopAt: (S: number, cx: number, cy: number) => void;
+  /** Point the camera for a close-up picture: angles in degrees, zoom in px/in, target in world inches. */
+  look: (azimuthDeg: number, polarDeg: number, zoom: number, target: [number, number, number]) => void;
   fit: (name: PresetName) => { zoom: number; target: number[]; spanU: number; spanV: number };
   /** world points -> CSS px in the canvas */
   project: (pts: [number, number, number][]) => [number, number][];
@@ -72,6 +74,14 @@ export function installTestApi(ctx: TestApiContext): () => void {
     },
     apply: ctx.apply,
     setTopAt: ctx.setTopAt,
+    look: (azimuthDeg, polarDeg, zoom, target) => {
+      const c = ctx.controls();
+      c.normalizeRotations();
+      void c.rotateTo(azimuthDeg * D2R, polarDeg * D2R, false);
+      void c.moveTo(target[0], target[1], target[2], false);
+      void c.zoomTo(zoom, false);
+      c.update(0);
+    },
     models: softModelsInUse,
     fit: (name) => {
       const f = ctx.fit(name);

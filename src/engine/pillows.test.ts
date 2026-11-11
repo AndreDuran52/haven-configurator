@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { buildHaven } from './buildHaven';
 import { decode, encode, FABRIC_CODES, FINISH_CODES } from './codec';
-import { standardL, standardU } from './defaults';
+import { standardL, standardStraight, standardU } from './defaults';
 import { FABRICS, FINISHES } from './fabrics';
 import { backCushions } from './cushions';
 import { BALL_PILLOW, PAIR_PRESS, PILLOW_PRESS, pillowAnchors, pillowCorners } from './pillows';
 import { boxDistance, boxesClash } from './softBox';
-import { setFabric, setTableFinish } from './ops';
+import { setFabric, setMeasurements, setTableFinish } from './ops';
 import { moveTable } from './tableOps';
-import type { Pt } from './types';
+import type { Config, Pt } from './types';
 
 const inPoly = (pt: Pt, poly: Pt[]) => {
   let inside = false;
@@ -84,6 +84,19 @@ describe('pillows (Q15, Andre 2026-09-26/27: like the showroom photos)', () => {
     }
   });
 
+  it('the standard layouts keep their pillows at 44″, 40″ and 36″ deep (Andre, 2026-11-11: none gained or lost with the knife-edge pillows)', () => {
+    const count = (c: Config, D: number) => {
+      const a = pillowAnchors(buildHaven(setMeasurements(c, { D }).config));
+      return [a.filter((p) => p.kind === 'square').length, a.filter((p) => p.kind === 'ball').length];
+    };
+    for (const D of [44, 40, 36]) {
+      expect(count(standardU(), D), `U ${D}`).toEqual([8, 2]);
+      expect(count(standardL('left'), D), `L left ${D}`).toEqual([6, 1]);
+      expect(count(standardL('right'), D), `L right ${D}`).toEqual([6, 1]);
+      expect(count(standardStraight(), D), `Straight ${D}`).toEqual([3, 0]);
+    }
+  });
+
   it('shallow seats get fewer, never more: 36″ deep still takes all 10, 34″ fewer', () => {
     expect(pillowAnchors(buildHaven(standardU({ D: 36 })))).toHaveLength(10);
     expect(pillowAnchors(buildHaven(standardU({ D: 34 }))).length).toBeLessThan(10);
@@ -98,7 +111,8 @@ describe('pillows (Q15, Andre 2026-09-26/27: like the showroom photos)', () => {
       for (const p of all.filter((q) => q.kind === 'square')) {
         expect(cushions.some((o) => boxesClash(p, o, -PILLOW_PRESS + 0.5)), `${p.key} rests on a cushion`).toBe(true);
         const mate = all.find((q) => q.kind === 'square' && q !== p && q.key.split(':').slice(0, -1).join(':') === p.key.split(':').slice(0, -1).join(':'));
-        if (mate) expect(boxesClash(p, mate, -PAIR_PRESS + 0.5), `${p.key} touches ${mate.key}`).toBe(true);
+        // Settling the second square back on its (differently leaning) cushion can ease the pair apart by up to 1″.
+        if (mate) expect(boxesClash(p, mate, -PAIR_PRESS + 1), `${p.key} touches ${mate.key}`).toBe(true);
       }
       for (const ball of all.filter((q) => q.kind === 'ball')) {
         const light = all.find((q) => q.key === ball.key.replace(':ball', ':sq1'))!;

@@ -6,6 +6,7 @@ import { Box3, NeutralToneMapping, Vector3, type DirectionalLight, type Texture 
 import { Canvas, useFrame } from '@react-three/fiber';
 import { ContactShadows } from '@react-three/drei';
 import { BACK_CUSHION, pillowAnchors, planCentre, seatMarkers, type BuildResult } from '@/engine';
+import { cushionSide } from '@/engine/cushionProfile';
 import { fitPoints, FLOOR_THICKNESS, FLOOR_TOP } from '@/ortho/fitPoints';
 import { personFigure } from '@/ortho/person';
 import { personPoints, personSeat } from '@/ortho/personSeat';
@@ -72,7 +73,7 @@ export default function ThreeView() {
   // The 3D person: on the back run's widest seat, from the Side drawing's own joints.
   const seat = useMemo(() => (person ? personSeat(built) : null), [person, built]);
   const fig = useMemo(
-    () => (seat ? personFigure(personHeight, personPose, { seatHeight: built.heights.seatHeight, pillowFront: built.heights.backFrame + BACK_CUSHION.depth, pillowTop: built.heights.backHeight + BACK_CUSHION.rise, D: built.D }) : null),
+    () => (seat ? personFigure(personHeight, personPose, { seatHeight: built.heights.seatHeight, pillowFront: built.heights.backFrame + BACK_CUSHION.depth, pillowTop: built.heights.backHeight + BACK_CUSHION.rise, backFront: cushionSide(built.heights).front, D: built.D }) : null),
     [seat, personHeight, personPose, built],
   );
   const points = useMemo(

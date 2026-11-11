@@ -4,17 +4,18 @@
 // its true size, each inside the sofa's outline.
 import { describe, expect, it } from 'vitest';
 import { BALL_PILLOW, buildHaven, pillowAnchors, SQUARE_PILLOW, standardStraight, standardU } from '@/engine';
-import { PILLOW_OUTLINE } from './pillowOutline';
-import { planPillows } from './pillowShapes';
+import { PILLOW_OUTLINE, planPillows } from './pillowShapes';
 
 const extent = (pts: readonly (readonly [number, number])[], k: 0 | 1) => Math.max(...pts.map((p) => p[k])) - Math.min(...pts.map((p) => p[k]));
 
 describe('plan pillows', () => {
-  it('the baked outline: 20″ across, about 14″ deep from above, inside the leaning box', () => {
-    expect(extent(PILLOW_OUTLINE, 0)).toBeCloseTo(SQUARE_PILLOW.w, 1);
+  it('the outline is the knife-edge pillow seen from above as it leans: 20″ across, about 8″ deep (thin at its top and bottom edges), inside the leaning box', () => {
+    expect(extent(PILLOW_OUTLINE, 0)).toBeGreaterThan(SQUARE_PILLOW.w - 0.5); // corner to corner, the points just softened
+    expect(extent(PILLOW_OUTLINE, 0)).toBeLessThanOrEqual(SQUARE_PILLOW.w);
     const deep = extent(PILLOW_OUTLINE, 1);
     const lean = (SQUARE_PILLOW.lean * Math.PI) / 180;
-    expect(deep).toBeGreaterThan(12);
+    expect(deep).toBeGreaterThan(7);
+    expect(deep).toBeLessThan(9);
     expect(deep).toBeLessThanOrEqual(SQUARE_PILLOW.t * Math.cos(lean) + SQUARE_PILLOW.h * Math.sin(lean) + 0.01);
   });
 

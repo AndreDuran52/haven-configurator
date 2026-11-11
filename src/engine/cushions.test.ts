@@ -36,15 +36,21 @@ describe('loose back cushions (Andre, 2026-09-27)', () => {
     expect(Object.fromEntries(count)).toEqual({ p2: 1, p3: 2, p4: 2, 'wedge:backLeft': 2, 'wedge:backRight': 2 });
   });
 
-  it('stand on the seat (sunk 1″) against the 10″ frame, 8″ deep; the box holds the soft top (it peaks at 31″, three/softGeometry.test)', () => {
+  it('lean back 12° (±1°), their front foot 1″ into the seat, 8″ deep; the box holds the soft top (it peaks at 31″, three/softGeometry.test)', () => {
     for (const [name, c] of layouts) {
       const b = buildHaven(c);
       for (const k of backCushions(b)) {
-        const corners = boxCorners(k);
-        expect(Math.min(...corners.map((q) => q[2])), `${name} ${k.key}`).toBeCloseTo(17, 9);
+        const zs = boxCorners(k)
+          .map((q) => q[2])
+          .sort((x, y) => x - y);
+        const lean = (k.lean * Math.PI) / 180;
+        // The back foot is buried so the front foot sits 1″ under the 18″ seat (a leaning box lifts its front).
+        expect(zs[0]! + k.t * Math.sin(lean), `${name} ${k.key}`).toBeCloseTo(17, 9);
+        expect(zs[2]!, `${name} ${k.key}`).toBeCloseTo(17, 9);
         expect(boxTop(k) - 31, `${name} ${k.key}`).toBeGreaterThan(0);
-        expect(boxTop(k) - 31, `${name} ${k.key}`).toBeLessThan(0.5);
+        expect(boxTop(k) - 31, `${name} ${k.key}`).toBeLessThan(1);
         expect(k.t).toBe(8);
+        expect(BACK_CUSHION_LEAN).toBe(12);
         expect(Math.abs(k.lean - BACK_CUSHION_LEAN)).toBeLessThanOrEqual(1);
       }
     }
@@ -66,14 +72,17 @@ describe('loose back cushions (Andre, 2026-09-27)', () => {
     }
   });
 
-  it('the back of each cushion rests on the frame line (t = 10) along its run', () => {
+  it('each cushion stands just in front of the frame (t = 10) and leans back over it; its box reaches no further forward than 19″', () => {
     const b: BuildResult = buildHaven(u);
     for (const k of backCushions(b).filter((q) => q.key.startsWith('p'))) {
       const run = b.runs.find((r) => r.id === b.pieces.find((p) => p.id === k.pieceId)!.run)!;
       const ts = boxCorners(k).map((q) => planToRun({ run: run.id, origin: run.origin, W: b.W }, [q[0], q[1]])[1]);
-      // The bottom-back edge sits on the frame's face; the top leans back over it.
-      expect(Math.max(...ts)).toBeLessThanOrEqual(18.01);
-      expect(ts.filter((t) => Math.abs(t - 10) < 1e-9)).toHaveLength(2);
+      expect(Math.max(...ts)).toBeLessThanOrEqual(19);
+      // The foot is under 1″ in front of the frame's face; the top is behind that face.
+      expect(k.fwd).toBeGreaterThan(0.5);
+      expect(k.fwd).toBeLessThan(1);
+      expect(ts.filter((t) => Math.abs(t - 10 - k.fwd) < 1e-9)).toHaveLength(2);
+      expect(Math.min(...ts)).toBeLessThan(10);
     }
   });
 

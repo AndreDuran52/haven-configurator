@@ -61,7 +61,6 @@ export async function fixes2(browser, base, check) {
     const fit = await page.evaluate(() => window.__haven.getState().ui.planFit)
     await page.getByRole('radio', { name: '3D' }).click()
     await page.waitForFunction(() => !!window.__haven3d, null, { timeout: 30000 })
-    await page.waitForFunction(() => window.__haven3d.models().square, null, { timeout: 30000 })
     await viewMenu(page)
     check((await page.getByTestId('pillows').count()) === 1 && (await page.getByTestId('plan-style').count()) === 0, '3D: the View menu has Pillows only (Plan style does nothing there)')
     await page.keyboard.press('Escape')
@@ -77,7 +76,7 @@ export async function fixes2(browser, base, check) {
     const off = keys.map((k) => (three[k] ? Math.max(...plan[k].map((v, i) => Math.abs(v - three[k][i]))) : Infinity))
     check(keys.length === 10 && Object.keys(three).length === 10, `10 pillows in the plan and in 3D (${keys.length}, ${Object.keys(three).length})`)
     check(Math.max(...off) <= 0.5, `each plan pillow covers the same ground as its 3D pillow from above (worst ${Math.max(...off).toFixed(2)}″)`)
-    // From above a square pillow is about 20 × 13″ (leaning on the back cushion), not a 20″ square (400 sq in).
+    // From above a knife-edge pillow is about 20 × 8″ (leaning on the back cushion), not a 20″ square (400 sq in).
     check(areas.length === 8 && areas.every((a) => a < 300), `square pillows read narrow from above (${areas.map((a) => a.toFixed(0)).join(', ')} sq in, not 400)`)
     check(errors.length === 0, `no console errors ${errors.join('; ')}`)
     await context.close()

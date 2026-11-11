@@ -8,7 +8,7 @@ import { Outlines } from '@react-three/drei';
 import { CatmullRomCurve3, MeshStandardMaterial, TubeGeometry, Vector3, type Material } from 'three';
 import type { PersonFigure, Pt2 } from '@/ortho/person';
 import { PERSON_ACROSS, type PersonSeat } from '@/ortho/personSeat';
-import { chopPillow } from './softGeometry';
+import { knifeEdgePillow } from './softGeometry';
 
 const BODY = '#56514b';
 const LINE = '#211f1c';
@@ -30,7 +30,7 @@ export function Person({ fig, seat, pillowMat }: { fig: PersonFigure; seat: Pers
   const torso = useMemo(() => new TubeGeometry(new CatmullRomCurve3(fig.spine.map(([s, z]) => new Vector3(0, z, s))), 32, t.torso / 2, 14, false), [fig.spine, t.torso]);
   useEffect(() => () => torso.dispose(), [torso]);
   const pt = fig.pillow ? fig.pillow.t1 - fig.pillow.t0 : 0;
-  const pillow = useMemo(() => (pt ? chopPillow(20, 20, pt) : null), [pt]);
+  const pillow = useMemo(() => (pt ? knifeEdgePillow(20, 20, pt) : null), [pt]);
   useEffect(() => () => pillow?.dispose(), [pillow]);
   const hip = PERSON_ACROSS.hip * fig.height;
   const arm = PERSON_ACROSS.arm * fig.height;

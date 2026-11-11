@@ -87,6 +87,8 @@ export interface SeatProfile {
   D: number;
   /** The back pillow's top (default 13″ above the seat). */
   pillowTop?: number;
+  /** Where the back pillow's leaning front face is at a height (engine/cushionProfile); without it the face stands straight up at pillowFront. */
+  backFront?: (z: number) => number;
 }
 
 const rad = (deg: number) => (deg * Math.PI) / 180;
@@ -186,7 +188,9 @@ export function personFigure(height: number, pose: PersonPose, seat: SeatProfile
   // A thigh sloping down must clear the seat's front edge (short people perch forward).
   if (slope < 0) hipT = Math.min(Math.max(hipT, seat.D - (hz - (seat.seatHeight + thick.thigh / 2 - EDGE_SINK)) / Math.tan(-slope)), seat.D - 3);
   const torsoLen = b.shoulderHeight - (hz - seat.seatHeight);
-  const lounge = reclineTo([hipT, hz], torsoLen, thick.torso / 2, seat.pillowFront, pillowTop) ?? LEAN.unsupported;
+  // The back rests on the pillow's face where its round top begins (3″ under its top), not on a wall.
+  const face = seat.backFront ? { front: seat.backFront(pillowTop - 3), top: pillowTop - 2.5 } : { front: seat.pillowFront, top: pillowTop };
+  const lounge = reclineTo([hipT, hz], torsoLen, thick.torso / 2, face.front, face.top) ?? LEAN.unsupported;
   // Upright: a square pillow whose front meets a back at LEAN.upright.
   let pillow: PersonFigure['pillow'] = null;
   let lean = lounge;

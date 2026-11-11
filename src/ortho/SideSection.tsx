@@ -32,7 +32,7 @@ const FONT = 'helvetica, arial, sans-serif';
 
 export function SideSection({ width, height, dims, D, fs = 14, paper = '#ffffff', person = null, embed }: SideSectionProps) {
   const sec = sideSection(dims, D);
-  const fig = person ? personFigure(person.height, person.pose, { seatHeight: dims.seatHeight, pillowFront: sec.pillow.t1, pillowTop: sec.pillow.z1, D }) : null;
+  const fig = person ? personFigure(person.height, person.pose, { seatHeight: dims.seatHeight, pillowFront: sec.pillow.t1, pillowTop: sec.pillow.z1, backFront: sec.cushionFront, D }) : null;
   const compact = width < 40 * fs; // a phone, or a small cell on the sheet: only the main measurements
   const u = fs / 14; // every fixed size scales with the text
   const textW = (s: string, bold = false) => s.length * fs * (bold ? 0.62 : 0.56);
@@ -137,10 +137,11 @@ export function SideSection({ width, height, dims, D, fs = 14, paper = '#ffffff'
       {sec.legs.map((l, i) => (
         <rect key={i} x={X(l.t0)} y={Y(l.z1)} width={(l.t1 - l.t0) * s} height={(l.z1 - l.z0) * s} fill={COLORS.leg} data-part="leg" />
       ))}
+      {/* The back pillow: its real leaning profile; the back and the seat, drawn after it, cover where it presses into them. */}
+      <path d={`${sec.cushion.map((p, i) => `${i ? 'L' : 'M'}${X(p[0])} ${Y(p[1])}`).join(' ')} Z`} fill={COLORS.pillow} stroke={INK} strokeWidth={lw} strokeLinejoin="round" data-part="pillow" />
       {box(sec.back, COLORS.back, 2.2, { 'data-part': 'back' } as React.SVGProps<SVGRectElement>)}
       {box(sec.seat, COLORS.seat, 2.4, { 'data-part': 'seat' } as React.SVGProps<SVGRectElement>)}
       <line x1={X(sec.seat.t0) + 4 * u} y1={Y(sec.stitch)} x2={X(sec.seat.t1) - 4 * u} y2={Y(sec.stitch)} stroke={INK} strokeWidth={lw * 0.8} strokeDasharray={`${5 * u} ${4 * u}`} data-part="stitch" data-z={sec.stitch} />
-      {box(sec.pillow, COLORS.pillow, 3, { 'data-part': 'pillow' } as React.SVGProps<SVGRectElement>)}
       <line x1={X(-3)} y1={oy} x2={xr - 9 * u} y2={oy} stroke={INK} strokeWidth={2.6 * u} />
       {label((X(sec.back.t0) + X(sec.back.t1)) / 2 + fs * 0.35, Y((sec.back.z0 + sec.back.z1) / 2), 'BACK', { rotate: true, bold: true, fill: LABEL })}
       {(sec.seat.t1 - sec.seat.t0) * s > textW('SEAT · one piece, stitch line in the middle', true) + 12 * u

@@ -22,6 +22,21 @@ describe('the side drawing (plan Q78)', () => {
     }
   });
 
+  it('the back pillow is drawn as it stands (Andre, 2026-11-11): leaning back, its belly\'s front at 18″, its round top at 31″', () => {
+    const s = sideSection(DEFAULT_DIMS, 44);
+    const ts = s.cushion.map((p) => p[0]);
+    const zs = s.cushion.map((p) => p[1]);
+    expect(Math.max(...zs)).toBeCloseTo(31, 2);
+    expect(Math.max(...ts)).toBeGreaterThan(17.9);
+    expect(Math.max(...ts)).toBeLessThan(18.15);
+    // The same profile at every depth: it belongs to the back, not the seat.
+    expect(sideSection(DEFAULT_DIMS, 36).cushion).toEqual(s.cushion);
+    // Its face leans back: further back near the top than at the belly.
+    expect(s.cushionFront(29)).toBeLessThan(s.cushionFront(20) - 2);
+    // It leans back over the frame (behind its 10″ face) above the frame's 27″ top.
+    expect(Math.min(...s.cushion.filter((p) => p[1] > 27.5).map((p) => p[0]))).toBeLessThan(10);
+  });
+
   it('the legs stand under the sofa, on the floor', () => {
     const s = sideSection(DEFAULT_DIMS, 36);
     for (const l of s.legs) {
