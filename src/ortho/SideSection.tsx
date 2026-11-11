@@ -21,6 +21,8 @@ export interface SideSectionProps {
   /** Background behind labels that cross the drawing. */
   paper?: string;
   person?: { height: number; pose: PersonPose } | null;
+  /** On the PDF sheet: drawn as a group at this corner of the sheet, not as its own <svg>. */
+  embed?: { x: number; y: number };
 }
 
 const INK = '#1c1b19';
@@ -28,22 +30,30 @@ const LABEL = '#4a453e';
 const COLORS = { back: '#c9bfae', pillow: '#ddd5c7', seat: '#f4f0e8', leg: '#3b332c', arm: '#8d867b', body: '#aaa69f', bodyLine: '#55524d', extra: '#b79f86' };
 const FONT = 'helvetica, arial, sans-serif';
 
-export function SideSection({ width, height, dims, D, fs = 14, paper = '#ffffff', person = null }: SideSectionProps) {
+export function SideSection({ width, height, dims, D, fs = 14, paper = '#ffffff', person = null, embed }: SideSectionProps) {
   const sec = sideSection(dims, D);
   const fig = person ? personFigure(person.height, person.pose, { seatHeight: dims.seatHeight, pillowFront: sec.pillow.t1, D }) : null;
-  const compact = width < 46 * fs; // a phone: only the main measurements
+  const compact = width < 40 * fs; // a phone, or a small cell on the sheet: only the main measurements
   const u = fs / 14; // every fixed size scales with the text
   const textW = (s: string, bold = false) => s.length * fs * (bold ? 0.62 : 0.56);
   const col = fs * 2.1;
   const L = { arm: `${fmtIn(sec.heights.arm)} arm`, back: `${fmtIn(sec.heights.back)} back`, pillow: `${fmtIn(sec.heights.pillow)} back pillows`, leg: `${fmtIn(sec.heights.leg)} leg`, piece: `${fmtIn(sec.heights.seat - sec.heights.leg)} seat`, seat: `${fmtIn(sec.heights.seat)} seat height` };
+  const narrow = width < 60 * fs; // an upright iPad, a phone, the sheet: the right-hand heights are turned along their lines
+  const usable = `${fmtIn(sec.usableSeat)} USABLE SEAT`;
   const ML = (compact ? 1 : 3) * col + 14 * u;
-  const MR = 16 * u + (compact ? 0 : Math.max(textW(L.piece), textW(L.leg)) + 26 * u) + textW(L.seat, true) + 14 * u;
-  const MT = 12 * u;
+  const colR = narrow ? col : Math.max(textW(L.piece), textW(L.leg)) + 26 * u;
+  const MR = 16 * u + (compact ? 0 : colR) + (narrow ? fs + 12 * u : textW(L.seat, true) + 14 * u);
   const rowH = fs * 2.5;
-  const MB = 2 * rowH + fs * 2.2 + 10 * u;
   const tMax = Math.max(D, fig ? Math.max(fig.toe[0], fig.ankle[0]) + fig.thick.foot : 0);
   const zMax = Math.max(sec.heights.pillow, fig ? fig.top : 0) + 2;
-  const s = Math.max(0.5, Math.min((width - ML - MR) / tMax, (height - MT - MB) / zMax, 15 * u));
+  const fit = (mt: number, mb: number) => Math.max(0.5, Math.min((width - ML - MR) / tMax, (height - mt - mb) / zMax, 15 * u));
+  const s0 = fit(12 * u, 2 * rowH + fs * 2.2 + 10 * u);
+  // A small drawing: the usable seat is written above the pillow, and the back | seat row is left out when the back has no room for its number.
+  const above = !fig && (compact || textW(usable, true) + 24 * u > sec.usableSeat * s0);
+  const chain = sec.back.t1 * s0 > textW(fmtIn(sec.back.t1)) + 10 * u;
+  const MT = above ? fs * 2.6 : 12 * u;
+  const MB = (chain ? 2 : 1) * rowH + (compact ? 0 : fs * 2.2) + 10 * u;
+  const s = fit(MT, MB);
   const ox = ML + Math.max(0, (width - ML - MR - tMax * s) / 2);
   const oy = MT + (height - MT - MB + zMax * s) / 2; // the floor
   const X = (t: number) => +(ox + t * s).toFixed(2);
@@ -63,7 +73,7 @@ export function SideSection({ width, height, dims, D, fs = 14, paper = '#ffffff'
     return (
       <g>
         {o.bg && <rect x={x - w / 2} y={y - fs * 0.95} width={w} height={fs * 1.3} fill={paper} rx={3 * u} />}
-        <text data-dim-text="" x={x} y={y} fontSize={fs} fontFamily={FONT} fontWeight={o.bold ? 700 : 600} fill={o.fill ?? INK} textAnchor={o.anchor ?? 'middle'} transform={o.rotate ? `rotate(-90 ${x} ${y})` : undefined}>
+        <text data-dim-text="" x={x} y={y} fontSize={fs} fontFamily={FONT} fontWeight={o.bold ? 700 : embed ? 400 : 600} fill={o.fill ?? INK} textAnchor={o.anchor ?? 'middle'} transform={o.rotate ? `rotate(-90 ${x} ${y})` : undefined}>
           {t}
         </text>
       </g>
@@ -72,25 +82,28 @@ export function SideSection({ width, height, dims, D, fs = 14, paper = '#ffffff'
   /** A horizontal dimension from t0 to t1 at screen y, its label above the line. */
   const hDim = (t0: number, t1: number, y: number, t: string, o: { bold?: boolean; bg?: boolean; ticks?: boolean } = {}) => (
     <g stroke={INK} strokeWidth={lw}>
-      {o.ticks !== false && [t0, t1].map((t, i) => <line key={i} x1={X(t)} y1={y - 7 * u} x2={X(t)} y2={y + 7 * u} />)}
+      {o.ticks !== false && [t0, t1].map((t, i) => <line key={i} x1={X(t)} y1={y - 5 * u} x2={X(t)} y2={y + 5 * u} />)}
       <line x1={X(t0)} y1={y} x2={X(t1)} y2={y} />
       {arrow(X(t0), y, -1, 0, 1)}
       {arrow(X(t1), y, 1, 0, 2)}
-      <g stroke="none">{label((X(t0) + X(t1)) / 2, y - 6 * u, t, { bold: o.bold, bg: o.bg })}</g>
+      <g stroke="none">{label((X(t0) + X(t1)) / 2, y - 7 * u, t, { bold: o.bold, bg: o.bg })}</g>
     </g>
   );
-  /** A vertical dimension from z0 to z1 at screen x; the label turned along it (left) or beside it (right). */
-  const vDim = (x: number, z0: number, z1: number, t: string, side: 'turned' | 'right', bold = false) => (
+  /** A vertical dimension from z0 to z1 at screen x; the label turned along it (on its left, or its right) or beside it; null = no label. */
+  const vDim = (x: number, z0: number, z1: number, t: string | null, side: 'turned' | 'turnedRight' | 'right', bold = false) => (
     <g stroke={INK} strokeWidth={lw}>
       {[z0, z1].map((z, i) => <line key={i} x1={x - 7 * u} y1={Y(z)} x2={x + 7 * u} y2={Y(z)} />)}
       <line x1={x} y1={Y(z0)} x2={x} y2={Y(z1)} />
       {(z1 - z0) * s > 22 * u && arrow(x, Y(z0), 0, 1, 1)}
       {(z1 - z0) * s > 22 * u && arrow(x, Y(z1), 0, -1, 2)}
-      <g stroke="none">
-        {side === 'turned'
-          ? label(x - 6 * u, (Y(z0) + Y(z1)) / 2, t, { rotate: true, bold })
-          : label(x + 10 * u, Math.min((Y(z0) + Y(z1)) / 2 + fs * 0.35, oy - 4 * u), t, { anchor: 'start', bold })}
-      </g>
+      {t !== null && (
+        <g stroke="none">
+          {side !== 'right'
+            ? // Turned along the line; a label longer than its line starts at the line's foot and runs past its head.
+              label(side === 'turned' ? x - 6 * u : x + 6 * u + fs * 0.75, textW(t, bold) > (z1 - z0) * s ? Y(z0) : (Y(z0) + Y(z1)) / 2, t, { rotate: true, bold, anchor: textW(t, bold) > (z1 - z0) * s ? 'start' : 'middle' })
+              : label(x + 10 * u, Math.min((Y(z0) + Y(z1)) / 2 + fs * 0.35, oy - 4 * u), t, { anchor: 'start', bold })}
+        </g>
+      )}
     </g>
   );
   const limb = (a: Pt2, b: Pt2, w: number, stroke: string, grow = 0, k?: string) => (
@@ -107,14 +120,17 @@ export function SideSection({ width, height, dims, D, fs = 14, paper = '#ffffff'
       </g>
     );
   const xr = X(tMax) + 16 * u; // the first height column on the right
-  const xr2 = compact ? xr : xr + Math.max(textW(L.piece), textW(L.leg)) + 26 * u;
+  const xr2 = compact ? xr : xr + colR;
+  const right = narrow ? 'turnedRight' : 'right';
   // The usable seat is measured over the seat; with a person sitting there, inside the seat's top half.
-  const yUse = fig ? Y(sec.stitch + (sec.seat.z1 - sec.stitch) * 0.3) : Y((sec.seat.z1 + sec.pillow.z1) / 2);
+  const yUse = fig ? Y(sec.stitch + (sec.seat.z1 - sec.stitch) * 0.3) : above ? Y(sec.heights.pillow) - 10 * u : Y((sec.seat.z1 + sec.pillow.z1) / 2);
   const seatLabelY = Y(fig ? (sec.seat.z0 + sec.stitch) / 2 : (sec.stitch + sec.seat.z1) / 2) + fs * 0.35;
   const yb = oy + rowH;
+  const yTotal = chain ? yb + rowH : yb;
 
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" width={width} height={height} viewBox={`0 0 ${width} ${height}`} data-side-svg="" data-usable={sec.usableSeat} data-depth={D} data-scale={+s.toFixed(4)}>
+  const data = { 'data-side-svg': '', 'data-usable': sec.usableSeat, 'data-depth': D, 'data-scale': +s.toFixed(4) };
+  const drawing = (
+    <>
       {/* The arm beyond the seat */}
       {!compact && <rect x={X(sec.arm.t0)} y={Y(sec.arm.z1)} width={D * s} height={(sec.arm.z1 - sec.arm.z0) * s} rx={2 * s} fill="none" stroke={COLORS.arm} strokeWidth={lw} strokeDasharray={`${6 * u} ${5 * u}`} data-part="arm" />}
       {sec.legs.map((l, i) => (
@@ -145,18 +161,31 @@ export function SideSection({ width, height, dims, D, fs = 14, paper = '#ffffff'
 
       {/* Measurements */}
       <g data-side-dims="">
-        {hDim(sec.pillow.t1, D, yUse, `${fmtIn(sec.usableSeat)} USABLE SEAT`, { bold: true, bg: true })}
-        {hDim(0, sec.back.t1, yb, fmtIn(sec.back.t1))}
-        {hDim(sec.back.t1, D, yb, `${fmtIn(D - sec.back.t1)} seat`)}
-        {hDim(0, D, yb + rowH, `${fmtIn(D)} TOTAL DEPTH`, { bold: true })}
+        {hDim(sec.pillow.t1, D, yUse, usable, { bold: true, bg: !above })}
+        {chain && hDim(0, sec.back.t1, yb, fmtIn(sec.back.t1))}
+        {chain && hDim(sec.back.t1, D, yb, `${fmtIn(D - sec.back.t1)} seat`)}
+        {hDim(0, D, yTotal, `${fmtIn(D)} TOTAL DEPTH`, { bold: true })}
         {!compact && vDim(ox - col * 0.6 - 6 * u, 0, sec.heights.arm, L.arm, 'turned')}
         {vDim(ox - col * (compact ? 0.6 : 1.6) - 6 * u, 0, sec.heights.back, L.back, 'turned')}
         {!compact && vDim(ox - col * 2.6 - 6 * u, 0, sec.heights.pillow, L.pillow, 'turned')}
-        {!compact && vDim(xr, sec.heights.leg, sec.heights.seat, L.piece, 'right')}
-        {!compact && vDim(xr, 0, sec.heights.leg, L.leg, 'right')}
-        {vDim(xr2, 0, sec.heights.seat, L.seat, 'right', true)}
-        {label((X(0) + X(D)) / 2, yb + rowH + fs * 1.9, `Back pillow: ${fmtIn(BACK_PILLOW_STITCH)} at the stitching, fills to ${fmtIn(sec.pillow.t1 - sec.pillow.t0)}`, { fill: LABEL })}
+        {!compact && vDim(xr, sec.heights.leg, sec.heights.seat, L.piece, right)}
+        {!compact && vDim(xr, 0, sec.heights.leg, narrow ? null : L.leg, 'right')}
+        {!compact && narrow && label(xr - 7 * u, oy + fs * 1.15, L.leg, { anchor: 'start' })}
+        {vDim(xr2, 0, sec.heights.seat, L.seat, right, true)}
+        {!compact && label((X(0) + X(D)) / 2, yTotal + fs * 1.9, `Back pillow: ${fmtIn(BACK_PILLOW_STITCH)} at the stitching, fills to ${fmtIn(sec.pillow.t1 - sec.pillow.t0)}`, { fill: LABEL })}
       </g>
+    </>
+  );
+  if (embed) {
+    return (
+      <g transform={`translate(${embed.x} ${embed.y})`} {...data}>
+        {drawing}
+      </g>
+    );
+  }
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={width} height={height} viewBox={`0 0 ${width} ${height}`} {...data}>
+      {drawing}
     </svg>
   );
 }

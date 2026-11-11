@@ -43,6 +43,8 @@ export function bodySizes(height: number): BodySizes {
 export type Pt2 = [number, number];
 
 export interface PersonFigure {
+  /** Standing height, inches. */
+  height: number;
   sizes: BodySizes;
   /** Joint centres (t, z). */
   hip: Pt2;
@@ -145,6 +147,7 @@ export function personFigure(height: number, pose: PersonPose, seat: SeatProfile
   const fore = Math.min(0.2 * height, d);
   const hand: Pt2 = [elbow[0] + ((lap[0] - elbow[0]) / d) * fore, elbow[1] + ((lap[1] - elbow[1]) / d) * fore];
   return {
+    height,
     sizes: b,
     hip,
     pelvis,

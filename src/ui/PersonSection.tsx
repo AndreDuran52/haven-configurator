@@ -39,7 +39,7 @@ export function PersonSection() {
         <>
           <div role="radiogroup" aria-label="How the person sits" className="mx-3 my-1 flex gap-1 rounded-lg border border-line bg-panel-2 p-0.5">
             {(['lounge', 'upright'] as const).map((v) => (
-              <button key={v} type="button" role="radio" aria-checked={pose === v} onClick={() => set(height, v)} className={`min-h-10 flex-1 rounded-md px-3 text-[15px] font-medium ${pose === v ? 'bg-panel text-ink shadow-sm' : 'text-ink-muted'}`}>
+              <button key={v} type="button" role="radio" aria-checked={pose === v} onClick={() => set(height, v)} className={`min-h-11 flex-1 rounded-md px-3 text-[15px] font-medium ${pose === v ? 'bg-panel text-ink shadow-sm' : 'text-ink-muted'}`}>
                 {v === 'lounge' ? 'Lounge' : 'Upright'}
               </button>
             ))}
