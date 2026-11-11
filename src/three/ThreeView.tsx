@@ -8,6 +8,7 @@ import { ContactShadows } from '@react-three/drei';
 import { BACK_CUSHION, pillowAnchors, planCentre, seatMarkers, type BuildResult } from '@/engine';
 import { fitPoints, FLOOR_THICKNESS, FLOOR_TOP } from '@/ortho/fitPoints';
 import { isElevation } from '@/ortho/presets';
+import { SideSection } from '@/ortho/SideSection';
 import { builtOf, layoutBuiltOf, useHaven, useHavenStore, useLive, useLiveLayout } from '@/state/store';
 import { aimKeyLight } from './keyLight';
 import { FLOOR_MARGIN, makeMaterials } from './materials';
@@ -52,6 +53,9 @@ export default function ThreeView() {
   // The numbered seat markers in Top (Andre, 2026-11-09): the same count as "Seats N", at seat height.
   const showMarkers = useHaven((s) => s.ui.markers && s.ui.preset === 'top');
   const snug = useHaven((s) => !!s.layout.snug);
+  const person = useHaven((s) => s.ui.person);
+  const personHeight = useHaven((s) => s.ui.personHeight);
+  const personPose = useHaven((s) => s.ui.personPose);
   const pillows = useMemo(() => (showPillows ? pillowAnchors(built) : []), [built, showPillows]);
   // Andre's Blender pillows: the procedural ones show until they load.
   const [models, setModels] = useState<SoftModels | null>(null);
@@ -164,6 +168,12 @@ export default function ThreeView() {
       </div>
       )}
       <Overlay view={view} preset={preset} heights={built.heights} markers={markers} />
+      {/* Side is a cut-through drawing with its measurements (Andre, 2026-11-11): it covers the 3D box; the canvas stays mounted under it. */}
+      {box && preset === 'side' && (
+        <div className="absolute inset-0 z-[5]" style={{ background: SCREEN_BG }} data-testid="side-section">
+          <SideSection width={box.w} height={box.h} dims={live.dims} D={live.D} paper={SCREEN_BG} person={person ? { height: personHeight, pose: personPose } : null} />
+        </div>
+      )}
     </div>
   );
 }

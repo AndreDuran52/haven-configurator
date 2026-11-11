@@ -13,6 +13,8 @@ export const KEYS = {
   dims: 'haven:dims',
   /** UX Phase 5: the side panel hidden, per device. */
   panel: 'haven:panel',
+  /** The person in the side drawing and 3D: its height and pose, per device. */
+  person: 'haven:person',
 } as const;
 
 function store(): Storage | null {
