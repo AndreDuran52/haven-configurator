@@ -1,7 +1,7 @@
 // The Side view drawing (Andre, 2026-11-11, plan Q78): a cut through a seat
 // with its measurements, in the style of the sketch he sent: rounded shapes,
 // the back in a darker tan, the back pillow lighter, the one-piece seat with
-// its stitch line, and heavy dimension lines. With the person on, a plain grey
+// its stitch line, and heavy dimension lines. With the person on, a charcoal stick
 // figure sits on it in profile. Drawn in display units (px on screen, pt on
 // paper): `fs` is the text size, so nothing is ever under 14 px on screen.
 // No three import: the 3D view shows it for the Side button and the PDF sheet
@@ -27,12 +27,12 @@ export interface SideSectionProps {
 
 const INK = '#1c1b19';
 const LABEL = '#4a453e';
-const COLORS = { back: '#c9bfae', pillow: '#ddd5c7', seat: '#f4f0e8', leg: '#3b332c', arm: '#8d867b', body: '#aaa69f', bodyLine: '#55524d', extra: '#b79f86' };
+const COLORS = { back: '#c9bfae', pillow: '#ddd5c7', seat: '#f4f0e8', leg: '#3b332c', arm: '#8d867b', body: '#56514b', bodyLine: '#211f1c', extra: '#b79f86' };
 const FONT = 'helvetica, arial, sans-serif';
 
 export function SideSection({ width, height, dims, D, fs = 14, paper = '#ffffff', person = null, embed }: SideSectionProps) {
   const sec = sideSection(dims, D);
-  const fig = person ? personFigure(person.height, person.pose, { seatHeight: dims.seatHeight, pillowFront: sec.pillow.t1, D }) : null;
+  const fig = person ? personFigure(person.height, person.pose, { seatHeight: dims.seatHeight, pillowFront: sec.pillow.t1, pillowTop: sec.pillow.z1, D }) : null;
   const compact = width < 40 * fs; // a phone, or a small cell on the sheet: only the main measurements
   const u = fs / 14; // every fixed size scales with the text
   const textW = (s: string, bold = false) => s.length * fs * (bold ? 0.62 : 0.56);
@@ -115,7 +115,8 @@ export function SideSection({ width, height, dims, D, fs = 14, paper = '#ffffff'
         {limb(fig.hip, fig.knee, fig.thick.thigh, stroke, grow)}
         {limb(fig.knee, fig.ankle, fig.thick.shin, stroke, grow)}
         {limb(fig.ankle, fig.toe, fig.thick.foot, stroke, grow)}
-        {limb(fig.pelvis, fig.shoulder, fig.thick.torso, stroke, grow)}
+        <path d={fig.spine.map((p, i) => `${i ? 'L' : 'M'}${X(p[0])} ${Y(p[1])}`).join(' ')} fill="none" stroke={stroke} strokeWidth={+(fig.thick.torso * s + grow).toFixed(2)} strokeLinecap="round" strokeLinejoin="round" />
+        {limb(fig.shoulder, fig.head, fig.thick.arm * 1.1, stroke, grow)}
         <circle cx={X(fig.head[0])} cy={Y(fig.head[1])} r={+(fig.thick.headR * s + grow / 2).toFixed(2)} fill={stroke} />
       </g>
     );
@@ -149,11 +150,11 @@ export function SideSection({ width, height, dims, D, fs = 14, paper = '#ffffff'
       {/* The person: the square pillow behind an upright back, then the figure as one silhouette */}
       {fig?.pillow && box(fig.pillow, COLORS.extra, Math.min(3, (fig.pillow.t1 - fig.pillow.t0) / 2.2), { 'data-part': 'upright-pillow' } as React.SVGProps<SVGRectElement>)}
       {fig && (
-        <g data-person="" data-hip={fig.hip.map((v) => v.toFixed(2)).join(',')} data-top={fig.top.toFixed(2)} data-feet={fig.feetOnFloor ? 'floor' : 'up'} data-seat-back={fig.seatBack.toFixed(2)}>
-          {body(COLORS.bodyLine, 3 * u)}
+        <g data-person="" data-hip={fig.hip.map((v) => v.toFixed(2)).join(',')} data-top={fig.top.toFixed(2)} data-feet={fig.feetOnFloor ? 'floor' : 'up'} data-seat-back={fig.seatBack.toFixed(2)} data-lean={fig.lean.toFixed(1)}>
+          {body(COLORS.bodyLine, 2.5 * u)}
           {body(COLORS.body, 0)}
-          {limb(fig.shoulder, fig.elbow, fig.thick.arm, COLORS.bodyLine, 3 * u)}
-          {limb(fig.elbow, fig.hand, fig.thick.arm, COLORS.bodyLine, 3 * u)}
+          {limb(fig.shoulder, fig.elbow, fig.thick.arm, COLORS.bodyLine, 2.5 * u)}
+          {limb(fig.elbow, fig.hand, fig.thick.arm, COLORS.bodyLine, 2.5 * u)}
           {limb(fig.shoulder, fig.elbow, fig.thick.arm, COLORS.body)}
           {limb(fig.elbow, fig.hand, fig.thick.arm, COLORS.body)}
         </g>

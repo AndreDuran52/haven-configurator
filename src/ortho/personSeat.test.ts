@@ -32,7 +32,7 @@ describe('where the 3D person sits (plan Q79)', () => {
     expect(pts).toHaveLength(8);
     expect(Math.max(...pts.map((p) => p[1]))).toBeCloseTo(fig.top, 5);
     const xs = pts.map((p) => p[0]);
-    expect(Math.max(...xs) - Math.min(...xs)).toBeGreaterThan(18); // shoulders and arms
-    expect(Math.max(...xs) - Math.min(...xs)).toBeLessThan(26);
+    expect(Math.max(...xs) - Math.min(...xs)).toBeGreaterThan(11); // a slim figure, arms by the sides
+    expect(Math.max(...xs) - Math.min(...xs)).toBeLessThan(16);
   });
 });

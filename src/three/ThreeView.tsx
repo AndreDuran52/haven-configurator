@@ -72,7 +72,7 @@ export default function ThreeView() {
   // The 3D person: on the back run's widest seat, from the Side drawing's own joints.
   const seat = useMemo(() => (person ? personSeat(built) : null), [person, built]);
   const fig = useMemo(
-    () => (seat ? personFigure(personHeight, personPose, { seatHeight: built.heights.seatHeight, pillowFront: built.heights.backFrame + BACK_CUSHION.depth, D: built.D }) : null),
+    () => (seat ? personFigure(personHeight, personPose, { seatHeight: built.heights.seatHeight, pillowFront: built.heights.backFrame + BACK_CUSHION.depth, pillowTop: built.heights.backHeight + BACK_CUSHION.rise, D: built.D }) : null),
     [seat, personHeight, personPose, built],
   );
   const points = useMemo(
