@@ -11,6 +11,8 @@ export const KEYS = {
   open: 'haven:open',
   /** UX Phase 3: plan dimensions Overall | Detailed, per device. */
   dims: 'haven:dims',
+  /** UX Phase 5: the side panel hidden, per device. */
+  panel: 'haven:panel',
 } as const;
 
 function store(): Storage | null {

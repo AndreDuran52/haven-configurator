@@ -12,7 +12,7 @@ import { buildHaven, buildLayout, encodeLayout, replaceSection, sectionConfig, s
 import { DEFAULT_PRESET, type PresetName } from '@/ortho/presets';
 import type { TrayKind } from '@/plan/placementTargets';
 import * as H from './history';
-import { readDimsMode } from './prefs';
+import { readDimsMode, readPanelHidden } from './prefs';
 import { DEFAULT_START, startForOpened, type StartChoice } from './start';
 
 /** The plan view's exact scale (CSS px per inch) and the plan point at its centre. */
@@ -64,6 +64,8 @@ export interface UiState {
   dims: DimsMode;
   /** Phase 3c (Andre 2026-11-09, Q71): Mirror sides on a U; off until switched on, off again when another layout opens. UI only. */
   mirror: boolean;
+  /** UX Phase 5 (Andre 2026-11-11): the side panel hidden, so the plan or 3D fills the screen (per device). UI only. */
+  panelHidden: boolean;
 }
 
 /** Make the two sides of a U alike again after an edit (engine/sides.ts mirrorSides; loaded with the switch). */
@@ -188,6 +190,7 @@ export function createHavenStore(initial: Layout | Config, ui: Partial<UiState> 
         result: null,
         dims: readDimsMode(),
         mirror: false,
+        panelHidden: readPanelHidden(),
         ...ui,
       },
       mirrorFn: null,

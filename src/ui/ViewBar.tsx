@@ -3,12 +3,13 @@
 // Overview, Top, Front, Side (3/4 and Iso are one Overview; Top is back since
 // Phase 3b); and a small View menu (Pillows in the plan and 3D; Plan style in
 // the plan only; Seating: seat markers, Snug, seat width). Rule for every menu (Andre, 2026-11-09): only options that do
-// something in the current view. A camera button returns to its exact view even
+// something in the current view. At the right end: Hide panel | Show panel (UX
+// Phase 5, 2026-11-11). A camera button returns to its exact view even
 // when it's already on. In the entry chunk: it imports only three-free modules
 // (ortho/presets), so no three.js.
 import { lazy, Suspense } from 'react';
 import { isElevation, type PresetName } from '@/ortho/presets';
-import { writeDimsMode } from '@/state/prefs';
+import { writeDimsMode, writePanelHidden } from '@/state/prefs';
 import { useHaven, useHavenStore, useLive } from '@/state/store';
 import { Menu } from './Menu';
 // The Seating section loads when the menu first opens (it stays out of the entry chunk).
@@ -39,6 +40,8 @@ export function ViewBar() {
   const look = useHaven((s) => s.ui.look);
   const pillows = useHaven((s) => s.ui.pillows);
   const hasLoose = useLive().loose.length > 0;
+  const panelHidden = useHaven((s) => s.ui.panelHidden);
+  const readOnly = useHaven((s) => s.ui.readOnly);
   const setUi = store.getState().setUi;
   return (
     <div className="pointer-events-none absolute inset-x-0 top-0 z-10 flex flex-wrap items-start gap-1.5 p-1.5 min-[480px]:gap-2 min-[480px]:p-2">
@@ -106,6 +109,23 @@ export function ViewBar() {
           )}
         </Menu>
       </div>
+      {/* UX Phase 5 (Andre, 2026-11-11): hide the side panel so the plan or 3D fills the screen (per device). */}
+      {!readOnly && (
+        <div className={`${group} ml-auto`}>
+          <button
+            type="button"
+            aria-pressed={panelHidden}
+            data-testid="panel-toggle"
+            className={pill(false)}
+            onClick={() => {
+              writePanelHidden(!panelHidden);
+              setUi({ panelHidden: !panelHidden });
+            }}
+          >
+            {panelHidden ? '« Show panel' : 'Hide panel »'}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
