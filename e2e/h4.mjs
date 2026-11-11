@@ -156,11 +156,12 @@ export async function h4(browser, base, check) {
     const after = await config(page)
     check(!after.runs.back.some((p) => p.id === seat) && (await undoDepth(page)) === d0 + 1, 'menu Delete: piece gone, one undo step')
     await page.getByRole('button', { name: 'Undo', exact: true }).click()
-    // Table: width chips and the style.
+    // Table: the width (typed or ±, UX Phase 3c; the chips are gone) and the style.
     const tid = await tableId(page)
     await tap(...(await centreOf(page, `[data-piece="${tid}"]`)))
     await page.waitForSelector('[data-tap-menu]')
-    await page.locator('[data-tap-menu]').getByRole('button', { name: '28″' }).click()
+    await page.fill(`#m-menu-table-${tid}`, '28')
+    await page.press(`#m-menu-table-${tid}`, 'Enter')
     await page.locator('[data-tap-menu]').getByRole('radio', { name: 'All wood' }).click()
     await page.waitForTimeout(400)
     const tc = await config(page)
@@ -226,8 +227,15 @@ export async function h4(browser, base, check) {
     const legs = (c) => c.runs.right.map((p) => p.kind + p.length).join(' ')
     await page.locator('[data-tap-menu]').getByRole('button', { name: 'Try 10″ arms' }).click()
     check(legs(await config(page)) === 'armless21 table20 oneArm31' && (await config(page)).dims.A === 10, `"Try 10″ arms": 10″ arms, seats 21 | 21 (${legs(await config(page))})`)
-    await page.locator('[data-tap-menu]').getByRole('button', { name: '24″' }).click()
-    check(legs(await config(page)) === 'armless19 table24 oneArm29', `the 24″ chip keeps the seats equal (${legs(await config(page))})`)
+    // The table ± grows from the middle (UX Phase 3c): + would push a seat under 23″, so it is refused; − gives each seat ½″.
+    const menu = page.locator('[data-tap-menu]')
+    await menu.getByRole('button', { name: 'Width plus 1' }).click()
+    await page.waitForTimeout(150)
+    // A measure field says why under itself (as "min 158″" does), not in a toast.
+    const plusWhy = (await page.textContent(`[data-error="menu-table-${bt}"]`).catch(() => '')) ?? ''
+    check(legs(await config(page)) === 'armless21 table20 oneArm31' && /can’t go under 23″/.test(plusWhy), `table +: refused, the seats are under 23″ ("${plusWhy}")`)
+    await menu.getByRole('button', { name: 'Width minus 1' }).click()
+    check(legs(await config(page)) === 'armless21.5 table19 oneArm31.5', `table −: ½″ back to each seat, from the middle (${legs(await config(page))})`)
     await page.keyboard.press('Escape')
     await page.evaluate((id) => {
       const s = window.__haven.getState()
@@ -241,7 +249,7 @@ export async function h4(browser, base, check) {
     await tap(...(await centreOf(page, `[data-piece="${bt}"]`)))
     await page.waitForSelector('[data-tap-menu]')
     await page.locator('[data-tap-menu]').getByRole('button', { name: 'Even seats' }).click()
-    check(legs(await config(page)) === 'armless19 table24 oneArm29', `Even seats shares 23 | 15 back to 19 | 19 (${legs(await config(page))})`)
+    check(legs(await config(page)) === 'armless21.5 table19 oneArm31.5', `Even seats shares 25½ | 17½ back to 21½ | 21½ (${legs(await config(page))})`)
     check((await page.getByRole('button', { name: 'Even seats' }).count()) === 0, 'Even seats hides once the seats are equal')
     await page.keyboard.press('Escape')
     for (let i = 0; i < 5; i++) await page.getByRole('button', { name: 'Undo', exact: true }).click()

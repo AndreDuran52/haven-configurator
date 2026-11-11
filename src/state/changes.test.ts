@@ -1,6 +1,8 @@
 // The result line's words (UX Phase 3, Andre 2026-11-08).
 import { describe, expect, it } from 'vitest';
 import { addPiece, editSection, nudgeRoom, setSnug, placeRoom, resizePiece, setArmWidth, setLock, setMeasurements, setRoom, solo, standardStraight, standardU, teeLayout, type Layout } from '@/engine';
+import { setLayoutShape } from '@/engine/shapeLayout';
+import { copySide } from '@/engine/sides';
 import { describeChange } from './changes';
 
 const u = () => solo(standardU());
@@ -51,6 +53,30 @@ describe('describeChange', () => {
     const a = u();
     expect(describeChange(a, a)).toBeNull();
     expect(describeChange(a, teeLayout({ total: 229, stem: 110 }))).toBeNull();
+  });
+
+  it('a shape switched in place, and a copied side (UX Phase 3c)', () => {
+    const a = u();
+    expect(describeChange(a, setLayoutShape(a, 'L-left').layout)).toBe('U → L left · Width 188″ → 142″ · Seats 7 → 4');
+    const s = solo(standardStraight());
+    expect(describeChange(s, setLayoutShape(s, 'U').layout)).toMatch(/^Straight → U · Width 120″ → 212″ · Seats \d+ → \d+$/);
+    const uneven = edit(a, (c) => setMeasurements(c, { R: 120 }));
+    const copied = edit(uneven, (c) => copySide(c, 'left'));
+    expect(describeChange(uneven, copied, 'Copied the left side to the right')).toBe('Copied the left side to the right · Right side 120″ → 132″ · Seats 6 → 7');
+  });
+
+  it('Mirror sides: the same change on both sides reads once (Phase 3c)', () => {
+    const a = u();
+    const b = edit(a, (c) => setMeasurements(c, { L: 140, R: 140 }));
+    expect(describeChange(a, b)).toBe('Sides 132″ → 140″ · Seat 58″ → 66″ (both sides)');
+  });
+
+  it('Mirror sides: a table added on one side reads once, not as removed and added pieces (round 2)', async () => {
+    const { mirrorSides } = await import('@/engine/sides');
+    const { addTable } = await import('@/engine');
+    const c = standardU({ L: 150, R: 150 });
+    const b = mirrorSides(c, addTable(c, { run: 'left', at: 'seam', seam: 0 }).config);
+    expect(describeChange(solo(c), solo(b))).toBe('Added table 32″ (both sides) · Seat 76″ → 44″ (both sides) · Seats 7 → 5');
   });
 
   it('long lists are cut at four', () => {

@@ -10,7 +10,7 @@ import { setArmWidth } from './ops';
 import { cushionOf, isSeat } from './pieces';
 import { addPiece } from './pieceOps';
 import { anchoredTargets, moveTable } from './tableOps';
-import { addTable, centralTable, NO_TABLE_ROOM, tableFits, tableTargets } from './tablePlace';
+import { addTable, centralTable, NO_TABLE_ROOM, tableFits, tableTargets, touchingTables } from './tablePlace';
 import { deepFreeze, desc, valid } from './testing';
 import type { Config } from './types';
 
@@ -78,18 +78,31 @@ describe('the width steps down so no seat goes under 23″', () => {
 });
 
 describe('where the tray offers a new table', () => {
-  it('seams only where a seam fits: no split targets on the Standard U; none on its full back', () => {
+  it('the Standard U: the corner seam and the arm\'s place on each leg (never outside the arm, Q72); no split (halves under 23); none on its full back', () => {
     const t = tableTargets(standardU());
-    expect(t.length).toBeGreaterThan(0);
-    expect(t.every((x) => x.placement.at === 'seam')).toBe(true);
-    expect(t.some((x) => x.placement.run === 'back')).toBe(false);
+    expect(t.map((x) => `${x.placement.run} ${x.placement.at}`)).toEqual(['left seam', 'left replaceArm', 'right seam', 'right replaceArm']);
+    const end = t.find((x) => x.placement.run === 'left' && x.placement.at === 'replaceArm')!;
+    expect(desc(end.config, 'left')).toEqual(['armless 40', 'table 32']); // seat | table: the arm's place
     for (const x of t) expect(seatsUnder23(x.config)).toEqual([]);
   });
 
-  it('a split is only the fallback for a run with no seam that fits: a one-seat leg still gets seams', () => {
-    // A one-seat leg of 73″ cushion next to a corner: the corner seam leaves 41 ≥ 23, so it is a seam, not a split.
+  it('never right next to another table (Phase 3c round 2): a second table goes elsewhere or is refused', () => {
+    const long = standardU({ L: 150, R: 150 });
+    const first = addTable(long, { run: 'left', at: 'seam', seam: 0 }).config; // table 32 | seat at the corner
+    for (const t of tableTargets(first)) expect(touchingTables(t.config), JSON.stringify(t.placement)).toBe(0);
+    const leftTable = first.runs.left!.find((p) => p.kind === 'table')!;
+    for (const a of anchoredTargets(first, leftTable.id)) expect(touchingTables(moveTable(first, leftTable.id, a.placement).config)).toBe(0);
+  });
+
+  it('the middle of a seat, when both halves stay 23″ or more (Q73)', () => {
+    // A one-seat leg of 73″ cushion: a 24″ table in its middle leaves 24½ | 24½.
     const nick = standardU({ W: 170, L: 140, R: 140, wedgeC: 55, dims: { A: 12 } });
-    expect(tableTargets(nick).filter((x) => x.placement.run === 'left').every((x) => x.placement.at === 'seam')).toBe(true);
+    const split = tableTargets(nick).find((x) => x.placement.run === 'left' && x.placement.at === 'split')!;
+    expect(desc(split.config, 'left')).toEqual(['armless 24.5', 'table 24', 'oneArm 36.5=24.5+12@end']);
+    // A 104″ side seat (L 164): 32 in the middle, 29 | 29.
+    const long = standardU({ L: 164 });
+    const mid = tableTargets(long).find((x) => x.placement.run === 'left' && x.placement.at === 'split')!;
+    expect(desc(mid.config, 'left')).toEqual(['armless 29', 'table 32', 'oneArm 43=29+14@end']);
   });
 
   it('"Table in the middle": the straight sofa gets 10 | 34 | 32 | 34 | 10; the Standard U a leg at its corner', () => {

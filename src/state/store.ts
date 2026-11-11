@@ -62,7 +62,12 @@ export interface UiState {
   result: string | null;
   /** UX Phase 3: plan dimensions, the overall sizes only or every piece (per device). */
   dims: DimsMode;
+  /** Phase 3c (Andre 2026-11-09, Q71): Mirror sides on a U; off until switched on, off again when another layout opens. UI only. */
+  mirror: boolean;
 }
+
+/** Make the two sides of a U alike again after an edit (engine/sides.ts mirrorSides; loaded with the switch). */
+export type MirrorFn = (before: Config, after: Config) => Config;
 
 export type PanelTab = 'size' | 'room' | 'pieces' | 'look';
 export type DimsMode = 'overall' | 'detailed';
@@ -84,6 +89,9 @@ export interface HavenState {
   config: Config;
   draft: Config | null;
   ui: UiState;
+  /** Mirror sides: set while the switch is on (every config edit of a one-sofa layout goes through it). */
+  mirrorFn: MirrorFn | null;
+  setMirror: (fn: MirrorFn | null) => void;
   /** Preview the edited section as `next` (a gesture frame). */
   setDraft: (next: Config, section?: string) => void;
   setLayoutDraft: (next: Layout) => void;
@@ -143,14 +151,17 @@ export function createHavenStore(initial: Layout | Config, ui: Partial<UiState> 
       void import('./changes').then(({ describeChange }) => {
         const now = get();
         // Only if nothing else happened meanwhile (another edit, Undo).
-        if (now.layout === after) set({ ui: { ...now.ui, result: describeChange(from, after) } });
+        if (now.layout === after) set({ ui: { ...now.ui, result: describeChange(from, after, opts.say) } });
       });
     };
     const clearResult = () => {
       if (get().ui.result !== null) set({ ui: { ...get().ui, result: null } });
     };
-    /** Lift a section config into the layout (same reference when unchanged or refused). */
-    const lift = (base: Layout, next: Config, section: string) => replaceSection(base, section, next);
+    /** Lift a section config into the layout (same reference when unchanged or refused). With Mirror sides on, the other side follows (one step). */
+    const lift = (base: Layout, next: Config, section: string) => {
+      const fn = get().mirrorFn;
+      return replaceSection(base, section, fn && base.sections.length === 1 ? fn(sectionConfig(base, section), next) : next);
+    };
     return {
       ...fieldsOf(H.initHistory(asLayout(initial)), ui.section ?? 'a'),
       ui: {
@@ -176,8 +187,11 @@ export function createHavenStore(initial: Layout | Config, ui: Partial<UiState> 
         panel: 'size',
         result: null,
         dims: readDimsMode(),
+        mirror: false,
         ...ui,
       },
+      mirrorFn: null,
+      setMirror: (fn) => set({ mirrorFn: fn, ui: { ...get().ui, mirror: !!fn } }),
       setDraft: (next, section = get().ui.section) => {
         const r = lift(get().layout, next, section);
         if (!r.rejected) apply((h) => H.setDraft(h, r.layout));
@@ -231,7 +245,8 @@ export function createHavenStore(initial: Layout | Config, ui: Partial<UiState> 
         const u = get().ui;
         set({
           ...fieldsOf(H.initHistory(asLayout(layout)), 'a'),
-          ui: { ...u, result: null, screen: 'editor', project: opts.project ?? null, lastStart: opts.lastStart ?? startForOpened(asLayout(layout), u.lastStart), selectedId: null, placing: null, dragging: null, readOnly: false, section: 'a' },
+          mirrorFn: null,
+          ui: { ...u, mirror: false, result: null, screen: 'editor', project: opts.project ?? null, lastStart: opts.lastStart ?? startForOpened(asLayout(layout), u.lastStart), selectedId: null, placing: null, dragging: null, readOnly: false, section: 'a' },
         });
       },
       goHome: () => set({ ui: { ...get().ui, screen: 'home', selectedId: null, placing: null, dragging: null } }),

@@ -12,6 +12,8 @@ const SHOTS = 'test-results'
 const LAPTOP = { width: 1440, height: 900 }
 const LAPTOP_SMALL = { width: 1280, height: 800 }
 const U_ROOM = '5UW188L132R132D44_bt32s36_la72_ra72_Mw240d200.zy'
+/** An opened T (shapes.mjs): the one layout whose shape switch still starts fresh. */
+const TEE = '3rW114.5L110R110D44_ba54.5_ra50_PglW114.5L110R110_ba54.5_la50.y2'
 
 async function fresh(browser, base, viewport = LAPTOP, path = '') {
   const context = await browser.newContext({ viewport })
@@ -134,26 +136,27 @@ export async function phase3(browser, base, check) {
     await context.close()
   }
 
-  // 3. The shape guard.
+  // 3. The shape switch (Phase 3c, Andre 2026-11-09): an edited sofa converts in place, no guard; Undo brings it back.
+  //    An opened T still starts fresh, asking first when it was edited (the guard).
   {
     const { context, page } = await fresh(browser, base)
-    await page.getByRole('radio', { name: 'L left' }).click()
-    check((await page.getByTestId('shape-guard').count()) === 0 && (await config(page)).shape === 'L-left', 'an unedited layout switches without asking')
-    await page.getByRole('radio', { name: 'U', exact: true }).click()
     await setField(page, 'W', 200)
     await page.getByRole('radio', { name: 'L right' }).click()
+    await page.waitForTimeout(200)
+    check((await page.getByTestId('shape-guard').count()) === 0 && (await config(page)).shape === 'L-right', 'an edited sofa switches in place without asking')
+    await page.getByRole('button', { name: 'Undo', exact: true }).click()
+    check((await config(page)).shape === 'U' && (await config(page)).W === 200, 'Undo brings the edited U back')
+    await page.goto(`${base}#c=${TEE}`, { waitUntil: 'networkidle' })
+    await page.waitForSelector('[data-plan-svg]')
+    await setField(page, 'D', 40)
+    await page.getByRole('radio', { name: 'Straight' }).click()
     await page.waitForSelector('[data-testid=shape-guard]')
     const title = await page.textContent('[role=dialog] h2')
     const desc = await page.textContent('[role=dialog] p')
     const buttons = await page.$$eval('[data-testid=shape-guard] button', (els) => els.map((e) => e.textContent))
-    check(title === 'Switch to L right?' && desc === 'This replaces your current layout.' && buttons.join(' | ') === 'Save first | Switch | Cancel', `the guard: "${title}" "${desc}" [${buttons.join(' | ')}]`)
+    check(title === 'Switch to Straight?' && desc === 'This replaces your current layout.' && buttons.join(' | ') === 'Save first | Switch | Cancel', `an edited T: the guard "${title}" "${desc}" [${buttons.join(' | ')}]`)
     await page.getByTestId('guard-cancel').click()
-    check((await config(page)).shape === 'U' && (await config(page)).W === 200, 'Cancel keeps the layout')
-    await page.getByRole('radio', { name: 'L right' }).click()
-    await page.getByTestId('guard-switch').click()
-    check((await config(page)).shape === 'L-right', 'Switch starts an L right')
-    await page.getByRole('button', { name: 'Undo', exact: true }).click()
-    check((await config(page)).shape === 'U' && (await config(page)).W === 200, 'Undo brings the edited U back')
+    check((await page.evaluate(() => window.__haven.getState().layout.sections.length)) === 2, 'Cancel keeps the T')
     await page.getByRole('radio', { name: 'Straight' }).click()
     await page.getByTestId('guard-save').click()
     await page.getByTestId('save-name').fill('Guard test')

@@ -5,7 +5,8 @@
 // never change), the arm width (it changes the footprint and the seats;
 // Andre 2026-11-09), the corner wedge, and the sofa's warnings. "When pieces
 // change" is on the Pieces tab; the room has its own tab; the seat width for
-// the seat count is in the settings menu.
+// the seat count is in the View menu. UX Phase 3c (Andre, 2026-11-09): on a U,
+// the Mirror sides switch under the side fields (one change makes both sides).
 import { lazy, Suspense } from 'react';
 import { DEPTH_PRESETS, setArmWidth, setMeasurements, type EditResult } from '@/engine';
 import { fmtIn } from '@/plan/format';
@@ -16,6 +17,7 @@ import { ROOM_CODES } from './warningCodes';
 import { WarningsList } from './WarningsList';
 
 const SectionsPanel = lazy(() => import('./SectionsPanel'));
+const MirrorSides = lazy(() => import('./MirrorSides'));
 // Radix Slider (~7 kB gzip) loads after the first paint, into a placeholder of its height.
 const WedgeSlider = lazy(() => import('./WedgeSlider').then((m) => ({ default: m.WedgeSlider })));
 
@@ -36,6 +38,7 @@ export function SizeTab() {
   const hasLeft = live.shape !== 'L-right' && !straight;
   const hasRight = live.shape !== 'L-left' && !straight;
   const other = !(DEPTH_PRESETS as readonly number[]).includes(live.D);
+  const inside = !joined && live.shape === 'U' ? builtOf(live).opening : null;
 
   return (
     <>
@@ -48,6 +51,11 @@ export function SizeTab() {
         {!joined && <MeasureField name="W" label="Width" labelClass="w-24" value={live.W} apply={(c, v) => setMeasurements(c, { W: v })} />}
         {!joined && hasLeft && <MeasureField name="L" label="Left side" labelClass="w-24" value={live.L} apply={(c, v) => setMeasurements(c, { L: v })} />}
         {!joined && hasRight && <MeasureField name="R" label="Right side" labelClass="w-24" value={live.R} apply={(c, v) => setMeasurements(c, { R: v })} />}
+        {!joined && live.shape === 'U' && (
+          <Suspense fallback={<div className="h-11" aria-hidden />}>
+            <MirrorSides />
+          </Suspense>
+        )}
         <MeasureField name="D" label="Depth" labelClass="w-24" value={live.D} apply={(c, v) => setMeasurements(c, { D: v })} />
         <div className="flex gap-2 pl-26" role="group" aria-label="Depth presets">
           {[...DEPTH_PRESETS].sort((a, b) => a - b).map((d) => (
@@ -75,6 +83,13 @@ export function SizeTab() {
           Seat depth <span className="font-semibold tabular-nums">{fmtIn(builtOf(live).seatDepth, { mark: false })}″</span>
           <span className="text-ink-muted"> (front edge to the back cushion)</span>
         </p>
+        {inside && (
+          // Inside the U (Phase 3c round 2, Q75): what clients ask, between the sides and back to front.
+          <p className="pl-26 text-[15px] text-ink" data-testid="inside-u">
+            Inside the U <span className="font-semibold tabular-nums">{fmtIn(inside.width, { mark: false })}″</span> wide ×{' '}
+            <span className="font-semibold tabular-nums">{fmtIn(inside.depth, { mark: false })}″</span> deep
+          </p>
+        )}
         <MeasureField name="A" label="Arm width" labelClass="w-24" step={0.5} value={live.dims.A} read={(c) => c.dims.A} apply={setArmWidth} />
       </Section>
       {!straight && (

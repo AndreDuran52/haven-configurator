@@ -6,6 +6,7 @@
 import type { BuildResult, BuiltPiece, Pt, Rect } from '@/engine';
 import type { DimLayout } from './dims';
 import { DimsLayer } from './DimsLayer';
+import { withInsideDims } from './insideDims';
 import { clearSeatsAt } from './seatsLabel';
 import { fmtIn } from './format';
 import { hatch, pts, woodGrain } from './geometry';
@@ -99,10 +100,13 @@ export function PlanDrawing({ built, dims, k, theme, showWarnings, selectedId, s
       : built.shape === 'L-left'
         ? [built.D + (built.W - built.D) / 2, built.D + (built.L - built.D) / 2]
         : [(built.W - built.D) / 2, built.D + (built.R - built.D) / 2];
-  // ... moved off any ottoman or coffee table sitting there.
+  // The plan's dimensions, with the U's inside width and depth (Phase 3c round 2, Q75); not for a section of a T.
+  const shownDims = dims && showSeats ? withInsideDims(built, dims) : dims;
+  const insideBoxes = dims && shownDims ? shownDims.texts.slice(dims.texts.length).map((t) => t.box) : [];
+  // ... moved off any ottoman or coffee table sitting there, and off the inside-the-U labels (a small screen).
   const seatsAt = clearSeatsAt(
     usualSeatsAt,
-    built.pieces.filter((p) => p.kind === 'ottoman' || p.kind === 'coffeeTable').map((p) => p.bbox),
+    [...built.pieces.filter((p) => p.kind === 'ottoman' || p.kind === 'coffeeTable').map((p) => p.bbox), ...insideBoxes],
     lw(seatsSize),
     seatsText.length,
     built.D,
@@ -163,7 +167,7 @@ export function PlanDrawing({ built, dims, k, theme, showWarnings, selectedId, s
         })}
       </g>
       <g data-loose="">{loose.map(piece)}</g>
-      {dims && <DimsLayer dims={dims} theme={theme} />}
+      {shownDims && <DimsLayer dims={shownDims} theme={theme} />}
       {showSeats && <g data-seats="">{text(seatsAt[0], seatsAt[1], seatsText, lw(seatsSize), { bold: true, fill: theme.ink })}</g>}
     </g>
   );

@@ -34,6 +34,8 @@ export const cancelDraft = <T>(h: History<T>): History<T> => (h.draft ? { ...h, 
 export interface CommitOptions {
   key?: string;
   now?: number;
+  /** The result line's lead for this edit (UX Phase 3c, e.g. "Copied the left side to the right"); history ignores it. */
+  say?: string;
 }
 
 export function commit<T>(h: History<T>, next?: T, opts: CommitOptions = {}): History<T> {

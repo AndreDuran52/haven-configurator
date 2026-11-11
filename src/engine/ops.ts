@@ -34,10 +34,12 @@ export function setMeasurements(config: Config, patch: Partial<Pick<Config, 'W' 
     const dL = next.L - d.L;
     const dR = next.R - d.R;
     if (!dW && !dL && !dR && next.D === d.D) return null;
+    // Seats that were even around a table stay even (UX Phase 3c, Andre 2026-11-09).
+    const even = evenPairs(d);
     Object.assign(d, next);
     // §5: a manual wedge sticks when D changes, clamped into the new D..D+30 range.
     if (d.wedgeC !== null) d.wedgeC = clampWedge(d.wedgeC, d.D);
-    if (reshapeRuns(d, alloc, wedgeC(d) - oldC, dW, dL, dR)) return true;
+    if (reshapeRuns(d, alloc, wedgeC(d) - oldC, dW, dL, dR)) return reEven(d, even) || noRoom();
     const min = shortfall(withSizes(config, { ...next, wedgeC: d.wedgeC }));
     return refuse('infeasible', minMessage(min), min);
   });
@@ -63,8 +65,9 @@ export function setWedge(config: Config, C: number): EditResult {
       if (to !== target) return refuse('noRoom', 'No room for a bigger wedge');
       if (config.wedgeC !== null) return null;
     }
+    const even = evenPairs(d);
     d.wedgeC = to;
-    return reshapeRuns(d, alloc, to - cur, 0, 0, 0) || refuse('noRoom', 'No room for a bigger wedge');
+    return (reshapeRuns(d, alloc, to - cur, 0, 0, 0) && reEven(d, even)) || refuse('noRoom', 'No room for a bigger wedge');
   });
 }
 
@@ -73,8 +76,9 @@ export function resetWedge(config: Config): EditResult {
   return edit(config, (d, alloc): Outcome => {
     if (d.wedgeC === null) return null;
     const oldC = wedgeC(d);
+    const even = evenPairs(d);
     d.wedgeC = null;
-    if (reshapeRuns(d, alloc, wedgeC(d) - oldC, 0, 0, 0)) return true;
+    if (reshapeRuns(d, alloc, wedgeC(d) - oldC, 0, 0, 0)) return reEven(d, even) || noRoom();
     const min = shortfall(withSizes(config, { wedgeC: null }));
     return refuse('infeasible', minMessage(min), min);
   });

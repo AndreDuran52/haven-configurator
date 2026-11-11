@@ -1,5 +1,7 @@
 // Public API of the pure geometry engine (plan §5). No React, three, zustand,
-// @/ or ../ imports anywhere in src/engine (oxlint-enforced).
+// @/ or ../ imports anywhere in src/engine (oxlint-enforced). The UX Phase 3c
+// ops (shape.ts, shapeLayout.ts, sides.ts, tableSize.ts) are imported by their
+// own paths so they load with the lazy UI that uses them, not up front.
 export * from './types';
 export * from './pieces';
 export * from './defaults';
@@ -16,7 +18,6 @@ export * from './clearance';
 export * from './profiles';
 export * from './world';
 export * from './ops';
-export * from './shape';
 export * from './pieceOps';
 export * from './tableOps';
 export * from './tablePlace';

@@ -32,40 +32,44 @@ describe('shapes', () => {
     }
   });
 
-  it('E19 setShape_UtoLRight_keepsBack: back [table 32][armless 96], end cap table (G2)', () => {
+  // UX Phase 3c (Andre, 2026-11-09): a shape switch keeps every seat and table; the width changes by the corner (G2 superseded).
+  it('E19 setShape_UtoLRight_keepsBack: back [table 32][armless 36], end cap table, W 188 -> 128 (seats stay)', () => {
     const c = op.setShape(U(), 'L-right');
-    expect(desc(c, 'back')).toEqual(['table 32', 'armless 96']);
+    expect(desc(c, 'back')).toEqual(['table 32', 'armless 36']);
     expect(desc(c, 'right')).toEqual(['oneArm 72=58+14@end']);
     expect(c.runs.left).toBeUndefined();
     const b = valid(c);
     expect(b.runs.find((r) => r.id === 'back')!.endCap).toBe('table');
-    expect([b.W, b.R]).toEqual([188, 132]);
-    // U -> L-left: the open end is a seat, which takes the arm (footprint kept)
-    expect(desc(op.setShape(U(), 'L-left'), 'back')).toEqual(['table 32', 'oneArm 96=82+14@end']);
+    expect([b.W, b.R]).toEqual([128, 132]);
+    // U -> L-left: the open end is a seat, which takes an arm on its outer side (cushion kept)
+    const ll = op.setShape(U(), 'L-left');
+    expect(desc(ll, 'back')).toEqual(['table 32', 'oneArm 50=36+14@end']);
+    expect(ll.W).toBe(142);
   });
 
-  it('G2: the shape picker keeps edited back pieces; lock off holds W too', () => {
+  it('G2 (3c): edited back pieces are kept as they are, lock on or off', () => {
     const edited = op.dragSeam(U(), 'back', 1, 4); // [table 36][armless 32]
-    expect(desc(op.setShape(edited, 'L-right'), 'back')).toEqual(['table 36', 'armless 92']);
+    expect(desc(op.setShape(edited, 'L-right'), 'back')).toEqual(['table 36', 'armless 32']);
     const off = op.setShape(op.setLock(U(), false), 'L-left');
-    expect([off.W, off.L]).toEqual([188, 132]);
+    expect([off.W, off.L]).toEqual([142, 132]);
   });
 
   it('E26 setShape_roundTrips: L-right -> U -> L-right equals the original; L-right -> L-left -> L-right is the identity', () => {
     const lr = standardL('right');
     const u = op.setShape(lr, 'U');
-    expect(shapeOf(u)).toEqual({ back: ['armless 12'], left: ['oneArm 72=58+14@end'], right: ['oneArm 72=58+14@end'] });
+    // The back seat loses its arm (cushion kept), the new left leg copies the right one.
+    expect(shapeOf(u)).toEqual({ back: ['armless 58'], left: ['oneArm 72=58+14@end'], right: ['oneArm 72=58+14@end'] });
+    expect([u.W, u.L, u.R]).toEqual([178, 132, 132]);
     expect(withoutNextId(op.setShape(u, 'L-right'))).toEqual(withoutNextId(lr));
     const ll = op.setShape(lr, 'L-left');
     expect(desc(ll, 'back')).toEqual(['oneArm 72=58+14@end']);
     expect(op.setShape(ll, 'L-right')).toEqual(lr);
   });
 
-  it('G2: L -> U refuses with the minimum W when the back cannot give up C', () => {
-    const lr = standardL('right', { W: 70, R: 132 }); // back 10: needs -60 at the start
-    const r = refused(raw.setShape(lr, 'U'), lr, 'infeasible');
-    expect(r.min).toEqual({ W: 126 }); // 2 x 60 + 6
-    expect(raw.setShape(lr, 'L-right')).toEqual({ config: lr, rejected: null }); // no-op
+  it('L -> U never runs out of room: the width grows by the corner; the same shape is a no-op', () => {
+    const lr = standardL('right', { W: 70, R: 132 }); // back 10
+    expect(op.setShape(lr, 'U').W).toBe(130);
+    expect(raw.setShape(lr, 'L-right')).toEqual({ config: lr, rejected: null });
   });
 });
 

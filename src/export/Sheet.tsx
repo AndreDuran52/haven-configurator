@@ -85,6 +85,8 @@ export function Sheet(p: SheetProps) {
     lb.seats.label,
     // Seat depth = sofa depth − 18 (Andre confirmed, Phase 3b, plan Q54).
     `Seat depth ${fmtIn(b.seatDepth)}`,
+    // Inside the U (Phase 3c round 2, Q75): between the sides × back to the end of the shorter side.
+    lb.solo && b.shape === 'U' && b.opening ? `Inside ${fmtIn(b.opening.width)} × ${fmtIn(b.opening.depth)}` : null,
     `Fabric: ${fabricOf(p.config.fabric).name}`,
     hasTable ? `Tables: ${style}, ${finishOf(p.config.tableFinish).name.toLowerCase()}` : null,
   ]

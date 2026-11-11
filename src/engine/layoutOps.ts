@@ -151,3 +151,4 @@ export function setSnug(l: Layout, on: boolean): LayoutResult {
   const { snug: _off, ...rest } = l;
   return { layout: rest, rejected: null };
 }
+

@@ -3,12 +3,13 @@
 // or drag a chip into the plan; a tapped Table goes to the middle) and "When
 // pieces change: Other seats adjust | Sofa size changes" (adding, deleting or
 // resizing a piece, and arm width). Arm width is on the Size tab and the table
-// style on the Design tab; a table's size controls belong here. Lazy: loads
-// when the tab opens.
+// style on the Design tab; a table's size is here: the Tables section (UX
+// Phase 3c, the ± grows the table from its middle). Lazy: loads when the tab opens.
 import { setLock } from '@/engine';
 import { useHavenStore, useLive } from '@/state/store';
 import { Section, Segmented } from './controls';
 import { PieceTray } from './PieceTray';
+import { TablesSection } from './TablesSection';
 
 export default function PiecesTab() {
   const store = useHavenStore();
@@ -37,6 +38,7 @@ export default function PiecesTab() {
           {live.lockOutside ? 'Adding, removing or resizing a piece keeps the sofa’s size: the seats next to it adjust.' : 'Adding, removing or resizing a piece makes the sofa longer or shorter.'}
         </p>
       </Section>
+      <TablesSection />
     </>
   );
 }

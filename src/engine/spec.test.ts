@@ -93,7 +93,8 @@ describe('§12 spec tests', () => {
     expect(piece(b, idAt(c, 'right', 0)).bbox).toEqual({ x: 76, y: 60, w: 44, h: 40 });
     expect(backLine(b)).toEqual(['oneArm 60', 'wedge 60']);
     expect(b.opening).toBeNull();
-    expect([b.seats.label, b.seats.snug]).toEqual(['Seats 2', 3]);
+    // Q76 (Phase 3c round 2): the leg's 26″ seat counts as one (23″ or more), so 3 comfortable (was 2).
+    expect([b.seats.label, b.seats.snug]).toEqual(['Seats 3', 3]);
   });
 
   it('T5 W = 300: back [table 32][74][74] (one split group), legs 72, Seats 11–12', () => {

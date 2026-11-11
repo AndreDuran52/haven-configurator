@@ -2,7 +2,7 @@
 // `RoomFloor` goes under the sofa (the floor and its walls); `RoomGaps` over
 // it: the distance from the sofa to each wall, amber under 30″ at the sides
 // and front (a walkway), red past a wall. A gap of 0 (touching) is not drawn.
-import { WALKWAY_MIN, type RoomFit, type Wall } from '@/engine';
+import { isShortWalkway, type RoomFit, type Wall } from '@/engine';
 import { fmtIn } from './format';
 import type { PlanTheme } from './theme';
 
@@ -40,12 +40,14 @@ export function RoomGaps({ room, k, theme, frontX, size = 14 }: { room: RoomFit;
         // A sofa bigger than the room that way: no negative numbers (the warning says by how much).
         const big = wall === 'left' || wall === 'right' ? s.w > r.w : s.h > r.h;
         if (big) return null;
-        const color = g < 0 ? theme.bad : wall !== 'back' && g < WALKWAY_MIN ? theme.warn : theme.dim;
+        // Under 6″ the sofa is against the wall (Phase 3c round 2): the plain colour, not amber.
+        const short = wall !== 'back' && isShortWalkway(g);
+        const color = g < 0 ? theme.bad : short ? theme.warn : theme.dim;
         const vertical = a[0] === b[0];
         const cx = (a[0] + b[0]) / 2;
         const cy = (a[1] + b[1]) / 2;
         return (
-          <g key={wall} data-room-gap={wall} data-gap={g} data-short={(g < 0 || (wall !== 'back' && g < WALKWAY_MIN)) || undefined}>
+          <g key={wall} data-room-gap={wall} data-gap={g} data-short={(g < 0 || short) || undefined}>
             <line x1={a[0]} y1={a[1]} x2={b[0]} y2={b[1]} stroke={color} strokeWidth={lw} strokeDasharray={`${4 * k} ${3 * k}`} />
             <text
               data-dim-text=""

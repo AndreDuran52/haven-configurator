@@ -5,10 +5,12 @@ import { blankConfig, standardL, standardU } from './defaults';
 import { available, openEnds, runIds, wedgeC } from './layout';
 import { ABSORB_FLOOR, cushionOf, isSeat } from './pieces';
 import { armInvariantOk, assertInvariants } from './rules';
-import * as raw from './index';
+import * as engine from './index';
+import { setShape } from './shape';
 import type { BuildResult, BuiltPiece, Config, EditResult, Rejection, RunId } from './types';
 
-export { raw };
+/** Every engine op, including the ones kept out of the index (UX Phase 3c). */
+export const raw = { ...engine, setShape };
 
 export function deepFreeze<T>(o: T): T {
   if (o && typeof o === 'object' && !Object.isFrozen(o)) {

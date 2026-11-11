@@ -108,10 +108,12 @@ export function layoutGroups(groups: Group[], f: Frame, p: DimProfile): DimLayou
     for (const pl of placed) {
       const uLine = tierOff[pl.tier]! * k
       const bounds = [pl.group.segs[0]!.s0, ...pl.group.segs.map((s) => s.s1)]
+      // With a room, a sofa dimension's extension lines start at the wall, not the sofa: no lines across the floor (Q74).
+      const from = pl.group.extFromFrame ? Math.max(pl.group.edgeU, 0) : pl.group.edgeU
       for (const s of bounds) {
-        const key = `${pl.group.edgeU}|${s}`
+        const key = `${from}|${s}`
         const cur = ext.get(key)
-        if (!cur || cur.reach < uLine) ext.set(key, { s, edgeU: pl.group.edgeU, reach: uLine })
+        if (!cur || cur.reach < uLine) ext.set(key, { s, edgeU: from, reach: uLine })
       }
     }
     for (const e of ext.values()) {

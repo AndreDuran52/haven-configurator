@@ -23,10 +23,9 @@ import { fmtIn } from '@/plan/format';
 import { builtOf, useHavenStore } from '@/state/store';
 import { Button, Segmented } from './controls';
 import { MeasureField } from './MeasureField';
+import { TableWidth } from './TableWidth';
 import type { Selection } from './selection';
 import { WedgeSlider } from './WedgeSlider';
-
-const TABLE_WIDTHS = [20, 24, 28, 32, 36, 40];
 
 function Row({ children }: { children: React.ReactNode }) {
   return <div className="flex flex-wrap items-center gap-2">{children}</div>;
@@ -125,9 +124,11 @@ export function MenuBody({ sel }: { sel: Selection }) {
     { value: 'table', label: 'Table' },
     { value: 'open', label: 'Open' },
   ];
+  // Plain words (Phase 3c round 2): which end this is, not "this run".
+  const endName = config.shape === 'straight' ? 'This end' : sel.run === 'back' ? 'End of the back' : 'End of this side';
   const endCap = nearEnd && capState && capState !== 'unfilled' && (
     <div className="flex flex-col gap-1">
-      <p className="text-sm font-semibold tracking-wide text-ink-muted uppercase">End of this run</p>
+      <p className="text-sm font-semibold tracking-wide text-ink-muted uppercase">{endName}</p>
       <Segmented
         label="End cap"
         value={(capState === 'armTable' ? 'table' : capState) as EndCap}
@@ -159,21 +160,8 @@ export function MenuBody({ sel }: { sel: Selection }) {
             {narrow && <Button onClick={() => apply(setArmWidth(s().config, 10))}>Try 10″ arms</Button>}
           </Row>
         )}
-        <div className="flex flex-col gap-1">
-          <p className="text-sm font-semibold tracking-wide text-ink-muted uppercase">Width</p>
-          <Row>
-            {TABLE_WIDTHS.map((w) => (
-              <Button
-                key={w}
-                tone={piece.length === w ? 'primary' : 'plain'}
-                aria-pressed={piece.length === w}
-                onClick={() => apply(resizePiece(s().config, sel.id, w))}
-              >
-                {w}″
-              </Button>
-            ))}
-          </Row>
-        </div>
+        {/* UX Phase 3c: the ± grows the table from its middle (the 20–40 chips are gone). */}
+        <TableWidth id={sel.id} name={`menu-table-${sel.id}`} />
         <div className="flex flex-col gap-1">
           <p className="text-sm font-semibold tracking-wide text-ink-muted uppercase">Style (all tables)</p>
           <Segmented
