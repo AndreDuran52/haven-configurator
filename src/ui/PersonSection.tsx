@@ -4,7 +4,8 @@
 // average US man, 5'9″, or the client's own (± 1″, hold to repeat, or typed
 // like 6'2). The height and pose are remembered on this device; never in links.
 import { useState } from 'react';
-import { feetInches, parseHeight, PERSON_MAX, PERSON_MIN, type PersonPose } from '@/ortho/person';
+import { feetInches, parseHeight } from '@/ortho/personHeight';
+import { PERSON_MAX, PERSON_MIN, type PersonPose } from '@/ortho/personLimits';
 import { writePerson } from '@/state/prefs';
 import { useHaven, useHavenStore } from '@/state/store';
 import { Stepper } from './Stepper';

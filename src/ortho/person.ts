@@ -1,224 +1,233 @@
-// The person on the sofa (Andre, 2026-11-11, plan Q63 / Q79): a plain figure
-// with standard body proportions scaled by height, seated on the Haven, in the
-// side plane (t = inches from the sofa's back, z = inches above the floor).
-// The side drawing and the 3D figure are both built from these joints, so they
-// always agree. Pure: no three, no React.
+// The person on the sofa (Andre, 2026-11-11, plan Q63 / Q79): a plain
+// mannequin whose every size is a ratio of height (personBuild.ts), seated on
+// the Haven in the side plane (t = inches from the sofa's back, z = inches
+// above the floor), with an across position for every joint. The Side drawing
+// and the 3D figure are both built from this, so they always agree. Pure.
 //
-// How people sit on the Haven (Andre's photos on the showroom sofa, 5'10″,
-// 2026-11-11): the hips slide forward until the knees bend at the front edge
-// and the feet are flat on the floor; the depth shows as how far the back
-// reclines onto the back pillow. Upright is the same with a square pillow
-// filling the space behind the back. The figure is a stick person (round head,
-// slim body and limbs) whose back curves when it reclines.
-//
-// Proportions are ratios of standing height for adult men, rounded from the
-// usual anthropometric tables (ANSUR-style seated measures; Drillis & Contini
-// segment ratios). At 5'9″ (69″, the average US man, CDC) they give: sitting
-// height 36″, shoulder height seated 23½″, seat back to behind the knee 19½″,
-// seat back to the front of the knee 24″, floor to behind the knee 17″, foot 10½″.
-
+// How people sit on the Haven (Andre's photos on the showroom sofa, 5'10″):
+// - the seat gives: the hips sink 3″, the thighs come up to about the seat's
+//   top at its front edge; the feet are always flat on the floor;
+// - Upright: the knees bend at the front edge, the feet nearly under them; a
+//   throw pillow fills the space behind the back, which reclines 10–15°,
+//   relaxed, the head upright;
+// - Lounge: the hips slide forward (the knees up to 6″ past the edge), the
+//   pelvis rolls back and the back bends through its middle until the upper
+//   back rests on the back cushion near its top; the lower back does not
+//   touch it; the head stays upright, about 6″ lower than in Upright.
+import { bodySizes, buildFor, type BodySizes, type Build } from './personBuild';
 import type { PersonPose } from './personLimits';
+import { gapAt, settle, spineFrom, type Pt2, type SpinePoint } from './personSpine';
+import type { PillowPress } from './pillowShape';
 
 export { PERSON_HEIGHT, PERSON_MAX, PERSON_MIN, type PersonPose } from './personLimits';
+export { bodySizes, type BodySizes } from './personBuild';
+export { feetInches, parseHeight } from './personHeight';
+export type { Pt2, SpinePoint } from './personSpine';
 
-export interface BodySizes {
-  /** Seat to the top of the head, sitting straight. */
-  sittingHeight: number;
-  /** Seat to the shoulder joint. */
-  shoulderHeight: number;
-  /** Back of the seat (buttock) to behind the knee: the thigh a seat must hold. */
-  thigh: number;
-  /** Back of the seat to the front of the knee. */
-  buttockKnee: number;
-  /** Floor to behind the knee: the lower leg a seat height must clear. */
-  lowerLeg: number;
-  foot: number;
-  head: number;
+/** The throw pillow behind an upright back: its centre, how far it leans back, its box, and where the back presses it. */
+export interface PersonPillow {
+  c: Pt2;
+  lean: number;
+  w: number;
+  h: number;
+  t: number;
+  press: PillowPress | null;
 }
-
-const RATIO: BodySizes = { sittingHeight: 0.52, shoulderHeight: 0.34, thigh: 0.285, buttockKnee: 0.345, lowerLeg: 0.248, foot: 0.152, head: 0.13 };
-
-const r1 = (x: number) => Math.round(x * 10) / 10;
-
-/** The body sizes for a height (inches, to 0.1″). */
-export function bodySizes(height: number): BodySizes {
-  const out = {} as BodySizes;
-  for (const k of Object.keys(RATIO) as (keyof BodySizes)[]) out[k] = r1(RATIO[k] * height);
-  return out;
-}
-
-export type Pt2 = [number, number];
 
 export interface PersonFigure {
   /** Standing height, inches. */
   height: number;
+  pose: PersonPose;
   sizes: BodySizes;
+  build: Build;
   /** Joint centres (t, z). */
   hip: Pt2;
-  /** The bottom of the spine (the same point as the hip joint; kept for the 3D figure). */
-  pelvis: Pt2;
   shoulder: Pt2;
+  /** Where the arm hangs from: half an arm's thickness down the back from the shoulder joint, so the arm's rounded top is level with the shoulder. */
+  armRoot: Pt2;
+  /** The head's centre; it is held upright. */
   head: Pt2;
   knee: Pt2;
   ankle: Pt2;
   toe: Pt2;
   elbow: Pt2;
   hand: Pt2;
-  /** The back from the pelvis to the shoulder: a curve bowed toward the sofa's back as it reclines. */
-  spine: Pt2[];
-  /** How far the back reclines from upright, degrees. */
+  /** The back, hip joint to shoulder joint, with the body's depth and width at each point. */
+  spine: SpinePoint[];
+  /** Each joint's distance from the body's middle, across the seat (the figure is symmetric). */
+  across: { hip: number; knee: number; ankle: number; toe: number; shoulder: number; elbow: number; hand: number };
+  /** How far the back reclines from upright, hip joint to shoulder joint, degrees. */
   lean: number;
-  /** Limb thicknesses (inches): torso, thigh, shin, arm, foot; the head's radius. */
-  thick: { torso: number; thigh: number; shin: number; arm: number; foot: number; headR: number };
-  /** Where the back of the person's seat is (t): the buttock. */
+  /** Where the buttock is (t). */
   seatBack: number;
-  /** Upright on a deep seat: the square pillow behind the back (t0..t1 on the seat, z0..z1), or null. */
-  pillow: { t0: number; t1: number; z0: number; z1: number } | null;
-  /** Feet flat on the floor: always (Andre, 2026-11-11). */
+  /** Upright: the throw pillow behind the back, or null. */
+  pillow: PersonPillow | null;
+  /** Feet flat on the floor: always. */
   feetOnFloor: boolean;
   /** The highest point (the top of the head). */
   top: number;
+  /** For the checks: the gap behind the waist, the knee joint past the front edge, the feet ahead of the knees, how far the thigh's underside is below the seat's top at its front edge. */
+  measures: { waistGap: number; kneePast: number; feetAhead: number; edgeSink: number; headClear: number };
 }
 
 export interface SeatProfile {
-  /** Seat height, the back pillow's front (from the sofa's back) and the seat's front edge (the sofa's depth). */
+  /** Seat height, the back cushion's belly front (from the sofa's back) and the seat's front edge (the sofa's depth). */
   seatHeight: number;
   pillowFront: number;
   D: number;
-  /** The back pillow's top (default 13″ above the seat). */
+  /** The back cushion's top (default 13″ above the seat). */
   pillowTop?: number;
-  /** Where the back pillow's leaning front face is at a height (engine/cushionProfile); without it the face stands straight up at pillowFront. */
+  /** Where the back cushion's leaning front face is at a height (engine/cushionProfile); without it the face stands straight up at pillowFront. */
   backFront?: (z: number) => number;
 }
 
 const rad = (deg: number) => (deg * Math.PI) / 180;
-const add = (p: Pt2, len: number, deg: number): Pt2 => [p[0] + len * Math.cos(rad(deg)), p[1] + len * Math.sin(rad(deg))];
+const deg = (r: number) => (r * 180) / Math.PI;
+const clamp = (x: number, a: number, b: number) => Math.min(b, Math.max(a, x));
+const add = (p: Pt2, len: number, d: number): Pt2 => [p[0] + len * Math.cos(rad(d)), p[1] + len * Math.sin(rad(d))];
 
-/**
- * The square pillow behind the back in Upright: 20″, and how thick it is when
- * leaned on (4″–9″). Where the space behind the back is thinner than that, the
- * pillow pushes the hips forward; where the back is already nearly upright
- * (under UPRIGHT_NEEDS°), it is left out.
- */
-export const UPRIGHT_PILLOW = { size: 20, min: 4, max: 9 } as const;
-/** How far a back sinks into the pillow it leans on, and the buttock into the bottom of the back pillow. */
-const BACK_SINK = 1;
-const SEAT_SINK = 2;
-/** How far the thigh may press into the seat's rounded front edge. */
-const EDGE_SINK = 3;
-/** The recline range, degrees from upright; an Upright back sits at UPRIGHT_LEAN against its pillow. */
-const LEAN = { min: 6, max: 50, upright: 7, unsupported: 8 } as const;
-/** Upright adds the pillow only when the back would otherwise recline more than this. */
-const UPRIGHT_NEEDS = 12;
-/** Feet ahead of the knees: a little in Lounge, nearly under them in Upright. */
-const FEET_AHEAD = { lounge: 4, upright: 1.5 } as const;
+/** The seat gives under a person: how far the hips sink into it (Andre: 3″, tapering toward the knee; the legs' own lengths bring the thigh up to the seat's top at its front edge). */
+export const SEAT_SINK = { hip: 3, knee: 1 };
+/** The throw pillow behind an upright back (the loose 20″ knife-edge pillow, engine SQUARE_PILLOW). */
+export const UPRIGHT_PILLOW = { size: 20, t: 6, min: 3, max: 6.5 } as const;
+/** How far a back presses into the cushion it leans on, and the buttock into the cushion's soft foot. */
+const BACK_SQUASH = 1;
+const FOOT_SQUASH = 2;
+/** Feet ahead of the knees. */
+const FEET_AHEAD = { lounge: 6, upright: 2 } as const;
+/** Lounge: the knee joint goes no further than this past the front edge (the thigh needs the seat), and the shoulders come down to this far under the cushion's top. */
+const KNEE_PAST = 6;
+const SHOULDER_UNDER = 0.75;
+/** The back's lean, degrees from upright. */
+const LEAN = { upright: 13.5, min: 5, max: 62, noPillow: 16 } as const;
 
-/**
- * The recline at which a back, hinged at `hip`, touches a support whose front
- * is at `front` and whose top is at `top` (it sinks BACK_SINK into it). Null
- * when it cannot reach within LEAN.max.
- */
-function reclineTo(hip: Pt2, torsoLen: number, halfW: number, front: number, top: number): number | null {
-  const contact = Math.min(top - 0.5, hip[1] + torsoLen * 0.95) - hip[1];
-  const back = (deg: number) => hip[0] - contact * Math.tan(rad(deg)) - halfW / Math.cos(rad(deg));
-  const target = front - BACK_SINK;
-  if (back(LEAN.min) <= target) return LEAN.min;
-  if (back(LEAN.max) > target) return null;
-  let lo: number = LEAN.min;
-  let hi: number = LEAN.max;
-  for (let i = 0; i < 30; i++) {
-    const mid = (lo + hi) / 2;
-    if (back(mid) > target) lo = mid;
-    else hi = mid;
-  }
-  return (lo + hi) / 2;
-}
-
-/** The spine: from `from`, `len` long, leaning `lean` degrees back, bowed backward as it reclines. */
-function spineCurve(from: Pt2, len: number, lean: number): Pt2[] {
-  const k = Math.min(1, Math.max(0, (lean - 10) / 30)) * 0.12; // the bow, as a share of the chord
-  const u: Pt2 = [-Math.sin(rad(lean)), Math.cos(rad(lean))];
-  const n: Pt2 = [-Math.cos(rad(lean)), -Math.sin(rad(lean))]; // toward the sofa's back
-  const at = (c: number, f: number): Pt2 => [from[0] + f * c * u[0] + 4 * f * (1 - f) * k * c * n[0], from[1] + f * c * u[1] + 4 * f * (1 - f) * k * c * n[1]];
-  const N = 8;
-  const pts = (c: number) => Array.from({ length: N }, (_, i) => at(c, i / (N - 1)));
-  const length = (ps: Pt2[]) => ps.slice(1).reduce((sum, p, i) => sum + Math.hypot(p[0] - ps[i]![0], p[1] - ps[i]![1]), 0);
-  return pts(len / length(pts(1))); // the same length however it bows
-}
-
-/** A two-bone arm from the shoulder to the hand, the elbow bent down and back. */
+/** A two-bone arm from the shoulder to the hand, the elbow bent back. */
 function arm(shoulder: Pt2, want: Pt2, upper: number, fore: number): { elbow: Pt2; hand: Pt2 } {
   let d = Math.hypot(want[0] - shoulder[0], want[1] - shoulder[1]);
   const reach = upper + fore - 0.3;
   const hand: Pt2 = d > reach ? [shoulder[0] + ((want[0] - shoulder[0]) / d) * reach, shoulder[1] + ((want[1] - shoulder[1]) / d) * reach] : want;
-  d = Math.min(d, reach);
-  const toHand = (Math.atan2(hand[1] - shoulder[1], hand[0] - shoulder[0]) * 180) / Math.PI;
-  const bend = (Math.acos(Math.min(1, Math.max(-1, (upper * upper + d * d - fore * fore) / (2 * upper * d)))) * 180) / Math.PI;
+  d = clamp(d, Math.abs(upper - fore) + 0.3, reach);
+  const toHand = deg(Math.atan2(hand[1] - shoulder[1], hand[0] - shoulder[0]));
+  const bend = deg(Math.acos(clamp((upper * upper + d * d - fore * fore) / (2 * upper * d), -1, 1)));
   return { elbow: add(shoulder, upper, toHand - bend), hand };
 }
 
-/**
- * The seated figure.
- * - Both poses: knees bent at the front edge, feet flat on the floor; the
- *   hips go where the thigh puts them (on a seat shorter than the thigh, back
- *   against the back pillow, the knees past the edge).
- * - Lounge: the back reclines until it rests on the back pillow, more on a
- *   deeper sofa, and curves as it does.
- * - Upright: on a seat deeper than the thigh, a square pillow fills the space
- *   behind the back, so it sits nearly straight.
- */
-export function personFigure(height: number, pose: PersonPose, seat: SeatProfile): PersonFigure {
-  const b = bodySizes(height);
-  const h = height;
-  const thick = { torso: 0.07 * h, thigh: 0.045 * h, shin: 0.045 * h, arm: 0.035 * h, foot: 0.035 * h, headR: (0.13 * h) / 2 };
-  const pillowTop = seat.pillowTop ?? seat.seatHeight + 13;
-  const hipBack = 0.07 * h; // the buttock to the hip joint
-  const kneeOff = (b.buttockKnee - b.thigh) / 2; // behind the knee to the knee joint
-  const thighLen = b.buttockKnee - hipBack - kneeOff;
-  const shinLen = 0.245 * h;
-  const footLen = b.foot * 0.7;
-  const hz = seat.seatHeight + thick.thigh / 2 + 0.3;
-  // The knee's height comes from the lower leg standing on the floor, a little forward (both poses use Lounge's knee).
-  const ankleZ = thick.foot / 2 + 0.8;
-  const kneeZ = ankleZ + Math.sqrt(shinLen * shinLen - FEET_AHEAD.lounge ** 2);
-  const slope = Math.asin(Math.max(-0.7, Math.min(0.7, (kneeZ - hz) / thighLen)));
-  // The hips: the back of the knee 1″ inside the front edge; not further back than the back pillow allows.
-  let hipT = seat.D - 1 + kneeOff - thighLen * Math.cos(slope);
-  hipT = Math.max(hipT, seat.pillowFront - SEAT_SINK + hipBack);
-  // A thigh sloping down must clear the seat's front edge (short people perch forward).
-  if (slope < 0) hipT = Math.min(Math.max(hipT, seat.D - (hz - (seat.seatHeight + thick.thigh / 2 - EDGE_SINK)) / Math.tan(-slope)), seat.D - 3);
-  const torsoLen = b.shoulderHeight - (hz - seat.seatHeight);
-  // The back rests on the pillow's face where its round top begins (3″ under its top), not on a wall.
-  const face = seat.backFront ? { front: seat.backFront(pillowTop - 3), top: pillowTop - 2.5 } : { front: seat.pillowFront, top: pillowTop };
-  const lounge = reclineTo([hipT, hz], torsoLen, thick.torso / 2, face.front, face.top) ?? LEAN.unsupported;
-  // Upright: a square pillow whose front meets a back at LEAN.upright.
-  let pillow: PersonFigure['pillow'] = null;
-  let lean = lounge;
-  if (pose === 'upright' && lounge > UPRIGHT_NEEDS) {
-    const top = seat.seatHeight + UPRIGHT_PILLOW.size;
-    const contact = Math.min(top - 0.5, hz + torsoLen * 0.95) - hz;
-    const front = hipT - contact * Math.tan(rad(LEAN.upright)) - thick.torso / 2 / Math.cos(rad(LEAN.upright)) + BACK_SINK;
-    const fill = Math.min(Math.max(front - seat.pillowFront, UPRIGHT_PILLOW.min), UPRIGHT_PILLOW.max);
-    hipT += Math.max(0, seat.pillowFront + fill - front); // a thin space: the pillow moves the hips forward
-    pillow = { t0: seat.pillowFront, t1: seat.pillowFront + fill, z0: seat.seatHeight, z1: top };
-    lean = reclineTo([hipT, hz], torsoLen, thick.torso / 2, pillow.t1, top) ?? LEAN.unsupported;
+export function personFigure(height: number, pose: PersonPose, seat: SeatProfile, sink: number = SEAT_SINK.hip): PersonFigure {
+  const sizes = bodySizes(height);
+  const b = buildFor(height);
+  const top = seat.pillowTop ?? seat.seatHeight + 13;
+  const face = seat.backFront ?? ((z: number) => (z <= top ? seat.pillowFront : -Infinity));
+  // The hips sink into the seat; the hip joint is half a thigh above their underside.
+  const hz = seat.seatHeight - sink + b.thighHip / 2;
+  const kneeOff = (sizes.buttockKnee - sizes.thigh) / 2; // behind the knee to the knee joint
+  const thighLen = sizes.buttockKnee - b.hipBack - kneeOff;
+  // The lower leg stands on the floor (in a shoe), the foot a little ahead of the knee: that sets the knee's height.
+  const ankleZ = b.sole + b.ankle;
+  const kneeZ = ankleZ + Math.sqrt(b.shin * b.shin - FEET_AHEAD[pose] ** 2);
+  const slope = Math.asin(clamp((kneeZ - hz) / thighLen, -0.7, 0.7));
+  const run = thighLen * Math.cos(slope);
+  // Upright: the back of the knee 1″ inside the front edge; no further back than the cushion's soft foot allows.
+  const foot = face(seat.seatHeight + 1);
+  let hipT = Math.max(seat.D - 1 + kneeOff - run, (Number.isFinite(foot) ? foot : seat.pillowFront) - FOOT_SQUASH + b.hipBack);
+
+  let back: { lean: number; spine: SpinePoint[] };
+  let pillow: PersonPillow | null = null;
+  if (pose === 'lounge') {
+    // Slide forward until the shoulders are just under the cushion's top, the knee at most KNEE_PAST beyond the edge.
+    const at = (t: number) => settle([t, hz], b, pose, face, BACK_SQUASH, [LEAN.min, LEAN.max]);
+    const shoulderZ = (t: number) => at(t).spine[at(t).spine.length - 1]!.p[1];
+    const cap = Math.max(hipT, seat.D + KNEE_PAST - run);
+    if (shoulderZ(hipT) > top - SHOULDER_UNDER) {
+      let [lo, hi] = [hipT, cap];
+      if (shoulderZ(cap) > top - SHOULDER_UNDER) lo = cap;
+      else
+        for (let i = 0; i < 24; i++) {
+          const mid = (lo + hi) / 2;
+          if (shoulderZ(mid) > top - SHOULDER_UNDER) lo = mid;
+          else hi = mid;
+        }
+      hipT = shoulderZ(cap) > top - SHOULDER_UNDER ? cap : hi;
+    }
+    back = at(hipT);
+  } else {
+    // Where the back would rest with no pillow: nearly upright already means no pillow is needed.
+    const bare = settle([hipT, hz], b, pose, face, BACK_SQUASH, [LEAN.min, LEAN.max]);
+    if (bare.lean <= LEAN.noPillow) back = bare;
+    else {
+      const mid = seat.seatHeight + UPRIGHT_PILLOW.size / 2;
+      const gap = (t: number, lean: number) => gapAt(spineFrom([t, hz], b, pose, lean), face, mid);
+      // A thin space: the pillow moves the hips forward. A deep one: the back reclines until the pillow fills it.
+      hipT += Math.max(0, UPRIGHT_PILLOW.min - gap(hipT, LEAN.upright));
+      let lean: number = LEAN.upright;
+      if (gap(hipT, lean) > UPRIGHT_PILLOW.max) {
+        let [lo, hi] = [lean, bare.lean];
+        for (let i = 0; i < 24; i++) {
+          const m = (lo + hi) / 2;
+          if (gap(hipT, m) > UPRIGHT_PILLOW.max) lo = m;
+          else hi = m;
+        }
+        lean = hi;
+      }
+      const spine = spineFrom([hipT, hz], b, pose, lean);
+      back = { lean, spine };
+      // The pillow stands in the space, leaning with it: its middle line runs between the cushion's face and the back.
+      const midAt = (z: number) => face(z) + gapAt(spine, face, z) / 2;
+      const [z1, z2] = [hz + 1, Math.min(seat.seatHeight + 15, top - 2, spine[spine.length - 1]!.p[1] - 2)];
+      const g = gap(hipT, lean);
+      // A back too far away to hold it (a short person on a deep seat): it just leans on the cushion.
+      const held = Number.isFinite(midAt(z1)) && Number.isFinite(midAt(z2)) && z2 > z1 + 4 && g <= UPRIGHT_PILLOW.max + 0.5;
+      const tilt = held ? clamp(deg(Math.atan2(midAt(z1) - midAt(z2), z2 - z1)), 6, 24) : 22;
+      const cz = seat.seatHeight - 0.5 + (UPRIGHT_PILLOW.size / 2) * Math.cos(rad(tilt));
+      // Where the space is wider than the pillow, it rests back on the cushion.
+      const ct = held ? midAt(z1) - (cz - z1) * Math.tan(rad(tilt)) - Math.max(0, g - UPRIGHT_PILLOW.t) / 2 : face(seat.seatHeight + 1) + UPRIGHT_PILLOW.t / 2 - (cz - seat.seatHeight) * Math.tan(rad(tilt));
+      pillow = {
+        c: [ct, cz],
+        lean: tilt,
+        w: UPRIGHT_PILLOW.size,
+        h: UPRIGHT_PILLOW.size,
+        t: UPRIGHT_PILLOW.t,
+        press: held && g < UPRIGHT_PILLOW.t ? { depth: Math.min(UPRIGHT_PILLOW.t - g, 2.4), at: -0.1 } : null,
+      };
+    }
   }
+
   const hip: Pt2 = [hipT, hz];
-  const knee: Pt2 = [hipT + thighLen * Math.cos(slope), hz + thighLen * Math.sin(slope)];
+  const spine = back.spine;
+  const shoulder = spine[spine.length - 1]!.p;
+  const knee: Pt2 = [hipT + run, hz + thighLen * Math.sin(slope)];
   const ankle: Pt2 = [knee[0] + FEET_AHEAD[pose], ankleZ];
-  const toe: Pt2 = [ankle[0] + footLen, thick.foot / 2];
-  const spine = spineCurve(hip, torsoLen, lean);
-  const shoulder = spine[spine.length - 1]!;
-  const head = add(shoulder, b.sittingHeight - b.shoulderHeight - thick.headR, 90 + lean / 2);
-  // Arms: Lounge rests the hand on the seat beside the hip; Upright on the lap.
-  const want: Pt2 = pose === 'lounge' ? [hipT + 4, seat.seatHeight + thick.arm / 2] : [hipT + thighLen * 0.55, hz + thick.thigh / 2 + thick.arm / 2];
-  const { elbow, hand } = arm(shoulder, want, 0.186 * h, 0.19 * h);
+  const toe: Pt2 = [ankle[0] + sizes.foot * 0.7, b.foot / 2];
+  // The head is held upright over the shoulders (chin a little down when lounging), never behind the cushion's face.
+  const headZ = shoulder[1] + b.shoulderToCrown - b.headH / 2;
+  const headBack = face(Math.min(headZ, top - 2.5)); // the cushion's face where its round top begins
+  const head: Pt2 = [Math.max(shoulder[0] + (pose === 'lounge' ? 1.5 : 0.8), (Number.isFinite(headBack) ? headBack : -Infinity) + b.headD / 2 + 0.3), headZ];
+  // Arms: each joint has its own place across the body. Upright: hands on the seat beside the thighs. Lounge: hands together on the lap.
+  const across = {
+    hip: b.hipsW / 2 - b.thighHip / 2,
+    knee: 0.07 * height,
+    ankle: 0.07 * height,
+    toe: 0.07 * height + sizes.foot * 0.7 * Math.sin(rad(10)),
+    shoulder: b.shoulders / 2 - b.upperArm / 2,
+    elbow: pose === 'lounge' ? b.shoulders / 2 - b.upperArm / 2 + 0.3 : b.shoulders / 2 + 0.012 * height, // upright, the elbows sit out a little
+    hand: pose === 'lounge' ? b.forearm / 2 + 0.3 : b.hipsW / 2 + b.forearm / 2 + 0.8,
+  };
+  const want: Pt2 = pose === 'lounge' ? [hipT + run * 0.42, hz + b.thighHip / 2 + b.forearm / 2] : [hipT + run * 0.62, seat.seatHeight + b.forearm / 2 - 0.5];
+  // Seen from the side a limb that also runs across the body looks shorter.
+  const flat = (len: number, dx: number) => Math.sqrt(Math.max(1, len * len - dx * dx));
+  const sn = spine[spine.length - 1]!.n;
+  const armRoot: Pt2 = [shoulder[0] + (sn[1] * b.upperArm) / 2, shoulder[1] - (sn[0] * b.upperArm) / 2];
+  const { elbow, hand } = arm(armRoot, want, flat(b.upperArmLen, across.elbow - across.shoulder), flat(b.forearmLen, across.elbow - across.hand));
+  const waist = spine[Math.round((spine.length - 1) * 0.32)]!;
+  const edgeZ = hz + (seat.D - hipT) * Math.tan(slope);
+  const edgeR = (b.thighHip + (b.thighKnee - b.thighHip) * clamp((seat.D - hipT) / run, 0, 1)) / 2;
   return {
     height,
-    sizes: b,
+    pose,
+    sizes,
+    build: b,
     hip,
-    pelvis: hip,
     shoulder,
+    armRoot,
     head,
     knee,
     ankle,
@@ -226,23 +235,18 @@ export function personFigure(height: number, pose: PersonPose, seat: SeatProfile
     elbow,
     hand,
     spine,
-    lean,
-    thick,
-    seatBack: hipT - hipBack,
+    across,
+    lean: deg(Math.atan2(hip[0] - shoulder[0], shoulder[1] - hip[1])),
+    seatBack: hipT - b.hipBack,
     pillow,
     feetOnFloor: true,
-    top: head[1] + thick.headR,
+    top: head[1] + b.headH / 2,
+    measures: {
+      waistGap: gapAt(spine, face, waist.p[1] - (waist.n[1] * waist.depth) / 2),
+      kneePast: knee[0] - seat.D,
+      feetAhead: ankle[0] - knee[0],
+      edgeSink: seat.seatHeight - (edgeZ - edgeR),
+      headClear: head[0] - b.headD / 2 - (Number.isFinite(headBack) ? headBack : seat.pillowFront),
+    },
   };
-}
-
-/** 69 -> 5'9″ */
-export const feetInches = (inches: number): string => `${Math.floor(Math.round(inches) / 12)}'${Math.round(inches) % 12}″`;
-
-/** "5'9", "5 9", "5ft 9", "69", "69in" -> inches; null when it is not a height. */
-export function parseHeight(text: string): number | null {
-  const s = text.trim().toLowerCase().replace(/[″"]|in(ches)?$/g, '').trim();
-  const m = /^(\d)\s*(?:'|ft|feet|\s)\s*(\d{1,2})?$/.exec(s);
-  if (m) return Number(m[1]) * 12 + Number(m[2] ?? 0);
-  const n = Number(s);
-  return Number.isFinite(n) && n > 0 ? Math.round(n) : null;
 }

@@ -15,7 +15,7 @@ const U = '1UW188L132R132D44_bt32s36_la72_ra72.wh'
 const texts = (page) => page.$$eval('[data-side-svg] text', (els) => els.map((e) => e.textContent))
 const sideData = (page) => page.$eval('[data-side-svg]', (e) => ({ usable: Number(e.dataset.usable), depth: Number(e.dataset.depth), scale: Number(e.dataset.scale) }))
 const person = (page) =>
-  page.$eval('[data-person]', (e) => ({ hip: e.dataset.hip.split(',').map(Number), top: Number(e.dataset.top), feet: e.dataset.feet, lean: Number(e.dataset.lean) })).catch(() => null)
+  page.$eval('[data-person]', (e) => ({ hip: e.dataset.hip.split(',').map(Number), shoulder: e.dataset.shoulder.split(',').map(Number), top: Number(e.dataset.top), feet: e.dataset.feet, lean: Number(e.dataset.lean), kneePast: Number(e.dataset.kneePast) })).catch(() => null)
 /** Labels of the side drawing that overlap each other, leave the drawing, or are under 14 px. */
 const sideLabels = (page) =>
   page.evaluate(() => {
@@ -99,7 +99,7 @@ export async function sideView(browser, base, check) {
     const lc = await sideLabels(page)
     check(t.includes('26" USABLE SEAT') && t.includes('18" seat height') && t.includes('27" back'), 'phone: the main measurements show')
     check(lc.overlaps === 0 && lc.clipped === 0 && lc.small === 0, `phone: ${lc.count} labels, ${lc.overlaps} overlapping, ${lc.clipped} clipped, ${lc.small} under 14 px`)
-    await page.screenshot({ path: 'test-results/side-phone.png' })
+    await page.screenshot({ path: 'test-results/side-phone.png' }).catch(() => console.log('note screenshot side-phone could not be captured'))
     await context.close()
   }
 
@@ -118,7 +118,7 @@ export async function sideView(browser, base, check) {
     await page.waitForSelector('[data-person]')
     check((await page.getByTestId('person-height').inputValue()) === "5'9″", `the height starts at 5'9″ (${await page.getByTestId('person-height').inputValue()})`)
     const lounge = await person(page)
-    check(lounge.feet === 'floor' && lounge.lean > 30, `Lounge at 44" deep: feet on the floor, the back reclined ${lounge.lean}° onto the pillow`)
+    check(lounge.feet === 'floor' && lounge.lean > 30 && lounge.kneePast >= 4 && lounge.kneePast <= 6.01 && Math.abs(lounge.shoulder[1] - 31) < 2.5, `Lounge at 44" deep: feet on the floor, the knees ${lounge.kneePast}" past the edge, the shoulders at ${lounge.shoulder[1]}" (cushion tops 31"), the back reclined ${lounge.lean}°`)
     check((await page.$('[data-part=upright-pillow]')) === null, 'Lounge: no extra pillow')
     const lc = await sideLabels(page)
     check(lc.overlaps === 0 && lc.clipped === 0, `with the person: ${lc.count} labels, ${lc.overlaps} overlapping, ${lc.clipped} clipped`)
@@ -127,7 +127,9 @@ export async function sideView(browser, base, check) {
     await viewMenu(page)
     await page.getByRole('radio', { name: 'Upright' }).click()
     const upright = await person(page)
-    check(upright.feet === 'floor' && upright.lean < 10 && upright.top > lounge.top + 3 && (await page.$('[data-part=upright-pillow]')) !== null, `Upright: a pillow behind the back, the back ${lounge.lean}° → ${upright.lean}°, the head ${lounge.top} → ${upright.top}, feet on the floor`)
+    check(upright.feet === 'floor' && upright.lean >= 10 && upright.lean <= 15 && upright.top > lounge.top + 5 && (await page.$('[data-part=upright-pillow]')) !== null, `Upright: a pillow behind the back, the back ${lounge.lean}° → ${upright.lean}°, the head ${lounge.top} → ${upright.top}, feet on the floor`)
+    const pillowLean = Number(await page.$eval('[data-part=upright-pillow]', (e) => e.dataset.lean))
+    check(pillowLean > 8 && pillowLean < 24, `Upright's pillow leans back with the cushion (${pillowLean}°), not a slab standing up`)
     // Height: + raises the head; a typed height is taken; out-of-range is held.
     await page.getByRole('button', { name: 'Height plus 1' }).click()
     const taller = await person(page)
@@ -149,7 +151,7 @@ export async function sideView(browser, base, check) {
     await page.waitForFunction(() => window.__haven3d.meshNames('person:').length > 0, null, { timeout: 10000 })
     await page.waitForFunction(() => window.__haven3d.state().resting, null, { timeout: 30000, polling: 100 })
     const names = await page.evaluate(() => window.__haven3d.meshNames('person:'))
-    check(names.includes('person:torso') && names.includes('person:head') && names.includes('person:neck') && names.filter((n) => n === 'person:thigh').length === 2 && names.includes('person:pillow'), `3D: the stick figure (${names.length} parts, with the Upright pillow)`)
+    check(names.includes('person:torso') && names.includes('person:head') && names.includes('person:neck') && names.filter((n) => n === 'person:thigh').length === 2 && names.filter((n) => n === 'person:forearm').length === 2 && names.includes('person:pillow'), `3D: the mannequin (${names.length} parts, with the Upright pillow)`)
     const b = await page.evaluate(() => {
       const bs = window.__haven3d.bounds('person:')
       const min = [0, 1, 2].map((i) => Math.min(...bs.map((q) => q.min[i])))
@@ -158,7 +160,14 @@ export async function sideView(browser, base, check) {
     })
     // The back run's only seat is p2: plan x 92–128 (middle 110); the head is about 18 + 36" up.
     const midX = (b.min[0] + b.max[0]) / 2 - b.offset[0]
-    check(Math.abs(midX - 110) < 0.5 && b.max[1] > 50 && b.max[1] < 56 && b.min[1] > -0.5, `3D: seated at the middle of the back seat (x ${midX.toFixed(1)}), head at ${b.max[1].toFixed(1)}", feet on the floor`)
+    check(Math.abs(midX - 110) < 0.5 && b.max[1] > 47 && b.max[1] < 52 && b.min[1] > -0.5, `3D: seated at the middle of the back seat (x ${midX.toFixed(1)}), head at ${b.max[1].toFixed(1)}", feet on the floor`)
+    // The 3D figure and the Side drawing come from the same joints: the same head height, feet on the same floor.
+    const drawn = await page.evaluate(() => window.__haven.getState().ui.preset)
+    await page.locator('[data-preset=side]').click()
+    await page.waitForSelector('[data-person]')
+    const side2 = await person(page)
+    await preset(page, drawn)
+    check(Math.abs(b.max[1] - side2.top) < 0.3 && Math.abs(b.min[1]) < 0.3, `3D and the Side drawing agree: top of head ${b.max[1].toFixed(2)}" in 3D, ${side2.top}" drawn; feet on the floor in both`)
     for (const name of ['threeQuarter', 'front', 'top']) {
       await preset(page, name)
       await page.waitForTimeout(300)
@@ -205,7 +214,7 @@ export async function sideView(browser, base, check) {
     const has = (s) => t.items.some((i) => i.str === s)
     check(t.items.some((i) => i.str.startsWith('SIDE VIEW')) && t.items.some((i) => /cut through a seat/.test(i.str)), 'PDF: "SIDE VIEW · cut through a seat"')
     check(has('26" USABLE SEAT') && has('44" TOTAL DEPTH') && has('18" seat height') && has('27" back'), `PDF: the drawing's measurements are text (${t.items.filter((i) => /USABLE|TOTAL|seat height/.test(i.str)).map((i) => i.str).join(' / ')})`)
-    await page.locator('[data-testid=made] img').screenshot({ path: 'test-results/side-sheet.png' })
+    await page.locator('[data-testid=made] img').screenshot({ path: 'test-results/side-sheet.png' }).catch(() => console.log('note screenshot side-sheet could not be captured'))
     check(errors.length === 0, `PDF: no console errors ${errors.join('; ')}`)
     await context.close()
   }

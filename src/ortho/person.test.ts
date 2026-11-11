@@ -1,7 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { bodySizes, feetInches, parseHeight, PERSON_HEIGHT, personFigure } from './person';
+import { DEFAULT_DIMS } from '@/engine';
+import { cushionSide } from '@/engine/cushionProfile';
+import { bodySizes, feetInches, parseHeight, PERSON_HEIGHT, personFigure, SEAT_SINK, type PersonFigure } from './person';
+import { buildFor } from './personBuild';
+import { backOf } from './personSpine';
 
-const seat = (D: number) => ({ seatHeight: 18, pillowFront: 18, pillowTop: 31, D });
+// The real sofa: the leaning back cushion's face, its top at 31″, the 18″ seat.
+const cushion = cushionSide(DEFAULT_DIMS);
+const TOP = 31;
+const seat = (D: number) => ({ seatHeight: 18, pillowFront: 18, pillowTop: TOP, backFront: cushion.front, D });
+const sit = (h: number, pose: 'lounge' | 'upright', D: number) => personFigure(h, pose, seat(D));
+const pathLength = (f: PersonFigure) => f.spine.slice(1).reduce((s, q, i) => s + Math.hypot(q.p[0] - f.spine[i]!.p[0], q.p[1] - f.spine[i]!.p[1]), 0);
 
 describe('the person (plan Q79)', () => {
   it("the average US man, 5'9″: the body numbers", () => {
@@ -9,97 +18,176 @@ describe('the person (plan Q79)', () => {
     expect(bodySizes(69)).toEqual({ sittingHeight: 35.9, shoulderHeight: 23.5, thigh: 19.7, buttockKnee: 23.8, lowerLeg: 17.1, foot: 10.5, head: 9 });
   });
 
-  it('the body scales with the height', () => {
-    const a = bodySizes(60);
-    const b = bodySizes(76);
-    for (const k of Object.keys(a) as (keyof typeof a)[]) expect(b[k]).toBeGreaterThan(a[k]);
-    expect(b.thigh / a.thigh).toBeCloseTo(76 / 60, 1);
+  it("the build at 5'10″ is Andre's (2026-11-11), and every size is a ratio of height", () => {
+    const b = buildFor(70);
+    const near = (got: number, want: number) => expect(Math.abs(got - want)).toBeLessThanOrEqual(0.1);
+    near(b.headW, 6.5);
+    near(b.headD, 8);
+    near(b.headH, 9);
+    near(b.neck, 4.5);
+    near(b.chestW, 13);
+    near(b.chestD, 9);
+    near(b.waistW, 11.5);
+    near(b.shoulders, 18);
+    near(b.hipsW, 14.5);
+    near(b.thighHip, 6);
+    near(b.thighKnee, 4);
+    near(b.shinKnee, 4);
+    near(b.shinAnkle, 3);
+    near(b.upperArm, 3.5);
+    near(b.forearm, 3);
+    near(b.spine, 20.3); // hip joint to shoulder joint: 0.29 × height
+    // The head is about a third of the shoulder width (it was 70%).
+    expect(b.headW / b.shoulders).toBeGreaterThan(0.33);
+    expect(b.headW / b.shoulders).toBeLessThan(0.4);
+    const a = buildFor(62);
+    const c = buildFor(75);
+    for (const k of Object.keys(b) as (keyof typeof b)[]) {
+      expect(a[k] / b[k]).toBeCloseTo(62 / 70, 6);
+      expect(c[k] / b[k]).toBeCloseTo(75 / 70, 6);
+    }
   });
 
-  it('feet flat on the floor at every height, depth and pose (Andre, 2026-11-11)', () => {
+  it('he sinks 3″ into the seat; the back keeps its true length however it bends', () => {
+    expect(SEAT_SINK.hip).toBe(3);
+    for (const pose of ['lounge', 'upright'] as const)
+      for (const D of [36, 40, 44])
+        for (const h of [62, 70, 75]) {
+          const f = sit(h, pose, D);
+          // The hip joint is half a thigh above the sunk underside: at seat height.
+          expect(f.hip[1]).toBeCloseTo(18 - 3 + f.build.thighHip / 2, 6);
+          expect(Math.abs(pathLength(f) - 0.29 * h) / (0.29 * h)).toBeLessThan(0.02);
+          expect(f.spine[0]!.p).toEqual(f.hip);
+          expect(f.spine[f.spine.length - 1]!.p).toEqual(f.shoulder);
+        }
+    // A 2″ sink sits him 1″ higher (the comparison Andre asked for).
+    expect(personFigure(70, 'upright', seat(44), 2).shoulder[1] - sit(70, 'upright', 44).shoulder[1]).toBeCloseTo(1, 6);
+  });
+
+  it('feet flat on the floor at every height, depth and pose', () => {
     for (let h = 54; h <= 80; h += 2)
       for (const D of [36, 40, 44])
         for (const pose of ['lounge', 'upright'] as const) {
-          const f = personFigure(h, pose, seat(D));
+          const f = sit(h, pose, D);
           expect(f.feetOnFloor).toBe(true);
-          expect(f.toe[1] - f.thick.foot / 2).toBeCloseTo(0, 5);
-          expect(f.ankle[1]).toBeLessThan(4);
+          expect(f.toe[1] - f.build.foot / 2).toBeCloseTo(0, 6);
+          expect(f.ankle[1]).toBeLessThan(5);
           expect(f.ankle[0]).toBeGreaterThan(D); // the lower leg stands in front of the seat
+          if (pose === 'lounge') expect(f.measures.kneePast).toBeLessThanOrEqual(6 + 1e-6);
         }
   });
 
-  it('the knees bend at the front edge whenever the seat is as deep as the thigh', () => {
-    for (let h = 60; h <= 76; h += 2)
-      for (const D of [40, 44]) {
-        const f = personFigure(h, 'lounge', seat(D));
-        if (D - 18 < f.sizes.thigh) continue;
-        const kneeBack = f.knee[0] - (f.sizes.buttockKnee - f.sizes.thigh) / 2;
-        expect(Math.abs(kneeBack - (D - 1))).toBeLessThanOrEqual(1);
-      }
+  it("Upright at 5'10″ on 44″ (Andre's side photo: shoulders about 37″, head about 49″)", () => {
+    const f = sit(70, 'upright', 44);
+    expect(f.lean).toBeGreaterThanOrEqual(10);
+    expect(f.lean).toBeLessThanOrEqual(15);
+    expect(f.shoulder[1]).toBeGreaterThan(36.5);
+    expect(f.shoulder[1]).toBeLessThan(38.2);
+    expect(f.top).toBeGreaterThan(48.5);
+    expect(f.top).toBeLessThan(50.5);
+    // The whole head is above the back cushion tops; it is upright over the shoulders.
+    expect(f.head[1] - f.build.headH / 2).toBeGreaterThan(TOP);
+    expect(Math.abs(f.head[0] - f.shoulder[0])).toBeLessThan(1.5);
+    // The back of the knee is at the front edge; the feet are nearly under the knees.
+    const kneeBack = f.knee[0] - (f.sizes.buttockKnee - f.sizes.thigh) / 2;
+    expect(Math.abs(kneeBack - 43)).toBeLessThan(0.6);
+    expect(f.measures.feetAhead).toBeLessThanOrEqual(2);
+    // The thigh comes up to about the seat's top at its front edge: not swallowed.
+    expect(f.measures.edgeSink).toBeLessThan(1);
   });
 
-  it('sits on the seat: the hips above it, the head on top', () => {
-    for (const pose of ['lounge', 'upright'] as const)
-      for (const D of [36, 40, 44]) {
-        const f = personFigure(69, pose, seat(D));
-        expect(f.hip[1]).toBeGreaterThan(18);
-        expect(f.hip[1]).toBeLessThan(21);
-        expect(f.top).toBeGreaterThan(18 + 26);
-        expect(f.top).toBeLessThan(18 + 36.5);
-        expect(f.seatBack).toBeGreaterThan(18 - 2 - 1e-9); // into the back pillow's soft bottom, no further
-      }
+  it("Upright's pillow: the loose 20″ knife-edge pillow, leaning with the back cushion, pressed where the back leans", () => {
+    const f = sit(70, 'upright', 44);
+    const p = f.pillow!;
+    expect(p).not.toBeNull();
+    expect([p.w, p.h, p.t]).toEqual([20, 20, 6]);
+    expect(p.lean).toBeGreaterThan(8);
+    expect(p.lean).toBeLessThan(24);
+    expect(p.press!.depth).toBeGreaterThan(0);
+    expect(p.press!.depth).toBeLessThanOrEqual(2.4);
+    // It stands on the seat between the cushion's face and his back.
+    expect(p.c[1] - (p.h / 2) * Math.cos((p.lean * Math.PI) / 180)).toBeCloseTo(17.5, 6);
+    expect(p.c[0]).toBeGreaterThan(cushion.front(27) - 0.5);
+    expect(p.c[0]).toBeLessThan(f.spine[6]!.p[0]);
+    // 40″: still a pillow; 36″: the back is upright already, no pillow.
+    expect(sit(70, 'upright', 40).pillow).not.toBeNull();
+    expect(sit(70, 'upright', 36).pillow).toBeNull();
+    expect(sit(70, 'lounge', 44).pillow).toBeNull();
   });
 
-  it('Lounge reclines onto the back pillow, more on a deeper sofa (5\'10″ on 44″: about 37°, as in the showroom photo)', () => {
-    const lean = (D: number) => personFigure(70, 'lounge', seat(D)).lean;
+  it("Lounge at 5'10″ on 44″ (Andre's side photo: shoulders about 30″, head about 42″)", () => {
+    const up = sit(70, 'upright', 44);
+    const f = sit(70, 'lounge', 44);
+    // The hips slide well forward: the knees 4–6″ past the edge, the feet 4–8″ ahead of them.
+    expect(f.hip[0]).toBeGreaterThan(up.hip[0] + 3);
+    expect(f.measures.kneePast).toBeGreaterThanOrEqual(4);
+    expect(f.measures.kneePast).toBeLessThanOrEqual(6 + 1e-6);
+    expect(f.measures.feetAhead).toBeGreaterThanOrEqual(4);
+    expect(f.measures.feetAhead).toBeLessThanOrEqual(8);
+    // The shoulders are level with, or a little below, the cushion tops; only the head shows above.
+    expect(f.shoulder[1] - TOP).toBeGreaterThanOrEqual(-2.5);
+    expect(f.shoulder[1] - TOP).toBeLessThanOrEqual(0.5);
+    expect(f.head[1] - f.build.headH / 2).toBeGreaterThan(TOP);
+    // The head is 5–8″ lower than in Upright, upright, and never behind the cushion's face.
+    expect(up.top - f.top).toBeGreaterThanOrEqual(5);
+    expect(up.top - f.top).toBeLessThanOrEqual(8);
+    expect(f.measures.headClear).toBeGreaterThanOrEqual(0);
+    // The lower back does not touch the cushion; the upper back rests on it.
+    expect(f.measures.waistGap).toBeGreaterThanOrEqual(2);
+    const upper = f.spine.slice(Math.floor(f.spine.length * 0.45)).map(backOf);
+    const closest = Math.min(...upper.map(([t, z]) => t - cushion.front(z)));
+    expect(closest).toBeGreaterThan(-1.2);
+    expect(closest).toBeLessThan(0);
+    expect(f.measures.edgeSink).toBeLessThan(1.8);
+  });
+
+  it('the bend is through the middle of the back: a C-curve when lounging, nearly straight upright', () => {
+    const bow = (f: PersonFigure) => {
+      const [a, b] = [f.hip, f.shoulder];
+      const l = Math.hypot(b[0] - a[0], b[1] - a[1]);
+      // How far the spine's points lie behind the straight line from hip to shoulder (positive = toward the sofa's back).
+      return Math.max(...f.spine.map((q) => ((b[0] - a[0]) * (q.p[1] - a[1]) - (b[1] - a[1]) * (q.p[0] - a[0])) / l));
+    };
+    expect(bow(sit(70, 'lounge', 44))).toBeGreaterThan(1.2);
+    expect(bow(sit(70, 'upright', 44))).toBeGreaterThan(0.2);
+    expect(bow(sit(70, 'upright', 44))).toBeLessThan(bow(sit(70, 'lounge', 44)) * 0.7);
+    // The chest reclines less than the pelvis: the top of the back is more upright than its foot.
+    const f = sit(70, 'lounge', 44);
+    const leanOf = (i: number, j: number) => Math.atan2(f.spine[i]!.p[0] - f.spine[j]!.p[0], f.spine[j]!.p[1] - f.spine[i]!.p[1]);
+    expect(leanOf(f.spine.length - 3, f.spine.length - 1)).toBeLessThan(leanOf(0, 2) - 0.2);
+  });
+
+  it('a shallower sofa leaves less room to slide: Lounge reclines less at 40″ and 36″', () => {
+    const lean = (D: number) => sit(70, 'lounge', D).lean;
     expect(lean(36)).toBeLessThan(lean(40));
     expect(lean(40)).toBeLessThan(lean(44));
-    expect(lean(44)).toBeGreaterThanOrEqual(35);
-    expect(lean(44)).toBeLessThanOrEqual(40);
-    expect(personFigure(70, 'lounge', seat(44)).pillow).toBeNull();
+    expect(sit(70, 'lounge', 36).shoulder[1]).toBeGreaterThan(sit(70, 'lounge', 44).shoulder[1]);
   });
 
-  it('Upright at 44″: a square pillow behind the back, the same hips, a straight back and a higher head', () => {
-    const lounge = personFigure(70, 'lounge', seat(44));
-    const f = personFigure(70, 'upright', seat(44));
-    expect(f.pillow).not.toBeNull();
-    expect(f.pillow!.t0).toBe(18);
-    expect(f.pillow!.t1 - f.pillow!.t0).toBeGreaterThanOrEqual(4);
-    expect(f.pillow!.t1 - f.pillow!.t0).toBeLessThanOrEqual(9);
-    expect(f.pillow!.z1 - f.pillow!.z0).toBe(20);
-    expect(f.hip[0]).toBeCloseTo(lounge.hip[0], 5);
-    expect(f.lean).toBeLessThan(10);
-    expect(f.top).toBeGreaterThan(lounge.top + 3);
-  });
-
-  it('Upright at 40″: a 4″ pillow still sits the back up; at 36″ the back is upright already and no pillow is needed', () => {
-    const at40 = personFigure(70, 'upright', seat(40));
-    expect(at40.pillow).not.toBeNull();
-    expect(at40.lean).toBeLessThan(10);
-    const at36 = personFigure(70, 'upright', seat(36));
-    expect(at36.pillow).toBeNull();
-    expect(at36.lean).toBeLessThan(12);
-  });
-
-  it('the back curves as it reclines; the spine runs from the hip to the shoulder at the torso\'s length', () => {
+  it("5'2″ and 6'3″ still scale and sit", () => {
     for (const pose of ['lounge', 'upright'] as const) {
-      const f = personFigure(70, pose, seat(44));
-      expect(f.spine[0]).toEqual(f.hip);
-      expect(f.spine[f.spine.length - 1]).toEqual(f.shoulder);
-      const len = f.spine.slice(1).reduce((s, p, i) => s + Math.hypot(p[0] - f.spine[i]![0], p[1] - f.spine[i]![1]), 0);
-      const torso = f.sizes.shoulderHeight - (f.hip[1] - 18);
-      expect(Math.abs(len - torso) / torso).toBeLessThan(0.03);
+      const [small, mid, tall] = [sit(62, pose, 44), sit(70, pose, 44), sit(75, pose, 44)];
+      expect(small.top).toBeLessThan(mid.top);
+      expect(mid.top).toBeLessThan(tall.top);
+      for (const f of [small, tall]) {
+        expect(f.feetOnFloor).toBe(true);
+        expect(f.hip[0]).toBeGreaterThan(20);
+        expect(f.head[1] - f.build.headH / 2).toBeGreaterThan(f.shoulder[1]);
+        expect(Number.isFinite(f.elbow[0] + f.elbow[1] + f.hand[0] + f.hand[1])).toBe(true);
+      }
     }
-    // The bow: the middle of a reclined spine lies behind the straight line from hip to shoulder.
-    const f = personFigure(70, 'lounge', seat(44));
-    const [a, b] = [f.spine[0]!, f.spine[f.spine.length - 1]!];
-    const mid = f.spine[Math.floor(f.spine.length / 2)]!;
-    const side = (b[0] - a[0]) * (mid[1] - a[1]) - (b[1] - a[1]) * (mid[0] - a[0]);
-    expect(side).toBeGreaterThan(0);
   });
 
-  it('a taller person sits taller', () => {
-    expect(personFigure(76, 'upright', seat(40)).top).toBeGreaterThan(personFigure(62, 'upright', seat(40)).top);
+  it('every joint has its own place across the body: arms from the outer shoulders, hands beside the thighs (Upright) or together on the lap (Lounge)', () => {
+    const up = sit(70, 'upright', 44);
+    const lo = sit(70, 'lounge', 44);
+    expect(up.across.shoulder * 2 + up.build.upperArm).toBeCloseTo(18, 1);
+    expect(up.across.hip * 2 + up.build.thighHip).toBeCloseTo(14.5, 1);
+    expect(up.across.hand).toBeGreaterThan(up.build.hipsW / 2); // outside the thighs
+    expect(up.hand[1]).toBeLessThan(18 + up.build.forearm); // resting on the seat
+    expect(lo.across.hand).toBeLessThan(2.5); // together, in the middle
+    expect(lo.hand[1]).toBeGreaterThan(lo.hip[1] + 2); // on the lap
+    expect(up.across.toe).toBeGreaterThan(up.across.ankle); // toes turned out a little
   });
 
   it('heights read and parse as feet and inches', () => {

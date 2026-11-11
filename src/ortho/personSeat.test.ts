@@ -24,15 +24,16 @@ describe('where the 3D person sits (plan Q79)', () => {
     expect(seats.some((p) => p.cushionRect!.w === widest && p.cushionRect!.x + widest / 2 === seat.x)).toBe(true);
   });
 
-  it('the fit points box the figure: from the seat back to the toes, up to the head', () => {
+  it('the fit points box the figure: from his back to his toes, the floor to the top of his head, shoulders wide', () => {
     const b = built('1UW188L132R132D44_bt32s36_la72_ra72.wh');
     const seat = personSeat(b)!;
-    const fig = personFigure(69, 'upright', { seatHeight: 18, pillowFront: 18, D: 44 });
+    const fig = personFigure(70, 'upright', { seatHeight: 18, pillowFront: 18, D: 44 });
     const pts = personPoints(b, fig, seat);
     expect(pts).toHaveLength(8);
     expect(Math.max(...pts.map((p) => p[1]))).toBeCloseTo(fig.top, 5);
+    expect(Math.min(...pts.map((p) => p[1]))).toBeCloseTo(0, 5);
     const xs = pts.map((p) => p[0]);
-    expect(Math.max(...xs) - Math.min(...xs)).toBeGreaterThan(11); // a slim figure, arms by the sides
-    expect(Math.max(...xs) - Math.min(...xs)).toBeLessThan(16);
+    expect(Math.max(...xs) - Math.min(...xs)).toBeGreaterThan(17.5); // 18″ across the shoulders, or the hands beside the thighs
+    expect(Math.max(...xs) - Math.min(...xs)).toBeLessThan(24);
   });
 });

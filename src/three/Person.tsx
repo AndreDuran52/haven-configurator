@@ -1,23 +1,37 @@
-// The person sitting on the sofa (Andre, 2026-11-11, plan Q79): a stick person
-// in one dark matte colour (round head, slim body and limbs), built from the
-// same joints as the Side drawing (ortho/person.ts), so the two always agree;
-// the body is a tube along the curved spine. Drawn inside SofaModel's group
-// (plan inches): x across the seat, y up, z = inches from the sofa's back.
+// The person sitting on the sofa (Andre, 2026-11-11, plan Q79): a plain,
+// faceless mannequin in one warm mid-grey, built from the same joints and
+// sizes as the Side drawing (ortho/person.ts), so the two always agree.
+// Drawn inside SofaModel's group (plan inches): x across the seat, y up,
+// z = inches from the sofa's back.
 import { useEffect, useMemo } from 'react';
 import { Outlines } from '@react-three/drei';
-import { CatmullRomCurve3, MeshStandardMaterial, TubeGeometry, Vector3, type Material } from 'three';
+import { MeshStandardMaterial, Quaternion, Vector3, type BufferGeometry, type Material } from 'three';
 import type { PersonFigure, Pt2 } from '@/ortho/person';
-import { PERSON_ACROSS, type PersonSeat } from '@/ortho/personSeat';
+import type { PersonSeat } from '@/ortho/personSeat';
+import { headGeometry, limbGeometry, torsoGeometry } from './personGeometry';
 import { knifeEdgePillow } from './softGeometry';
 
-const BODY = '#56514b';
-const LINE = '#211f1c';
+// A little lighter than the drawing's #9a948c: the 3D lights shade it down to about that.
+const BODY = '#b0aaa2';
+const LINE = '#6f6a63';
+const UP = new Vector3(0, 1, 0);
 
-function Limb({ name, a, b, w, x = 0, mat }: { name: string; a: Pt2; b: Pt2; w: number; x?: number; mat: Material }) {
-  const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+/** A joint in the figure's frame: its side-plane place (t, z) and how far across. */
+const at = (p: Pt2, x: number) => new Vector3(x, p[1], p[0]);
+
+function useGeometry<T extends BufferGeometry | null>(make: () => T, deps: unknown[]): T {
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const g = useMemo(make, deps);
+  useEffect(() => () => g?.dispose(), [g]);
+  return g;
+}
+
+function Limb({ name, a, b, ra, rb, mat }: { name: string; a: Vector3; b: Vector3; ra: number; rb: number; mat: Material }) {
+  const len = a.distanceTo(b);
+  const geo = useGeometry(() => limbGeometry(len, ra, rb), [len, ra, rb]);
+  const q = useMemo(() => new Quaternion().setFromUnitVectors(UP, b.clone().sub(a).normalize()), [a, b]);
   return (
-    <mesh name={`person:${name}`} position={[x, (a[1] + b[1]) / 2, (a[0] + b[0]) / 2]} rotation={[Math.atan2(b[0] - a[0], b[1] - a[1]), 0, 0]} material={mat}>
-      <capsuleGeometry args={[w / 2, len, 6, 12]} />
+    <mesh name={`person:${name}`} geometry={geo} position={a.clone().add(b).multiplyScalar(0.5)} quaternion={q} material={mat}>
       <Outlines thickness={1} color={LINE} />
     </mesh>
   );
@@ -26,43 +40,32 @@ function Limb({ name, a, b, w, x = 0, mat }: { name: string; a: Pt2; b: Pt2; w: 
 export function Person({ fig, seat, pillowMat }: { fig: PersonFigure; seat: PersonSeat; pillowMat: Material }) {
   const mat = useMemo(() => new MeshStandardMaterial({ color: BODY, roughness: 1, metalness: 0 }), []);
   useEffect(() => () => mat.dispose(), [mat]);
-  const t = fig.thick;
-  const torso = useMemo(() => new TubeGeometry(new CatmullRomCurve3(fig.spine.map(([s, z]) => new Vector3(0, z, s))), 32, t.torso / 2, 14, false), [fig.spine, t.torso]);
-  useEffect(() => () => torso.dispose(), [torso]);
-  const pt = fig.pillow ? fig.pillow.t1 - fig.pillow.t0 : 0;
-  const pillow = useMemo(() => (pt ? knifeEdgePillow(20, 20, pt) : null), [pt]);
-  useEffect(() => () => pillow?.dispose(), [pillow]);
-  const hip = PERSON_ACROSS.hip * fig.height;
-  const arm = PERSON_ACROSS.arm * fig.height;
-  const ends = [fig.spine[0]!, fig.spine[fig.spine.length - 1]!];
+  const b = fig.build;
+  const x = fig.across;
+  const torso = useGeometry(() => torsoGeometry(fig.spine, b), [fig.spine, b]);
+  const head = useGeometry(() => headGeometry(b.headW, b.headH, b.headD), [b.headW, b.headH, b.headD]);
+  const p = fig.pillow;
+  const pillow = useGeometry(() => (p ? knifeEdgePillow(p.w, p.h, p.t, p.press ?? undefined) : null), [p?.w, p?.h, p?.t, p?.press?.depth, p?.press?.at]);
   return (
     <group name="person" position={[seat.x, 0, seat.back]}>
-      <group scale={[PERSON_ACROSS.torso, 1, 1]}>
-        <mesh name="person:torso" geometry={torso} material={mat}>
-          <Outlines thickness={1} color={LINE} />
-        </mesh>
-        {ends.map(([s, z], i) => (
-          <mesh key={i} name="person:torso-end" position={[0, z, s]} material={mat}>
-            <sphereGeometry args={[t.torso / 2, 16, 12]} />
-          </mesh>
-        ))}
-      </group>
-      <Limb name="neck" a={fig.shoulder} b={fig.head} w={t.arm * 1.1} mat={mat} />
-      <mesh name="person:head" position={[0, fig.head[1], fig.head[0]]} scale={[1, 1.08, 1]} material={mat}>
-        <sphereGeometry args={[t.headR, 24, 16]} />
+      <mesh name="person:torso" geometry={torso} material={mat}>
+        <Outlines thickness={1} color={LINE} />
+      </mesh>
+      <Limb name="neck" a={at(fig.shoulder, 0)} b={at(fig.head, 0)} ra={b.neck / 2} rb={b.neck / 2} mat={mat} />
+      <mesh name="person:head" geometry={head} position={[0, fig.head[1], fig.head[0]]} material={mat}>
         <Outlines thickness={1} color={LINE} />
       </mesh>
       {[-1, 1].map((side) => (
         <group key={side}>
-          <Limb name="thigh" a={fig.hip} b={fig.knee} w={t.thigh} x={side * hip} mat={mat} />
-          <Limb name="shin" a={fig.knee} b={fig.ankle} w={t.shin} x={side * hip} mat={mat} />
-          <Limb name="foot" a={fig.ankle} b={fig.toe} w={t.foot} x={side * hip} mat={mat} />
-          <Limb name="upper-arm" a={fig.shoulder} b={fig.elbow} w={t.arm} x={side * arm} mat={mat} />
-          <Limb name="forearm" a={fig.elbow} b={fig.hand} w={t.arm} x={side * arm} mat={mat} />
+          <Limb name="thigh" a={at(fig.hip, side * x.hip)} b={at(fig.knee, side * x.knee)} ra={b.thighHip / 2} rb={b.thighKnee / 2} mat={mat} />
+          <Limb name="shin" a={at(fig.knee, side * x.knee)} b={at(fig.ankle, side * x.ankle)} ra={b.shinKnee / 2} rb={b.shinAnkle / 2} mat={mat} />
+          <Limb name="foot" a={at(fig.ankle, side * x.ankle)} b={at(fig.toe, side * x.toe)} ra={b.foot / 2} rb={b.foot / 2} mat={mat} />
+          <Limb name="upper-arm" a={at(fig.armRoot, side * x.shoulder)} b={at(fig.elbow, side * x.elbow)} ra={b.upperArm / 2} rb={b.upperArm / 2} mat={mat} />
+          <Limb name="forearm" a={at(fig.elbow, side * x.elbow)} b={at(fig.hand, side * x.hand)} ra={b.forearm / 2} rb={b.forearm / 2} mat={mat} />
         </group>
       ))}
-      {fig.pillow && pillow && (
-        <mesh name="person:pillow" geometry={pillow} position={[0, (fig.pillow.z0 + fig.pillow.z1) / 2, (fig.pillow.t0 + fig.pillow.t1) / 2]} material={pillowMat}>
+      {p && pillow && (
+        <mesh name="person:pillow" geometry={pillow} position={[0, p.c[1], p.c[0]]} rotation={[(-p.lean * Math.PI) / 180, 0, 0]} material={pillowMat}>
           <Outlines thickness={1.25} color="#4a4038" />
         </mesh>
       )}

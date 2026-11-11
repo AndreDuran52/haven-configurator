@@ -12,9 +12,6 @@ export interface PersonSeat {
   back: number;
 }
 
-/** Half-widths across the body, as ratios of height: the hip joints, the arms' centres; how much wider than deep the torso is. */
-export const PERSON_ACROSS = { hip: 0.04, arm: 0.075, torso: 1.25 } as const;
-
 export function personSeat(built: BuildResult): PersonSeat | null {
   const run = built.runs.find((r) => r.id === 'back');
   if (!run || run.axis !== 'x') return null;
@@ -34,11 +31,11 @@ export function personSeat(built: BuildResult): PersonSeat | null {
 /** The figure's bounding box as world points, for the ortho fit (the head is well above the sofa). */
 export function personPoints(built: BuildResult, fig: PersonFigure, seat: PersonSeat): Vec3[] {
   const centre = planCentre(built.bounds);
-  const half = PERSON_ACROSS.arm * fig.height + fig.thick.arm / 2;
-  const t0 = Math.min(fig.seatBack, ...fig.spine.map((p) => p[0] - fig.thick.torso / 2), fig.head[0] - fig.thick.headR);
-  const t1 = Math.max(fig.toe[0], fig.ankle[0], fig.knee[0]) + fig.thick.foot / 2;
-  const z0 = Math.min(fig.toe[1], fig.ankle[1]) - fig.thick.foot / 2;
+  const b = fig.build;
+  const half = Math.max(fig.across.shoulder + b.upperArm / 2, fig.across.elbow + b.upperArm / 2, fig.across.hand + b.forearm / 2, fig.across.toe + b.foot / 2);
+  const t0 = Math.min(fig.seatBack, ...fig.spine.map((p) => p.p[0] - p.depth / 2), fig.head[0] - b.headD / 2);
+  const t1 = Math.max(fig.toe[0], fig.ankle[0], fig.knee[0]) + b.foot / 2;
   const out: Vec3[] = [];
-  for (const x of [seat.x - half, seat.x + half]) for (const t of [t0, t1]) for (const z of [z0, fig.top]) out.push(planToWorld(x, seat.back + t, z, centre));
+  for (const x of [seat.x - half, seat.x + half]) for (const t of [t0, t1]) for (const z of [0, fig.top]) out.push(planToWorld(x, seat.back + t, z, centre));
   return out;
 }
