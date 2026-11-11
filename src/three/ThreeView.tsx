@@ -7,11 +7,15 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { ContactShadows } from '@react-three/drei';
 import { BACK_CUSHION, pillowAnchors, planCentre, seatMarkers, type BuildResult } from '@/engine';
 import { fitPoints, FLOOR_THICKNESS, FLOOR_TOP } from '@/ortho/fitPoints';
+import { personFigure } from '@/ortho/person';
+import { personPoints, personSeat } from '@/ortho/personSeat';
 import { isElevation } from '@/ortho/presets';
+import { SideSection } from '@/ortho/SideSection';
 import { builtOf, layoutBuiltOf, useHaven, useHavenStore, useLive, useLiveLayout } from '@/state/store';
 import { aimKeyLight } from './keyLight';
 import { FLOOR_MARGIN, makeMaterials } from './materials';
 import { Overlay } from './Overlay';
+import { Person } from './Person';
 import { Pillows } from './Pillows';
 import { loadSoftModels, type SoftModels } from './models';
 import { buildParts } from './parts';
@@ -52,6 +56,9 @@ export default function ThreeView() {
   // The numbered seat markers in Top (Andre, 2026-11-09): the same count as "Seats N", at seat height.
   const showMarkers = useHaven((s) => s.ui.markers && s.ui.preset === 'top');
   const snug = useHaven((s) => !!s.layout.snug);
+  const person = useHaven((s) => s.ui.person);
+  const personHeight = useHaven((s) => s.ui.personHeight);
+  const personPose = useHaven((s) => s.ui.personPose);
   const pillows = useMemo(() => (showPillows ? pillowAnchors(built) : []), [built, showPillows]);
   // Andre's Blender pillows: the procedural ones show until they load.
   const [models, setModels] = useState<SoftModels | null>(null);
@@ -62,7 +69,16 @@ export default function ThreeView() {
       on = false;
     };
   }, []);
-  const points = useMemo(() => fitPoints(built, { loose: showLoose, pillows: showPillows }), [built, showLoose, showPillows]);
+  // The 3D person: on the back run's widest seat, from the Side drawing's own joints.
+  const seat = useMemo(() => (person ? personSeat(built) : null), [person, built]);
+  const fig = useMemo(
+    () => (seat ? personFigure(personHeight, personPose, { seatHeight: built.heights.seatHeight, pillowFront: built.heights.backFrame + BACK_CUSHION.depth, pillowTop: built.heights.backHeight + BACK_CUSHION.rise, D: built.D }) : null),
+    [seat, personHeight, personPose, built],
+  );
+  const points = useMemo(
+    () => [...fitPoints(built, { loose: showLoose, pillows: showPillows }), ...(fig && seat ? personPoints(built, fig, seat) : [])],
+    [built, showLoose, showPillows, fig, seat],
+  );
   const world = useMemo(() => worldBounds(built), [built]);
   const markers = useMemo(
     () =>
@@ -133,6 +149,7 @@ export default function ThreeView() {
         <group position={[world.offset[0], 0, world.offset[1]]}>
           <SofaModel parts={parts} mats={mats} showLoose={showLoose} />
           <Pillows anchors={pillows} mats={mats.pillow} models={models} />
+          {fig && seat && <Person fig={fig} seat={seat} pillowMat={mats.pillow.taupe} />}
         </group>
         <mesh name="floor" position={[floor.at[0], FLOOR_TOP - FLOOR_THICKNESS / 2, floor.at[1]]} material={mats.floor}>
           <boxGeometry args={[floor.w, FLOOR_THICKNESS, floor.d]} />
@@ -164,6 +181,12 @@ export default function ThreeView() {
       </div>
       )}
       <Overlay view={view} preset={preset} heights={built.heights} markers={markers} />
+      {/* Side is a cut-through drawing with its measurements (Andre, 2026-11-11): it covers the 3D box; the canvas stays mounted under it. */}
+      {box && preset === 'side' && (
+        <div className="absolute inset-0 z-[5]" style={{ background: SCREEN_BG }} data-testid="side-section">
+          <SideSection width={box.w} height={box.h} dims={live.dims} D={live.D} paper={SCREEN_BG} person={person ? { height: personHeight, pose: personPose } : null} />
+        </div>
+      )}
     </div>
   );
 }
