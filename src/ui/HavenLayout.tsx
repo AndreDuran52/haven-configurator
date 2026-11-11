@@ -3,6 +3,8 @@
 // Narrow screens (iPad portrait, phones): plan on top, controls below it.
 // Since the editor redesign (2026-11-06) nothing sits under the plan: the tray
 // and the wedge slider are in the side panel's tabs, so the plan is taller.
+// UX Phase 5 (Andre, 2026-11-11): the panel can be hidden (the view bar's
+// Hide panel), so the plan or 3D takes the whole screen under the top bar.
 import { lazy, Suspense, useEffect } from 'react';
 import { PlanView } from '@/plan/PlanView';
 import { useHaven, useHavenStore } from '@/state/store';
@@ -28,12 +30,14 @@ export function HavenLayout() {
   const selected = useHaven((s) => s.ui.selectedId !== null);
   const readOnly = useHaven((s) => s.ui.readOnly);
   const tableDrag = useHaven((s) => s.ui.dragging === 'table');
+  // UX Phase 5: the side panel hidden (never in ?view, which shows its summary there).
+  const full = useHaven((s) => s.ui.panelHidden && !s.ui.readOnly);
   useEffect(() => warm3d(window), []);
   useGlobalKeys(useHavenStore());
   return (
     <div className="haven-layout grid h-dvh bg-canvas text-ink">
       <TopBar />
-      <main className="haven-main min-h-0">
+      <main className={`haven-main min-h-0 ${full ? 'haven-main--full' : ''}`}>
         <section className="haven-plan flex min-h-0 min-w-0 flex-col">
           <div className="relative min-h-0 flex-1">
             {/* Plan and 3D share one box under the view bar: same size = parity hand-off. */}
@@ -60,15 +64,17 @@ export function HavenLayout() {
             )}
           </div>
         </section>
-        <aside className="haven-side safe-bottom safe-x min-h-0 overflow-y-auto overscroll-contain border-line bg-panel p-4">
-          {readOnly ? (
-            <Suspense fallback={null}>
-              <ViewSummary />
-            </Suspense>
-          ) : (
-            <Sidebar />
-          )}
-        </aside>
+        {!full && (
+          <aside className="haven-side safe-bottom safe-x min-h-0 overflow-y-auto overscroll-contain border-line bg-panel p-4">
+            {readOnly ? (
+              <Suspense fallback={null}>
+                <ViewSummary />
+              </Suspense>
+            ) : (
+              <Sidebar />
+            )}
+          </aside>
+        )}
       </main>
       <Suspense fallback={null}>{selected && view === 'plan' && <TapMenu />}</Suspense>
       <Toast />

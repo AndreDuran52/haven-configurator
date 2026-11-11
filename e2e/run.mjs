@@ -6,6 +6,7 @@ import { fixes } from './fixes.mjs'
 import { fixes2 } from './fixes2.mjs'
 import { seats } from './seats.mjs'
 import { keep } from './keep.mjs'
+import { panelPhase } from './panel.mjs'
 import { h2 } from './h2.mjs'
 import { h4 } from './h4.mjs'
 import { h5 } from './h5.mjs'
@@ -45,6 +46,7 @@ try {
   await fixes2(browser, BASE, check)
   await seats(browser, BASE, check)
   await keep(browser, BASE, check)
+  await panelPhase(browser, BASE, check)
 } finally {
   await browser.close()
   await server.close()

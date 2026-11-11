@@ -1365,7 +1365,7 @@ Andre's answers (Q50–Q53): a rectangle only (width × depth, no doors or windo
 **As built:**
 1. **When pieces change: Keep sofa size | Let sofa grow** (was the "Lock outside size" switch; the "from pieces" hints are gone).
 2. **Result line** under the plan after every edit, e.g. "Table 20″ → 24″ · Seats 26½″ | 26½″ → 24½″ | 24½″" (`src/state/changes.ts`, loaded after the first edit). It stays until the next edit, Undo or ×, with **Undo** inside. A bottom strip is kept for it, so the plan never re-fits when it shows. New sofas (Start, Reset, a shape switch) show a toast instead.
-3. **Shape guard:** on an edited layout, switching shape asks "Switch to L left? This replaces your current layout." [Save first] [Switch] [Cancel]; Undo brings the old layout back. Every switch starts the new shape at its standard size (the room stays). Phase 5 upgrades the prompt to "kept as an option".
+3. **Shape guard:** on an edited layout, switching shape asks "Switch to L left? This replaces your current layout." [Save first] [Switch] [Cancel]; Undo brings the old layout back. Every switch starts the new shape at its standard size (the room stays). Phase 5 upgrades the prompt to "kept as an option" (dropped with the options, 2026-11-11; a shape switch converts in place since Phase 3c).
 4. **Top bar:** ‹ Projects; the project name (menu: Rename, Reset to the …, Start new…); Undo and Redo arrows; on the right the seat count as text, Share, **Save** (the one tan button, with a dot when there are unsaved changes) and Settings. "Start" left the bar. Phones: Redo and Settings hidden so the bar fits 390 px.
 5. **Labels:** Width, Left side, Right side, Depth; the room's Room width and Room length; tabs **Size | Room | Pieces | Look** (the room's warnings and badge on Room).
 6. **Seat count:** 28″ (snug 24″) by default; its control is in **Settings** with the build number.
@@ -1466,6 +1466,15 @@ Andre's answers: **"the seats stay"** when the shape changes (Q69), and the tabl
 - **Against a wall is not a walkway**: under 6″ from a side or front wall (`AGAINST_WALL`, `src/engine/roomFit.ts`) gives no walkway warning and is not drawn amber; 6–29″ warns as before.
 - **Entry budget:** 332 kB raw / 111 kB gzip (measured 330.8 / 110.8; the seat-marker rule is repeated in `seatMarkers.ts` so that file stays out of the entry chunk).
 
+
+### UX Phase 5 (reduced): Hide panel (Andre, 2026-11-11; built)
+Andre dropped the options A | B | C: "the goal is to close the client on the call and pick the main config, not make other options" (Q62). What is left of Phase 5 is the hide-panel button.
+- **Hide panel | Show panel** at the right end of the bar over the plan / 3D (`src/ui/ViewBar.tsx`). Hidden, the side panel is gone and the plan or 3D takes the whole screen under the top bar (`haven-main--full`, `src/index.css`). The top bar (Save, Share, Undo, the seat count) and the view bar stay. A tap on a piece still opens its menu. On a narrow screen (iPad portrait, phone) the plan takes the full height.
+- **Remembered on this device** (`ui.panelHidden`, `readPanelHidden` / `writePanelHidden` in `src/state/prefs.ts`, key `haven:panel`), never in links or projects. `?view` has no toggle (it keeps its summary).
+- The plan re-fits to the bigger box (its ResizeObserver); the 3D canvas follows after a short settle and keeps the sofa framed.
+- **Entry budget:** 332 kB raw / 112 kB gzip (measured 331.4 / 111.1).
+
+**Measured:** vitest `storage.test.ts` (the pref, shown by default, storage throwing reads as shown); e2e `panel.mjs` (at 1440 and 1280: shown by default, hidden gives the full width, labels in view and not overlapping, no text under 14 px, a tap opens the menu, a reload keeps it hidden, Show panel restores the same width; a 300″ U draws bigger; 3D widens to 1440; portrait gets the full height; `?view` has no toggle).
 
 ### H7: Cloud saves + tracker hand-off (optional, later; Andre decides, do not start until told)
 The configurator is complete without H7. Options, in order of cost:
@@ -1652,7 +1661,7 @@ Answer in a word. **Q1 is answered (camera, spring-back orbit), and Q9, Q10, Q12
 | Q59 | Shape switching | **Answered and built (Phase 3c, 2026-11-09):** converts in place, no prompt (U → L drops a leg and gives that end an arm; L → U mirrors the leg; Straight → L/U adds corners and standard legs) |
 | Q60 | Same both sides of the U | **Answered and built (Phase 3c, 2026-11-09):** first two Copy buttons; replaced by the Mirror sides switch (Q71) |
 | Q61 | Seat count | **Answered and built (2026-11-09):** one number everywhere; comfortable by default, "· snug" with Snug, "· 21″ seats" for a non-standard width; a wedge is 1 |
-| Q62 | Options | **Answered (for Phase 5):** A \| B \| C in a project; the PDF prints the current option only |
+| Q62 | Options | **Dropped (Andre, 2026-11-11):** no options A \| B \| C; the call ends with one configuration |
 | Q63 | The 3D person | **Answered:** typed height, plain grey figure, Lounge \| Upright; Andre checks a 5'7″ Side view at 44″ and 36″ before the PR is done |
 | Q64 | Pillows, seat line, fabrics, logo | **Answered (for the look, link v7):** Colour 1, Colour 2, Same colour, Ball; None / 2 squares / 2 squares + ball per spot; Seats: Stitch line \| No line; waits on Andre's fabric list and logo |
 | Q65 | Pillow depth in the plan | **Answered (2026-11-09):** match the 3D exactly (20 × about 13″ from above, the 12″ model leaning); the 3D is unchanged |
@@ -1667,6 +1676,7 @@ Answer in a word. **Q1 is answered (camera, spring-back orbit), and Q9, Q10, Q12
 | Q74 | Dimensions with a room | **Answered and built (2026-11-09):** the sofa's dimensions outside the room, no lines across the floor; inside only the four wall gaps |
 | Q75 | Inside the U | **Answered and built (2026-11-09):** width between the sides and depth to the end of the shorter side, on the plan, the Size tab and the PDF |
 | Q76 | Narrow seats | **Answered and built (2026-11-09):** a seat of 23″ or more counts as one person (and gets a marker) |
+| Q77 | Hide panel | **Answered and built (2026-11-11):** a Hide panel / Show panel button at the right of the view bar, remembered on this device |
 
 ---
 

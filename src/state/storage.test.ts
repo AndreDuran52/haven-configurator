@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { encode, solo, standardU } from '@/engine';
 import { readDraft, saveDraft } from './draft';
+import { readPanelHidden, writePanelHidden } from './prefs';
+import { createHavenStore } from './store';
 import { KEYS, readItem, removeItem, writeItem } from './storage';
 
 function memoryStorage(): Storage {
@@ -42,6 +44,20 @@ describe('storage (CLAUDE.md rule 9)', () => {
     expect(() => removeItem('a')).not.toThrow();
     expect(saveDraft(solo(standardU()))).toBe(false);
     expect(readDraft()).toBeNull();
+  });
+
+  it('UX Phase 5: the side panel shows unless this device hid it; storage throwing reads as shown', () => {
+    vi.stubGlobal('localStorage', memoryStorage());
+    expect(readPanelHidden()).toBe(false);
+    expect(createHavenStore(standardU()).getState().ui.panelHidden).toBe(false);
+    expect(writePanelHidden(true)).toBe(true);
+    expect([readPanelHidden(), readItem(KEYS.panel)]).toEqual([true, 'hidden']);
+    expect(createHavenStore(standardU()).getState().ui.panelHidden).toBe(true);
+    writePanelHidden(false);
+    expect(readPanelHidden()).toBe(false);
+    vi.stubGlobal('localStorage', throwing());
+    expect(writePanelHidden(true)).toBe(false);
+    expect(readPanelHidden()).toBe(false);
   });
 
   it('works with the localStorage getter itself throwing', () => {

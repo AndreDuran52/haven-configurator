@@ -10,12 +10,13 @@
 // 2026-11-09: 330 / 111 for Phase 3c (even seats kept even in the engine, the
 // shape switch and the copy row; their code loads lazily, main was at 109.9);
 // 332 raw for Phase 3c round 2 (the inside-the-U sizes drawn at first paint;
-// measured 330.8 / 110.8).
+// measured 330.8 / 110.8); 332 / 112 for UX Phase 5's hide panel (2026-11-11,
+// measured 331.4 / 111.1).
 // Andre approved up to 115 gzip.
 import { readFileSync } from 'node:fs'
 import { gzipSync } from 'node:zlib'
 
-const BUDGET = { rawKb: 332, gzipKb: 111 }
+const BUDGET = { rawKb: 332, gzipKb: 112 }
 const MARKERS = [
   { name: 'three.js', text: 'THREE.WebGLRenderer' },
   { name: 'jsPDF', text: 'jsPDF' },

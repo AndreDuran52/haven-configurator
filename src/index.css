@@ -121,6 +121,11 @@ body {
 .haven-side {
   border-top-width: 1px;
 }
+/* UX Phase 5: the side panel hidden, the plan / 3D takes it all (both layouts). */
+.haven-main.haven-main--full {
+  grid-template-rows: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
+}
 @media (min-width: 900px) {
   .haven-main {
     grid-template-rows: none;
