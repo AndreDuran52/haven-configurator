@@ -60,6 +60,7 @@ export function Person({ fig, seat, pillowMat, models }: { fig: PersonFigure; se
   const x = fig.across;
   const torso = useGeometry(() => torsoGeometry(fig.spine, b), [fig.spine, b]);
   const head = useGeometry(() => headGeometry(b.headW, b.headH, b.headD), [b.headW, b.headH, b.headD]);
+  const cap = useGeometry(() => headGeometry(b.upperArm * 1.2, b.upperArm * 1.1, b.upperArm * 1.15), [b.upperArm]);
   const p = fig.pillow;
   const model = models?.square;
   const pillow = useGeometry(() => (p ? backPillow(p, model) : null), [p?.w, p?.h, p?.t, p?.press?.depth, p?.press?.at, model]);
@@ -68,7 +69,7 @@ export function Person({ fig, seat, pillowMat, models }: { fig: PersonFigure; se
       <mesh name="person:torso" geometry={torso} material={mat}>
         <Outlines thickness={1} color={LINE} />
       </mesh>
-      <Limb name="neck" a={at(fig.shoulder, 0)} b={at(fig.head, 0)} ra={b.neck / 2} rb={b.neck / 2} mat={mat} />
+      <Limb name="neck" a={at(fig.shoulder, 0)} b={at(fig.head, 0)} ra={b.neck / 2} rb={b.neck * 0.45} mat={mat} />
       <mesh name="person:head" geometry={head} position={[0, fig.head[1], fig.head[0]]} material={mat}>
         <Outlines thickness={1} color={LINE} />
       </mesh>
@@ -77,7 +78,11 @@ export function Person({ fig, seat, pillowMat, models }: { fig: PersonFigure; se
           <Limb name="thigh" a={at(fig.hip, side * x.hip)} b={at(fig.knee, side * x.knee)} ra={b.thighHip / 2} rb={b.thighKnee / 2} mat={mat} />
           <Limb name="shin" a={at(fig.knee, side * x.knee)} b={at(fig.ankle, side * x.ankle)} ra={b.shinKnee / 2} rb={b.shinAnkle / 2} mat={mat} />
           <Limb name="foot" a={at(fig.ankle, side * x.ankle)} b={at(fig.toe, side * x.toe)} ra={b.foot / 2} rb={b.foot / 2} mat={mat} />
-          <Limb name="upper-arm" a={at(fig.armRoot, side * x.shoulder)} b={at(fig.elbow, side * x.elbow)} ra={b.upperArm / 2} rb={b.upperArm / 2} mat={mat} />
+          {/* The shoulder cap joins the arm to the body's shoulder line; the upper arm tapers to the elbow. */}
+          <mesh name="person:shoulder" geometry={cap} position={at(fig.armRoot, side * x.shoulder)} material={mat}>
+            <Outlines thickness={1} color={LINE} />
+          </mesh>
+          <Limb name="upper-arm" a={at(fig.armRoot, side * x.shoulder)} b={at(fig.elbow, side * x.elbow)} ra={b.upperArm / 2} rb={b.upperArm * 0.42} mat={mat} />
           <Limb name="forearm" a={at(fig.elbow, side * x.elbow)} b={at(fig.hand, side * x.hand)} ra={b.forearm / 2} rb={b.forearm / 2} mat={mat} />
         </group>
       ))}

@@ -7,7 +7,7 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { ContactShadows } from '@react-three/drei';
 import { BACK_CUSHION, pillowAnchors, planCentre, seatMarkers, type BuildResult } from '@/engine';
 import { fitPoints, FLOOR_THICKNESS, FLOOR_TOP } from '@/ortho/fitPoints';
-import { figureOnSofa, personPoints, personSeat } from '@/ortho/personSeat';
+import { figureOnSofa, personPoints, personSeat, pillowsBeside } from '@/ortho/personSeat';
 import { isElevation } from '@/ortho/presets';
 import { SideSection } from '@/ortho/SideSection';
 import { builtOf, layoutBuiltOf, useHaven, useHavenStore, useLive, useLiveLayout } from '@/state/store';
@@ -58,7 +58,7 @@ export default function ThreeView() {
   const person = useHaven((s) => s.ui.person);
   const personHeight = useHaven((s) => s.ui.personHeight);
   const personPose = useHaven((s) => s.ui.personPose);
-  const pillows = useMemo(() => (showPillows ? pillowAnchors(built) : []), [built, showPillows]);
+  const allPillows = useMemo(() => (showPillows ? pillowAnchors(built) : []), [built, showPillows]);
   // Andre's Blender pillows: the procedural ones show until they load.
   const [models, setModels] = useState<SoftModels | null>(null);
   useEffect(() => {
@@ -74,6 +74,8 @@ export default function ThreeView() {
     () => (seat ? figureOnSofa(built, personHeight, personPose) : null),
     [seat, personHeight, personPose, built],
   );
+  // The sofa's pillows where he sits are left out while the person is shown.
+  const pillows = useMemo(() => (fig && seat ? pillowsBeside(allPillows, built, fig, seat) : allPillows), [allPillows, built, fig, seat]);
   const points = useMemo(
     () => [...fitPoints(built, { loose: showLoose, pillows: showPillows }), ...(fig && seat ? personPoints(built, fig, seat) : [])],
     [built, showLoose, showPillows, fig, seat],

@@ -65,13 +65,13 @@ export function SidePerson({ fig, d }: { fig: PersonFigure; d: Draw }) {
       <polygon points={torso} {...(paint as React.SVGProps<SVGPolygonElement>)} />
       <circle cx={d.X(fig.hip[0])} cy={d.Y(fig.hip[1])} r={(b.hipsD / 2) * d.s} {...(paint as React.SVGProps<SVGCircleElement>)} />
       <circle cx={d.X(fig.shoulder[0])} cy={d.Y(fig.shoulder[1])} r={(b.shoulderD / 2) * d.s} {...(paint as React.SVGProps<SVGCircleElement>)} />
-      <Taper a={fig.shoulder} b={fig.head} ra={b.neck / 2} rb={b.neck / 2} d={d} paint={paint} />
+      <Taper a={fig.shoulder} b={fig.head} ra={b.neck / 2} rb={b.neck * 0.45} d={d} paint={paint} />
       <ellipse cx={d.X(fig.head[0])} cy={d.Y(fig.head[1])} rx={(b.headD / 2) * d.s} ry={(b.headH / 2) * d.s} {...(paint as React.SVGProps<SVGEllipseElement>)} />
     </g>
   );
   const arm = (paint: React.SVGProps<SVGElement>) => (
     <g>
-      <Taper a={fig.armRoot} b={fig.elbow} ra={b.upperArm / 2} rb={b.upperArm / 2} d={d} paint={paint} />
+      <Taper a={fig.armRoot} b={fig.elbow} ra={b.upperArm / 2} rb={b.upperArm * 0.42} d={d} paint={paint} />
       <Taper a={fig.elbow} b={fig.hand} ra={b.forearm / 2} rb={b.forearm / 2} d={d} paint={paint} />
     </g>
   );

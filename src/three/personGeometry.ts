@@ -27,11 +27,13 @@ export function torsoGeometry(spine: SpinePoint[], b: Build): BufferGeometry {
   };
   const first = rings[0]!;
   const last = rings[rings.length - 1]!;
-  // Under the hips: a rounded seat. Above the shoulders: sloping in to the neck.
+  // Under the hips: a rounded seat. Above the shoulders: a square shoulder line held full width
+  // (Andre, 2026-11-18: wider than the waist, a yoke, not a dome), then in to the neck.
   const under = [0.92, 0.72, 0.4, 0.05].map((k, i): [number, number, number] => [first.hd * 0.3 * (i + 1), first.hw * k, first.hd * k]);
   const over: [number, number, number][] = [
-    [0.8, last.hw * 0.86, last.hd * 0.95],
-    [1.7, last.hw * 0.55, last.hd * 0.8],
+    [0.7, last.hw * 1.0, last.hd * 0.95],
+    [1.4, last.hw * 0.97, last.hd * 0.85],
+    [1.9, last.hw * 0.7, last.hd * 0.7],
     [2.3, b.neck * 0.62, b.neck * 0.6],
     [2.6, b.neck * 0.3, b.neck * 0.3],
   ];

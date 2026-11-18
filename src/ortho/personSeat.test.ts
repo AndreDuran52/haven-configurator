@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { buildHaven, decodeLayout, rootConfig } from '@/engine';
+import { buildHaven, decodeLayout, pillowAnchors, rootConfig, standardStraight, standardU } from '@/engine';
 import { personFigure } from './person';
-import { personPoints, personSeat } from './personSeat';
+import { figureOnSofa, personPoints, personSeat, pillowsBeside } from './personSeat';
 
 const built = (code: string) => {
   const d = decodeLayout(code);
@@ -35,5 +35,19 @@ describe('where the 3D person sits (plan Q79)', () => {
     const xs = pts.map((p) => p[0]);
     expect(Math.max(...xs) - Math.min(...xs)).toBeGreaterThan(17.5); // 18″ across the shoulders, or the hands beside the thighs
     expect(Math.max(...xs) - Math.min(...xs)).toBeLessThan(24);
+  });
+});
+
+describe('the sofa pillows where he sits (2026-11-18)', () => {
+  it('on a straight sofa the arm end’s pair under him is left out (the ball by the arm stays beside him); the Standard U keeps all 12', () => {
+    for (const [c, keep] of [[standardStraight(), 4], [standardU(), 12]] as const) {
+      const built = buildHaven(c);
+      const seat = personSeat(built)!;
+      const fig = figureOnSofa(built, 70, 'upright');
+      const all = pillowAnchors(built);
+      const kept = pillowsBeside(all, built, fig, seat);
+      expect(kept).toHaveLength(keep);
+      for (const a of kept) expect(Math.abs(a.x - seat.x) >= fig.across.shoulder + a.w / 2 || a.y <= seat.back).toBe(true);
+    }
   });
 });

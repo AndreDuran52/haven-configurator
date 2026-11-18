@@ -129,7 +129,7 @@ export async function sideView(browser, base, check) {
     await viewMenu(page)
     await page.getByRole('radio', { name: 'With', exact: true }).click()
     const upright = await person(page)
-    check(upright.feet === 'floor' && upright.lean >= 10 && upright.lean <= 15 && upright.top > lounge.top + 5 && (await page.$('[data-part=upright-pillow]')) !== null, `With: a pillow behind the back, the back ${lounge.lean}° → ${upright.lean}°, the head ${lounge.top} → ${upright.top}, feet on the floor`)
+    check(upright.feet === 'floor' && upright.lean >= 3 && upright.lean <= 8 && upright.top > lounge.top + 5 && (await page.$('[data-part=upright-pillow]')) !== null, `With: a pillow behind the back, the back ${lounge.lean}° → ${upright.lean}°, the head ${lounge.top} → ${upright.top}, feet on the floor`)
     const pillowLean = Number(await page.$eval('[data-part=upright-pillow]', (e) => e.dataset.lean))
     check((await page.getByTestId('person-no-pillow').count()) === 0 && pillowLean > 8 && pillowLean < 24, `the extra pillow leans back with the cushion (${pillowLean}°), not a slab standing up`)
     // Height: + raises the head; a typed height is taken; out-of-range is held.

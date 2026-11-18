@@ -29,6 +29,16 @@ export function personSeat(built: BuildResult): PersonSeat | null {
   return best;
 }
 
+/**
+ * The sofa's throw pillows with those where the person sits left out (on a
+ * straight sofa his seat is also an arm end's: he'd sit in its pillows).
+ */
+export function pillowsBeside<T extends { x: number; y: number; w: number }>(anchors: T[], built: BuildResult, fig: PersonFigure, seat: PersonSeat): T[] {
+  const b = fig.build;
+  const half = Math.max(fig.across.shoulder + b.upperArm / 2, fig.across.knee + b.thighKnee / 2);
+  return anchors.filter((a) => !(Math.abs(a.x - seat.x) < half + a.w / 2 && a.y > seat.back && a.y < seat.back + built.D));
+}
+
 /** The person sitting on this sofa (the 3D view and the View menu read the same figure). */
 export function figureOnSofa(built: BuildResult, height: number, pose: PersonPose): PersonFigure {
   const h = built.heights;

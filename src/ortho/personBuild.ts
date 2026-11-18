@@ -45,8 +45,8 @@ const BUILD_RATIO = {
   headW: 6.5 / AT,
   headD: 8 / AT,
   headH: 9 / AT,
-  /** The neck's thickness; from the front the chin nearly meets the shoulders. */
-  neck: 4.5 / AT,
+  /** The neck's thickness: clearly slimmer than the head (Andre, 2026-11-18; 4.5″ before). */
+  neck: 3.8 / AT,
   /** Across and front to back: the hips on the seat, the waist, the chest, the shoulder line (the arms hang outside it). */
   hipsW: 14.5 / AT,
   hipsD: 8.5 / AT,
