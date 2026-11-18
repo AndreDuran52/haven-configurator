@@ -2,7 +2,7 @@
 // unchanged engine in its own coordinates, then placed. Pure.
 import { buildHaven } from './buildHaven';
 import type { Joint, Layout, Section, SharedKey } from './layoutTypes';
-import { SHARED_KEYS } from './layoutTypes';
+import { SHARED_KEYS, TEE_SHARED_BACK } from './layoutTypes';
 import { seatTotals } from './seating';
 import { roomFit, sofaRect, type RoomFit } from './roomFit';
 import type { BuildResult, Bounds, Config, Pt, Rect, SeatCount, Warning } from './types';
@@ -87,7 +87,7 @@ export function offsets(l: Layout): Map<string, Pt> {
       out.set(s.id, [0, 0]);
       continue;
     }
-    out.set(s.id, [po[0] + parent.config.W - (s.join.sharedBack ? parent.config.dims.B : 0), po[1]]);
+    out.set(s.id, [po[0] + parent.config.W - (s.join.sharedBack ? TEE_SHARED_BACK : 0), po[1]]);
   }
   return out;
 }
@@ -117,7 +117,7 @@ export function buildLayout(l: Layout, build: (c: Config) => BuildResult = build
     const p = sections.find((q) => q.id === s.join!.to);
     if (!p) continue;
     const x = p.offset[0] + p.config.W;
-    const B = p.config.dims.B;
+    const B = TEE_SHARED_BACK;
     const stem = { parent: p.config.R, child: s.config.L, width: p.config.D + s.config.D - (s.join.sharedBack ? B : 0) };
     const strip = s.join.sharedBack ? { x: x - B, y: p.offset[1], w: B, h: Math.min(stem.parent, stem.child) } : null;
     joints.push({ parent: p.id, child: s.id, kind: s.join.kind, sharedBack: s.join.sharedBack, x, strip, stem });

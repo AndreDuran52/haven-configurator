@@ -6,7 +6,7 @@
 // paper): `fs` is the text size, so nothing is ever under 14 px on screen.
 // No three import: the 3D view shows it for the Side button and the PDF sheet
 // draws the same thing.
-import type { HavenDims } from '@/engine';
+import { BACK_CUSHION, type HavenDims } from '@/engine';
 import { fmtIn } from '@/plan/format';
 import { personFigure, type PersonPose } from './person';
 import { SidePerson, SidePillow } from './SidePerson';
@@ -152,7 +152,7 @@ export function SideSection({ width, height, dims, D, fs = 14, paper = '#ffffff'
         {!compact && vDim(xr, 0, sec.heights.leg, narrow ? null : L.leg, 'right')}
         {!compact && narrow && label(xr - 7 * u, oy + fs * 1.15, L.leg, { anchor: 'start' })}
         {vDim(xr2, 0, sec.heights.seat, L.seat, right, true)}
-        {!compact && label((X(0) + X(D)) / 2, yTotal + fs * 1.9, `Back pillow: ${fmtIn(BACK_PILLOW_STITCH)} at the stitching, fills to ${fmtIn(sec.pillow.t1 - sec.pillow.t0)}`, { fill: LABEL })}
+        {!compact && label((X(0) + X(D)) / 2, yTotal + fs * 1.9, `Back pillow: ${fmtIn(BACK_PILLOW_STITCH)} at the stitching, ${fmtIn(BACK_CUSHION.depth)} at the belly, takes ${fmtIn(sec.pillow.t1 - sec.pillow.t0)}`, { fill: LABEL })}
       </g>
     </>
   );

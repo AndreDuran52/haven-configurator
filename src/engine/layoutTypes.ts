@@ -52,6 +52,14 @@ export interface Layout {
 }
 
 /** Fields every joined section shares (one depth, corner, look and seat count per sofa). */
+/**
+ * How much the two halves of a shared-back T overlap (inches): the back frame
+ * as it was when T links were first written (10″). It stays 10 after the
+ * frame became 8″ (Andre, 2026-11-18), so every T link opens at the size it
+ * was saved with (links are forever).
+ */
+export const TEE_SHARED_BACK = 10;
+
 export const SHARED_KEYS = ['D', 'wedgeC', 'lockOutside', 'seatWidth', 'snugWidth', 'fabric', 'tableFinish', 'tableStyle', 'dims'] as const;
 export type SharedKey = (typeof SHARED_KEYS)[number];
 

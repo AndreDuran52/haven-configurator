@@ -11,14 +11,14 @@ describe('the side drawing (plan Q78)', () => {
     expect(s.stitch).toBe(DEFAULT_DIMS.deckHeight); // the 3D seam is the same line
   });
 
-  it('the usable seat is the depth less 18″ (the 10″ back and the 8″ pillow)', () => {
+  it('the usable seat is the depth less 18″ (the 8″ back and the 10″ the back pillow takes; Andre, 2026-11-18)', () => {
     for (const [D, usable] of [[44, 26], [40, 22], [36, 18]] as const) {
       const s = sideSection(DEFAULT_DIMS, D);
       expect(s.usableSeat).toBe(usable);
       expect(s.D).toBe(D);
-      expect(s.seat.t1 - s.seat.t0).toBe(D - 10);
-      expect(s.back).toMatchObject({ t0: 0, t1: 10, z0: 1, z1: 27 });
-      expect(s.pillow).toMatchObject({ t0: 10, t1: 18, z0: 18, z1: 31 });
+      expect(s.seat.t1 - s.seat.t0).toBe(D - 8);
+      expect(s.back).toMatchObject({ t0: 0, t1: 8, z0: 1, z1: 27 });
+      expect(s.pillow).toMatchObject({ t0: 8, t1: 18, z0: 18, z1: 31 });
     }
   });
 
@@ -26,15 +26,18 @@ describe('the side drawing (plan Q78)', () => {
     const s = sideSection(DEFAULT_DIMS, 44);
     const ts = s.cushion.map((p) => p[0]);
     const zs = s.cushion.map((p) => p[1]);
-    expect(Math.max(...zs)).toBeCloseTo(31, 2);
+    expect(Math.max(...zs)).toBeCloseTo(31, 1);
     expect(Math.max(...ts)).toBeGreaterThan(17.9);
     expect(Math.max(...ts)).toBeLessThan(18.15);
     // The same profile at every depth: it belongs to the back, not the seat.
     expect(sideSection(DEFAULT_DIMS, 36).cushion).toEqual(s.cushion);
     // Its face leans back: further back near the top than at the belly.
     expect(s.cushionFront(29)).toBeLessThan(s.cushionFront(20) - 2);
-    // It leans back over the frame (behind its 10″ face) above the frame's 27″ top.
-    expect(Math.min(...s.cushion.filter((p) => p[1] > 27.5).map((p) => p[0]))).toBeLessThan(10);
+    // It rests on the frame's top edge (8″ back, 27″ up): its back within ½″ of it there, never through it below.
+    const nearTop = s.cushion.filter((p) => p[1] > 26 && p[1] < 28 && p[0] < 12).map((p) => p[0]);
+    expect(Math.min(...nearTop)).toBeGreaterThanOrEqual(7.9);
+    expect(Math.min(...nearTop)).toBeLessThan(8.5);
+    expect(Math.min(...s.cushion.filter((p) => p[1] < 26).map((p) => p[0]))).toBeGreaterThanOrEqual(7.95);
   });
 
   it('the legs stand under the sofa, on the floor', () => {

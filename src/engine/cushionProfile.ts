@@ -6,7 +6,7 @@
 // half-round top, the bottom front rolled under, the back pressed flat where
 // it meets the frame. Not in the engine barrel: import it by this path (it
 // loads with the 3D view and the Side drawing, never the entry chunk).
-import { BACK_CUSHION_LEAN, BACK_CUSHION_SHAPE as S, cushionFit, type CushionFit as Fit, type HavenDims, type Pt } from './index';
+import { BACK_CUSHION_SHAPE as S, cushionFit, cushionLean, type CushionFit as Fit, type HavenDims, type Pt } from './index';
 
 /** What the shape needs of a cushion's fit (a placed cushion's box carries it: BackCushion). */
 export type CushionFit = Pick<Fit, 'h' | 't' | 'lean' | 'fwd' | 'frameUp'>;
@@ -104,7 +104,7 @@ export interface CushionSide {
 }
 
 /** The cushion as the Side drawing and the person see it: cut through the middle of a 36″ cushion at the nominal lean. */
-export function cushionSide(d: HavenDims, lean: number = BACK_CUSHION_LEAN): CushionSide {
+export function cushionSide(d: HavenDims, lean: number = cushionLean(d)): CushionSide {
   const fit = cushionFit(d, lean);
   const ring = cushionRing(fit, 36, 0);
   const outline = ring.map((p) => cushionToSide(fit, p));

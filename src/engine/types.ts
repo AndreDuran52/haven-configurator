@@ -54,7 +54,7 @@ export interface LoosePiece {
 export interface HavenDims {
   /** Arm width (runs the full depth). */
   A: number;
-  /** Back = the back frame's depth. Seat depth = D - B - BACK_CUSHION.depth (to the loose back cushions). */
+  /** Back = the back frame's depth. Seat depth = D - B - BACK_CUSHION.reach (to the loose back cushions). */
   B: number;
   /** Depth of the back frame (= B since 2026-09-27; the back cushions sit on the seat). */
   backFrame: number;

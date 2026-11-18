@@ -7,13 +7,14 @@ import type { Config, HavenDims, Shape, TableFinish, TableStyle } from './types'
 /**
  * §3 heights and depths. Q12, Q29 defaults accepted by Andre (2026-09-25);
  * Q9, Q10, Q13, Q14 answered from the real Haven (2026-09-27): a tight seat
- * (flat, 18″, one piece with a stitch line at its middle, 9½″), a 10″-thick back frame 27″ tall, loose
+ * (flat, 18″, one piece with a stitch line at its middle, 9½″), an 8″-deep back frame 27″ tall
+ * (measured on the showroom Haven, 2026-11-18; 10″ before), loose
  * back cushions standing on the seat (profiles.ts BACK_CUSHION), the table flush with the seat.
  */
 export const DEFAULT_DIMS: HavenDims = {
   A: 14,
-  B: 10, // the 10″ back frame (the loose back cushions sit on the seat, in front of it)
-  backFrame: 10,
+  B: 8, // the 8″ back frame (Andre, 2026-11-18; the loose back cushions sit on the seat, in front of it)
+  backFrame: 8,
   legHeight: 1,
   // The tight seat is one upholstered piece, 17″ tall on its 1″ leg, with a stitch line at its
   // exact middle (Andre, 2026-11-11): 9½″ from the floor. Links write this only when it differs,
@@ -40,7 +41,7 @@ export const SEAT_WIDTH_DEFAULT = 28;
 export const SNUG_SEAT_WIDTH = 24;
 export const CLEARANCE_MIN = 14;
 export const OPENING_MIN = 60;
-/** Seat depth is measured to the back cushions (D − B − 8): under 16 warns (the old 24 to the frame). */
+/** Seat depth is measured to the back cushions (D − B − 10 = D − 18): under 16 warns (the old 24 to the frame). */
 export const SEAT_DEPTH_MIN = 16;
 export const WEDGE_FACE_MIN = 8;
 

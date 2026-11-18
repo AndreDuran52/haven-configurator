@@ -47,7 +47,7 @@ Each milestone: `git fetch`, branch from `origin/main` (`h0b-scaffold`, `h1-engi
 - [x] H4 Editing (seams, tables, tray, tap menu, loose pieces; table style added 2026-09-26)
 - [x] H5 Look (procedural pillows per Andre's photo, swatches, Sketch; Q16 fabric list still to come)
 - [x] H6 Sheets (PDF/PNG), share links + `?view`, local Saved layouts (one simple sheet per Andre, 2026-09-26)
-- [x] H5b Look pass: the real Haven (tight seat, 10″ frame, loose back cushions, table at 18″, inset legs, karate-chop pillows; Andre, 2026-09-27)
+- [x] H5b Look pass: the real Haven (tight seat, 10″ frame (8″ since 2026-11-18), loose back cushions, table at 18″, inset legs, karate-chop pillows; Andre, 2026-09-27)
 - [x] H5c Andre's Blender pillow (`src/three/models/pillow-square.glb`) + puffier back cushions (2026-09-27)
 - [x] H5d Arm width editable (6–14″), arm shown in the plan (seat | arm), seat warning under 23″ (2026-09-28)
 - [x] H6b Projects home (cards, save in place, unsaved-changes guard, backup/restore), Download / Print first (2026-10-02)

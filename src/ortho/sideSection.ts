@@ -4,9 +4,10 @@
 // inches: t = depth from the sofa's back, z = height above the floor.
 //
 // The Haven (Andre's numbers): 1″ leg; a tight seat, one upholstered piece
-// from 1″ to 18″ with a stitch line at its exact middle; a 10″ back, 27″
-// tall; back pillows standing on the seat and leaning back on the back, 5″ at
-// the stitching and filling to 8″ at a low belly, half-round tops at 31″; 23″ arms.
+// from 1″ to 18″ with a stitch line at its exact middle; an 8″ back, 27″
+// tall (2026-11-18); back pillows standing on the seat and leaning back on the
+// back's top edge, 5″ at the stitching and filling to 8″ at a low belly,
+// taking 10″ of seat, half-round tops at 31″; 23″ arms.
 import { BACK_CUSHION, type HavenDims } from '@/engine';
 import { cushionSide } from '@/engine/cushionProfile';
 
@@ -27,7 +28,7 @@ export interface SideSection {
   seat: Box;
   /** The stitch line's height (the middle of the seat piece). */
   stitch: number;
-  /** The back pillow's nominal box: its belly's front (t1) and its top (z1). */
+  /** The seat the back pillow takes: from the frame to its belly's front (t1), and its top (z1). */
   pillow: Box;
   /** Its real outline, leaning back (engine/cushionProfile): [t, z] points, and where its front face is at a height. */
   cushion: [number, number][];
@@ -42,7 +43,7 @@ export interface SideSection {
 
 export function sideSection(dims: HavenDims, D: number): SideSection {
   const pillowTop = dims.backHeight + BACK_CUSHION.rise;
-  const pillowFront = dims.backFrame + BACK_CUSHION.depth;
+  const pillowFront = dims.backFrame + BACK_CUSHION.reach;
   const soft = cushionSide(dims);
   const leg = (t: number): Box => ({ t0: t, t1: t + 3, z0: 0, z1: dims.legHeight });
   return {

@@ -82,7 +82,7 @@ export function pillowAnchors(b: BuildResult): PillowAnchor[] {
   const squares: OrientedBox[] = [];
   const zPivot = d.seatHeight - SINK;
   // Everything starts 2″ inside the back cushions, then slides forward.
-  const tStart = F + BACK_CUSHION.depth - 2;
+  const tStart = F + BACK_CUSHION.reach - 2;
   const onCushions = (q: OrientedBox) => cushions.some((c) => boxesClash(q, c, -PILLOW_PRESS));
   const ballBlocked = (q: OrientedBox) => [...cushions, ...squares].some((c) => boxDistance(c, [q.x, q.y, q.z]) < r + PAD);
   const ballAt = ([x, y]: Pt): OrientedBox => ({ x, y, z: d.seatHeight - SINK / 2 + r, facing: [0, 1], lean: 0, w: BALL_PILLOW, h: BALL_PILLOW, t: BALL_PILLOW });
@@ -158,7 +158,7 @@ export function pillowAnchors(b: BuildResult): PillowAnchor[] {
     // The wedge's seat (§8 polygon, in the left corner's frame).
     const seat: Pt[] = [[F, F], [C, F], [C, b.D], [b.D, C], [F, C]];
     const ok = (q: OrientedBox | null): q is OrientedBox => !!q && !pressing(q) && boxCorners(q).every(([x, y]) => insideConvex(seat, m([x, y]), 0.5));
-    const corner = F + BACK_CUSHION.depth; // the front of the other back's cushions
+    const corner = F + BACK_CUSHION.reach; // the front of the other back's cushions
     const fA: RunFrame = { run: 'back', origin: [0, 0], W: b.W };
     const dirA = right ? -1 : 1;
     const light = resting(fA, right ? b.W - corner : corner, dirA, 0.5, YAW_WEDGE_BACK);

@@ -32,7 +32,7 @@ export function personSeat(built: BuildResult): PersonSeat | null {
 /** The person sitting on this sofa (the 3D view and the View menu read the same figure). */
 export function figureOnSofa(built: BuildResult, height: number, pose: PersonPose): PersonFigure {
   const h = built.heights;
-  return personFigure(height, pose, { seatHeight: h.seatHeight, pillowFront: h.backFrame + BACK_CUSHION.depth, pillowTop: h.backHeight + BACK_CUSHION.rise, backFront: cushionSide(h).front, D: built.D });
+  return personFigure(height, pose, { seatHeight: h.seatHeight, pillowFront: h.backFrame + BACK_CUSHION.reach, pillowTop: h.backHeight + BACK_CUSHION.rise, backFront: cushionSide(h).front, D: built.D });
 }
 
 /** The figure's bounding box as world points, for the ortho fit (the head is well above the sofa). */

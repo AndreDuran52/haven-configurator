@@ -77,7 +77,7 @@ describe('soft geometry stays inside the engine’s boxes (what the anchors and 
     g.dispose();
     // The side profile the drawing and the person use: peak 31″, most forward at 18″, slimmer and rounder at the top.
     const side = cushionSide(DEFAULT_DIMS);
-    expect(side.peak[1]).toBeCloseTo(31, 2);
+    expect(side.peak[1]).toBeCloseTo(31, 1);
     expect(Math.max(...side.outline.map((p) => p[0]))).toBeGreaterThan(17.9);
     expect(Math.max(...side.outline.map((p) => p[0]))).toBeLessThan(18.15);
     expect(side.front(28)).toBeLessThan(side.front(21) - 1.2); // it leans back

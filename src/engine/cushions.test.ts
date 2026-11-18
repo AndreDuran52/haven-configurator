@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildHaven } from './buildHaven';
 import { decode, encode } from './codec';
-import { BACK_CUSHION_LEAN, backCushions, boxTop } from './cushions';
+import { BACK_CUSHION_LEAN_RANGE, backCushions, boxTop, cushionLean } from './cushions';
 import { standardL, standardU } from './defaults';
 import { moveTable } from './tableOps';
 import { boxCorners, boxesClash, planToRun } from './softBox';
@@ -50,8 +50,11 @@ describe('loose back cushions (Andre, 2026-09-27)', () => {
         expect(boxTop(k) - 31, `${name} ${k.key}`).toBeGreaterThan(0);
         expect(boxTop(k) - 31, `${name} ${k.key}`).toBeLessThan(1);
         expect(k.t).toBe(8);
-        expect(BACK_CUSHION_LEAN).toBe(12);
-        expect(Math.abs(k.lean - BACK_CUSHION_LEAN)).toBeLessThanOrEqual(1);
+        // The lean comes from where it rests (the frame's top edge): 10–15° (Andre's close-ups), ±1° per cushion.
+        const lean0 = cushionLean(b.heights);
+        expect(lean0).toBeGreaterThanOrEqual(BACK_CUSHION_LEAN_RANGE[0]);
+        expect(lean0).toBeLessThanOrEqual(BACK_CUSHION_LEAN_RANGE[1] + 0.5);
+        expect(Math.abs(k.lean - lean0)).toBeLessThanOrEqual(1);
       }
     }
   });
@@ -72,17 +75,17 @@ describe('loose back cushions (Andre, 2026-09-27)', () => {
     }
   });
 
-  it('each cushion stands just in front of the frame (t = 10) and leans back over it; its box reaches no further forward than 19″', () => {
+  it('each cushion stands in front of the 8″ frame, takes 10″ of seat and leans back onto the frame (Andre, 2026-11-18); its box reaches no further forward than 19″', () => {
     const b: BuildResult = buildHaven(u);
     for (const k of backCushions(b).filter((q) => q.key.startsWith('p'))) {
       const run = b.runs.find((r) => r.id === b.pieces.find((p) => p.id === k.pieceId)!.run)!;
       const ts = boxCorners(k).map((q) => planToRun({ run: run.id, origin: run.origin, W: b.W }, [q[0], q[1]])[1]);
       expect(Math.max(...ts)).toBeLessThanOrEqual(19);
-      // The foot is under 1″ in front of the frame's face; the top is behind that face.
-      expect(k.fwd).toBeGreaterThan(0.5);
-      expect(k.fwd).toBeLessThan(1);
-      expect(ts.filter((t) => Math.abs(t - 10 - k.fwd) < 1e-9)).toHaveLength(2);
-      expect(Math.min(...ts)).toBeLessThan(10);
+      // The foot stands about 3″ in front of the frame's face; the top leans back past it.
+      expect(k.fwd).toBeGreaterThan(2.5);
+      expect(k.fwd).toBeLessThan(3.6);
+      expect(ts.filter((t) => Math.abs(t - 8 - k.fwd) < 1e-9)).toHaveLength(2);
+      expect(Math.min(...ts)).toBeLessThan(8);
     }
   });
 

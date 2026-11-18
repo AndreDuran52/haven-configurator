@@ -16,7 +16,7 @@ describe('§12 spec tests', () => {
     expect(desc(c, 'right')).toEqual(['oneArm 72=58+14@end']);
     expect(piece(b, idAt(c, 'left', 0)).arm!.facing).toBe('LAF');
     expect(piece(b, idAt(c, 'right', 0)).arm!.facing).toBe('RAF');
-    expect(b.seatDepth).toBe(26); // to the loose back cushions: 44 − 10 − 8 (Andre, 2026-09-27)
+    expect(b.seatDepth).toBe(26); // to the loose back cushions: 44 − 8 frame − 10 they take (Andre, 2026-09-27; 2026-11-18)
     expect(b.opening).toEqual({ width: 100, depth: 88 });
     expect(b.seats.label).toBe('Seats 7');
     expect(b.warnings).toEqual([]);
@@ -28,17 +28,17 @@ describe('§12 spec tests', () => {
   it('T1 (geometry) exact §8 coordinates: rects, arms, backs, cushions, bounds, heights', () => {
     const c = U();
     const b = valid(c);
-    expect(piece(b, 'wedge:backLeft').backs).toEqual([{ x: 0, y: 0, w: 60, h: 10 }, { x: 0, y: 0, w: 10, h: 60 }]);
+    expect(piece(b, 'wedge:backLeft').backs).toEqual([{ x: 0, y: 0, w: 60, h: 8 }, { x: 0, y: 0, w: 8, h: 60 }]);
     expect(piece(b, tableId(c)).bbox).toEqual({ x: 60, y: 0, w: 32, h: 44 });
     expect(piece(b, idAt(c, 'back', 1)).bbox).toEqual({ x: 92, y: 0, w: 36, h: 44 });
     const left = piece(b, idAt(c, 'left', 0));
     expect(left.bbox).toEqual({ x: 0, y: 60, w: 44, h: 72 });
     expect(left.arm).toEqual({ at: 'end', facing: 'LAF', rect: { x: 0, y: 118, w: 44, h: 14 } });
-    expect(left.backs).toEqual([{ x: 0, y: 60, w: 10, h: 58 }]);
-    expect(left.cushionRect).toEqual({ x: 10, y: 60, w: 34, h: 58 });
+    expect(left.backs).toEqual([{ x: 0, y: 60, w: 8, h: 58 }]);
+    expect(left.cushionRect).toEqual({ x: 8, y: 60, w: 36, h: 58 });
     const right = piece(b, idAt(c, 'right', 0));
     expect(right.arm).toEqual({ at: 'end', facing: 'RAF', rect: { x: 144, y: 118, w: 44, h: 14 } });
-    expect(right.cushionRect).toEqual({ x: 144, y: 60, w: 34, h: 58 });
+    expect(right.cushionRect).toEqual({ x: 144, y: 60, w: 36, h: 58 });
     expect(b.runs.map((r) => [r.id, r.endCap])).toEqual([['back', null], ['left', 'arm'], ['right', 'arm']]);
     expect(b.wedge.readout).toBe('Wedge 60 × 60 · angled face 22.6"');
     expect(b.bounds).toEqual({ minX: 0, minY: 0, maxX: 188, maxY: 132 }); // G4

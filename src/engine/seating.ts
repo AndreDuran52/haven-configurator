@@ -136,7 +136,7 @@ export function collectWarnings(c: Config, C: number, clearances: Clearance[]): 
   return w;
 }
 
-/** Seat depth, front edge to the loose back cushions (Andre, 2026-09-27): D − back frame − 8″. */
+/** Seat depth, front edge to the loose back cushions (Andre, 2026-09-27; 2026-11-18): D − back frame − the 10″ they take = D − 18. */
 export function seatDepth(c: Pick<Config, 'D' | 'dims'>): number {
-  return c.D - c.dims.B - BACK_CUSHION.depth;
+  return c.D - c.dims.B - BACK_CUSHION.reach;
 }
