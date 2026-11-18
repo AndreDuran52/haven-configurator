@@ -15,12 +15,12 @@ describe('auto-split (G9: equal footprint, arm included)', () => {
   });
 
   it('E4 splitRemainder_W300_5: back [32][74.5][74]', () => {
-    expect(desc(standardU({ W: 300.5 }), 'back')).toEqual(['table 32', 'armless 74.5', 'armless 74']);
-    expect(desc(standardU({ W: 369 }), 'back')).toEqual(['table 32', 'armless 72.5', 'armless 72.5', 'armless 72']);
+    expect(desc(standardU({ W: 300.5, table: 32 }), 'back')).toEqual(['table 32', 'armless 74.5', 'armless 74']);
+    expect(desc(standardU({ W: 369, table: 32 }), 'back')).toEqual(['table 32', 'armless 72.5', 'armless 72.5', 'armless 72']);
   });
 
   it('E8 oneArmAutoSplit_equalFootprint: L = 260 gives left [armless 100][one-arm 100 (86 + 14)]', () => {
-    const c = standardU({ L: 260 });
+    const c = standardU({ L: 260, table: 32 });
     expect(desc(c, 'left')).toEqual(['armless 100', 'oneArm 100=86+14@end']);
     expect(desc(standardL('right', { W: 190.5 }), 'back')).toEqual(['oneArm 65=51+14@start', 'armless 65.5']);
     valid(c);
@@ -35,7 +35,7 @@ describe('auto-split (G9: equal footprint, arm included)', () => {
   });
 
   it('a manual seam drag dissolves the group; user-owned pieces never re-merge', () => {
-    const big = standardU({ W: 300 });
+    const big = standardU({ W: 300, table: 32 });
     const dragged = op.dragSeam(big, 'back', 2, 10);
     expect(desc(dragged, 'back')).toEqual(['table 32', 'armless 84', 'armless 64']);
     expect(dragged.runs.back!.some((p) => p.splitGroup)).toBe(false);
@@ -94,7 +94,7 @@ describe('wedge slider', () => {
   });
 
   it('E11 wedgeSlider_clampsToFeasible: W 160 Standard U, setWedge(74) gives C 61 (back armless 6), not refused (G3)', () => {
-    const c0 = standardU({ W: 160 });
+    const c0 = standardU({ W: 160, table: 32 });
     const c = op.setWedge(c0, 74);
     expect(c.wedgeC).toBe(61);
     expect(desc(c, 'back')).toEqual(['table 32', 'armless 6']);
@@ -112,7 +112,7 @@ describe('wedge slider', () => {
   });
 
   it('E29 resetWedge_infeasible: W 160, setWedge(44), W 128, then resetWedge -> infeasible, min.W 158', () => {
-    const a = op.setWedge(standardU({ W: 160 }), 44);
+    const a = op.setWedge(standardU({ W: 160, table: 32 }), 44);
     const b = op.setMeasurements(a, { W: 128 });
     const r = refused(raw.resetWedge(b), b, 'infeasible');
     expect(r.min).toEqual({ W: 158 });

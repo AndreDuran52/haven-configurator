@@ -436,7 +436,7 @@ A no-op (e.g. `setLock` to its current value) returns `{config: input, rejected:
 | **arm** | open | Adds an arm to the end seat |
 | | armTable | Removes the table (absorbed) |
 | | table | Removes the table, then adds the arm |
-| **table** | arm or open | 32″ table in place of the arm |
+| **table** | arm or open | a new table (24″, stepping down to 20″; 32″ before 2026-11-18) in place of the arm |
 | | armTable | Drops the arm, keeps the table |
 | **open** | any | Removes the arm and/or the table |
 
@@ -474,10 +474,10 @@ Refused on wedge-only runs and on unfilled ends.
 
 **Presets.**
 - **Default fill** of a run = one seat for the whole length, with an arm at the open end if its cushion is ≥ 6 (spec §8); auto-split if over 108.
-- **`standardU()`:** W 188, L 132, R 132, D 44; back = [table 32][armless rest] if rest ≥ 6, else default fill; legs default fill.
+- **`standardU()`:** W 188, L 132, R 132, D 44; back = [table 24][armless rest] if rest ≥ 6, else default fill; legs default fill. **Andre, 2026-11-18:** the standard table is 24″ (60 | 24 | 44 | 60, still 188″; 32 | 36 before). The L's, the Straight and Blank open without a table. `standardU({ table: 32 })` builds the older U, which the §12 tests and golden links below are written against (links keep every table's width forever).
 - **`standardL(side)`:** W 132, kept leg 132 (the other leg's value stays 132), default fill, no table (Q5). The literal spec wording ("the same pieces minus one leg") would leave a 188″ back with the table at the open end and no arm; spec test 4 instead shows the L's back as a plain one-arm fill, so the plan follows test 4. The shape picker on an edited U (G2) deliberately keeps the user's pieces instead.
 - **`blankConfig(shape)`:** one gap per run of length > 0.
-- **`addPiece` defaults:** armless 36, one-arm 50 (36 + 14), table 32.
+- **`addPiece` defaults:** armless 36, one-arm 50 (36 + 14), table 24 (`TABLE_DEFAULT`; 32 before 2026-11-18).
 
 **Reorder.**
 - Seats and gaps move within their run.
@@ -1014,7 +1014,7 @@ Two profiles:
   - Tighten the `check:bundle` budget to measured + 15 % (§3).
 - **Files:** `src/{App.tsx, main.tsx}`, `src/state/**`, `src/plan/{PlanView,PlanDrawing,DimsLayer,dims,format,textMetrics,geometry,theme}.*`, `src/ui/{HavenLayout,TopBar,Sidebar,MeasureField,WedgeSlider,StartMenu,WarningsList,UpdateChip}.tsx`, `vite.config.ts`, `scripts/check-bundle.mjs`, `e2e/**`; dependencies `zustand`, the Radix primitives, `vite-plugin-pwa` (dev).
 - **Done when:**
-  - `/` opens on the Standard U (even with a saved draft) showing back chain `60 | 32 | 36 | 60`, overall `188"`, legs `72` (drawn as seat `58` | arm `14` since H5d), `44"D`, "Seats 7".
+  - `/` opens on the Standard U (even with a saved draft) showing back chain `60 | 24 | 44 | 60` (`60 | 32 | 36 | 60` before 2026-11-18), overall `188"`, legs `72` (drawn as seat `58` | arm `14` since H5d), `44"D`, "Seats 7".
   - Typing D = 36 shows back 52, legs 80, "Seats 7–8" (test 2).
   - The slider at 55 shows legs 77 and back 46 (test 6).
   - W = 300 shows `74 | 74` (test 5).
@@ -1421,7 +1421,7 @@ Andre tested Phase 3b and asked for five fixes as one PR before the seat markers
    - a table goes **between cushions** (at a seam), at an open end in the arm's place, or in the middle of a seat when both halves stay 23″ or more (Phase 3c fixes, Q72, Q73; this item first said "never cut into a seat");
    - **"Other seats adjust":** dropped between two seats, both shrink equally (`sharePair`), so the table sits centred: straight 120″ with 10″ arms + a table = 10 | 34 | 32 | 34 | 10 (14 | 30 | 32 | 30 | 14 with the default 14″ arms). Next to a corner, an open end or another table, the seat on the other side takes it, as before (the Standard U back stays 60 | 32 | 36 | 60);
    - **"Sofa size changes":** the seats keep their size and the sofa grows by the table;
-   - a new table starts at **32″**; if that leaves a seat under 23″ it steps down to 28, 24, then 20″, and the result line says why ("Added table 24″ (32″ would leave a seat under 23″)"); if none fits: **"Not enough seat for a table here."**;
+   - a new table starts at **24″** (Andre, 2026-11-18; 32″ stepping down to 28 / 24 / 20 before); if that leaves a seat under 23″ it steps down to 20″, and the result line says why ("Added table 20″ (24″ would leave a seat under 23″)"); if neither fits: **"Not enough seat for a table here."** The tap menu's end "Table" steps down the same way. Saved layouts and links keep the widths they were saved with;
    - the tray's **Table tapped** (not dragged) goes straight to the most central seam where it fits (nearest the middle of the back run): "Table in the middle", pulled forward from Phase 6;
    - **moving** a table follows the same rules and keeps its width (Q66): spots that would leave a seat it shrinks under 23″ are not offered; a move within the same run is still a pure reorder;
    - unchanged: the table's 18″ height, the backrest stopping at the table, decoding (old links and saved layouts load exactly as they were; only new edits use the rule).
@@ -1522,7 +1522,7 @@ No cross-repo code coupling in any option: no shared packages, no shared databas
 - a JSON round trip is lossless;
 - the input is deep-frozen (purity).
 
-**§12 tests** (assertions extended with the unasserted numbers, verified on engine-A 2026-09-24):
+**§12 tests** (assertions extended with the unasserted numbers, verified on engine-A 2026-09-24). They are written against the Standard U as it was through 2026-11-18, with its 32″ table (`testing.ts` `U()` = `standardU({ table: 32 })`); the 24″ standard has its own tests:
 
 | Test | Assertions |
 |---|---|

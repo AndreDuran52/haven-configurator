@@ -12,7 +12,7 @@ const inside = (r: { x: number; y: number; w: number; h: number }, [x, y]: [numb
 
 describe('a room: no dimension line across the floor (Q74)', () => {
   it("Andre's 266 × 276 room round the Standard U: every line and label of the sofa's dimensions is outside the room", () => {
-    const lb = buildLayout(setRoom(solo(standardU()), { w: 266, d: 276 }).layout);
+    const lb = buildLayout(setRoom(solo(standardU({ table: 32 })), { w: 266, d: 276 }).layout);
     const room = lb.room!.rect;
     const { layout } = fitSource(withRoom(soloSource(lb.sections[0]!.built), lb.room), 860, 700);
     for (const l of layout.lines) {
@@ -24,7 +24,7 @@ describe('a room: no dimension line across the floor (Q74)', () => {
   });
 
   it('without a room the extension lines still start at the sofa', () => {
-    const b = buildHaven(standardU());
+    const b = buildHaven(standardU({ table: 32 }));
     const { layout } = fitSource(soloSource(b), 860, 700);
     const ext = layout.lines.filter((l) => l.kind === 'ext');
     expect(ext.some((l) => Math.abs(l.a[1] - 0) < 2 && l.a[1] < 0)).toBe(true); // just above the back edge
@@ -39,19 +39,19 @@ describe('inside the U (Q75)', () => {
   };
 
   it('the Standard U: 100″ between the sides, 88″ back to front; Andre’s 173″ sides: 129″; the shorter side counts', () => {
-    expect(added(buildHaven(standardU())).texts).toEqual(['100"', '88"']);
-    expect(added(buildHaven(standardU({ L: 173, R: 173 }))).texts).toEqual(['100"', '129"']);
-    expect(added(buildHaven(standardU({ L: 173, R: 150 }))).texts).toEqual(['100"', '106"']);
+    expect(added(buildHaven(standardU({ table: 32 }))).texts).toEqual(['100"', '88"']);
+    expect(added(buildHaven(standardU({ L: 173, R: 173, table: 32 }))).texts).toEqual(['100"', '129"']);
+    expect(added(buildHaven(standardU({ L: 173, R: 150, table: 32 }))).texts).toEqual(['100"', '106"']);
   });
 
   it('the lines run from seat front to seat front and from the back seat to the end of the shorter side', () => {
-    const [w, d] = added(buildHaven(standardU())).lines;
+    const [w, d] = added(buildHaven(standardU({ table: 32 }))).lines;
     expect([w!.a[0], w!.b[0]]).toEqual([44, 144]);
     expect([d!.a[1], d!.b[1]]).toEqual([44, 132]);
   });
 
   it('only a U', () => {
-    const b = buildHaven(standardU());
+    const b = buildHaven(standardU({ table: 32 }));
     const { layout } = fitSource(soloSource(b), 860, 700);
     expect(withInsideDims({ ...b, shape: 'L-left', opening: null }, layout)).toBe(layout);
   });

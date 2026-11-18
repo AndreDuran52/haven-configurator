@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { buildHaven, setArmWidth, standardL, standardU, type BuildResult, type Pt } from '@/engine';
 import { buildParts, LEG_INSET } from './parts';
 
-const built = buildHaven(standardU());
+const built = buildHaven(standardU({ table: 32 }));
 const kindOf = (b: BuildResult, id: string) => b.pieces.find((q) => q.id === id)?.kind;
 const bbox = (poly: Pt[]) => [Math.min(...poly.map((p) => p[0])), Math.min(...poly.map((p) => p[1])), Math.max(...poly.map((p) => p[0])), Math.max(...poly.map((p) => p[1]))];
 
@@ -59,7 +59,7 @@ describe('the real Haven (Andre, 2026-09-27)', () => {
   });
 
   it('arm width (Andre, 2026-09-28): a 10″ arm renders 10″ wide, the frame and seat take the rest of the piece', () => {
-    const b10 = buildHaven(setArmWidth(standardU(), 10).config);
+    const b10 = buildHaven(setArmWidth(standardU({ table: 32 }), 10).config);
     const p10 = buildParts(b10);
     const get = (k: string) => p10.prisms.find((p) => p.key === k)!;
     expect(bbox(get('p3:arm').poly)).toEqual([0, 122, 44, 132]);

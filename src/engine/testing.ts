@@ -89,8 +89,13 @@ export const op = {
   resizeLoose: guard(raw.resizeLoose),
 };
 
+/**
+ * The Standard U as it was through 2026-11-18 (32″ table | 36″ seat): the
+ * golden links and the §12 tests were written against it, and links keep
+ * every table's width forever. The 24″ standard is tested on its own.
+ */
 export const U = (): Config => {
-  const c = standardU();
+  const c = standardU({ table: 32 });
   valid(c);
   return deepFreeze(c);
 };
@@ -145,7 +150,7 @@ export function fixtures(): Record<string, Config> {
     T3a: op.moveTable(u, tableId(u), { run: 'left', at: 'replaceArm' }),
     T3b: test3b(),
     T4: standardL('right', { W: 120, R: 100 }),
-    T5: standardU({ W: 300 }),
+    T5: standardU({ W: 300, table: 32 }),
     T6: op.setWedge(u, 55),
     T7: op.setEndCap(u, 'right', 'open'),
     T8: blankConfig('U'),
@@ -170,7 +175,7 @@ export function canon(c: Config) {
 
 /** A config that exercises every optional link field (golden test). */
 export function kitchenSink(): Config {
-  let c = standardU({ W: 300.5, D: 40, wedgeC: 60, seatWidth: 26, snugWidth: 22, tableFinish: 'darkWood', dims: { cushionCrown: 7 } });
+  let c = standardU({ W: 300.5, D: 40, wedgeC: 60, seatWidth: 26, snugWidth: 22, tableFinish: 'darkWood', dims: { cushionCrown: 7 }, table: 32 });
   c = raw.setLock(c, false).config;
   c = raw.addLoose(c, 'coffeeTable').config;
   return raw.addLoose(c, 'ottoman', { x: -10.5, y: 150, w: 30, d: 20 }).config;

@@ -3,7 +3,7 @@ import { blankConfig, buildHaven, moveTable, setMeasurements, setWedge, standard
 import { fitScreen, layoutDims } from './dimLayout';
 import { PRINT } from './dims';
 
-const u = standardU();
+const u = standardU({ table: 32 });
 const fixtures = {
   T1: u,
   T2: setMeasurements(u, { D: 36 }).config,

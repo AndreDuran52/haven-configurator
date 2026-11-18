@@ -21,7 +21,8 @@ export const SPLIT_MIN_CUSHION = 12;
 
 export const TABLE_MIN = 16;
 export const TABLE_MAX = 40;
-export const TABLE_DEFAULT = 32;
+/** The standard table insert (Andre, 2026-11-18: 24″; 32″ before). Links keep every table's own width. */
+export const TABLE_DEFAULT = 24;
 export const ARMLESS_DEFAULT = 36;
 /** Default cushion of a new one-arm piece (footprint = this + A). */
 export const ONE_ARM_SEAT_DEFAULT = 36;

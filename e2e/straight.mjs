@@ -1,6 +1,6 @@
 // Straight sofa checks (Andre, 2026-11-06; plan §10 "Straight sofa"): start it
 // from the Projects home, its plan (no corners, no legs, one depth callout), a
-// table dropped between the seats (32″, both seats shrink; 2026-11-09), a table in place of the start
+// table dropped between the seats (24″ since 2026-11-18, both seats shrink; 2026-11-09), a table in place of the start
 // arm from the tap menu, the v4 link in a fresh browser, 3D Top parity and the
 // PDF header. Judged by outcome: the config, the link, the DOM, the PDF text.
 import { VIEWPORTS } from './browser.mjs'
@@ -45,8 +45,8 @@ export async function straight(browser, base, check) {
     check((await page.getByRole('radio', { name: 'Straight' }).getAttribute('aria-checked')) === 'true', 'the shape picker shows Straight')
     check((await page.locator('#m-L, #m-R').count()) === 0 && (await page.getByText('Corner wedge').count()) === 0, 'the Size tab has no L, R or corner wedge')
     check((await page.evaluate(() => window.__plan.encode())).startsWith('4iW120'), 'its link is v4 (4i…)')
-    // A table dragged from the tray to the seam between the two seats (Andre, 2026-11-09): 32″,
-    // both seats give 16″: 14 | 30 | 32 | 30 | 14.
+    // A table dragged from the tray to the seam between the two seats (Andre, 2026-11-09): 24″
+    // (2026-11-18), both seats give 12″: 14 | 34 | 24 | 34 | 14.
     await panel(page, 'Pieces')
     const touch = await context.newCDPSession(page)
     const send = (type, pts) => touch.send('Input.dispatchTouchEvent', { type, touchPoints: pts })
@@ -63,7 +63,7 @@ export async function straight(browser, base, check) {
     await send('touchEnd', [])
     await page.waitForTimeout(200)
     const t = await config(page)
-    check(back(t) === 'oneArm44@start table32 oneArm44@end', `the tray table lands between the seats: 32″, seats 30 | 30 (${back(t)})`)
+    check(back(t) === 'oneArm48@start table24 oneArm48@end', `the tray table lands between the seats: 24″, seats 34 | 34 (${back(t)})`)
     // The start arm becomes a table from the tap menu (the end nearest the tapped seat).
     await page.getByRole('button', { name: 'Undo', exact: true }).click()
     const first = (await config(page)).runs.back[0].id
@@ -71,7 +71,7 @@ export async function straight(browser, base, check) {
     await page.waitForSelector('[data-tap-menu]')
     await page.locator('[data-tap-menu]').getByRole('radio', { name: 'Table' }).click()
     const e = await config(page)
-    check(back(e) === 'table32 armless28 oneArm60@end', `"End of this run: Table" on the left seat puts the table at the start (${back(e)})`)
+    check(back(e) === 'table24 armless36 oneArm60@end', `"End of this run: Table" on the left seat puts the table at the start (${back(e)})`)
     const lc = await labelCheck(page)
     check(lc.overlaps === 0 && lc.clipped === 0, `labels: ${lc.count}, ${lc.overlaps} overlapping, ${lc.clipped} clipped`)
     check(errors.length === 0, `no console errors ${errors.join('; ')}`)

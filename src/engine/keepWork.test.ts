@@ -12,7 +12,7 @@ import { resizeTable, TABLE_SEAT_ROOM } from './tableSize';
 import { deepFreeze, desc, valid } from './testing';
 import type { Config } from './types';
 
-const nick = () => standardU({ W: 170, L: 140, R: 140, wedgeC: 55, dims: { A: 12 } });
+const nick = () => standardU({ W: 170, L: 140, R: 140, wedgeC: 55, dims: { A: 12 }, table: 32 });
 /** Nick's left leg with a table in the seat: 24½ | 24 | 24½. */
 const nickTable = () => addPiece(nick(), 'table', { run: 'left', at: 'split', pieceId: nick().runs.left![0]!.id }).config;
 const tableIn = (c: Config, run: 'back' | 'left' | 'right') => c.runs[run]!.find((p) => p.kind === 'table')!.id;
@@ -40,10 +40,10 @@ describe('Copy left to right / right to left', () => {
   });
 
   it('right to left; same reference when the sides already match; only a U', () => {
-    const c = setMeasurements(standardU(), { L: 120 }).config;
+    const c = setMeasurements(standardU({ table: 32 }), { L: 120 }).config;
     const r = ok(copySide(c, 'right'));
     expect([r.L, r.R]).toEqual([132, 132]);
-    const u = deepFreeze(standardU());
+    const u = deepFreeze(standardU({ table: 32 }));
     expect(copySide(u, 'left')).toEqual({ config: u, rejected: null });
     const l = deepFreeze(standardL('left'));
     expect(copySide(l, 'left').rejected?.code).toBe('notAllowed');
@@ -54,7 +54,7 @@ describe('Mirror sides (the switch on, Q71)', () => {
   const both = (c: Config) => [desc(c, 'left').join(' '), desc(c, 'right').join(' ')];
 
   it('a change to the left side is made to the right; to the right side, to the left; ids stay', () => {
-    const u = deepFreeze(standardU());
+    const u = deepFreeze(standardU({ table: 32 }));
     const l = ok(setMeasurements(u, { L: 140 }));
     const m = mirrorSides(u, l);
     expect([m.L, m.R]).toEqual([140, 140]);
@@ -66,10 +66,10 @@ describe('Mirror sides (the switch on, Q71)', () => {
   });
 
   it('a table added to one side appears on the other; the back and other shapes are left alone', () => {
-    const u = deepFreeze(standardU());
+    const u = deepFreeze(standardU({ table: 32 }));
     const t = addTable(u, { run: 'right', at: 'seam', seam: 0 }).config;
     const m = mirrorSides(u, t);
-    expect(desc(m, 'left')).toEqual(['table 32', 'oneArm 40=26+14@end']);
+    expect(desc(m, 'left')).toEqual(['table 24', 'oneArm 48=34+14@end']); // a new table: the standard 24″
     expect(desc(m, 'right')).toEqual(desc(m, 'left'));
     valid(m);
     const d = ok(setMeasurements(u, { D: 40 }));
@@ -90,9 +90,9 @@ describe('seats even around a table stay even', () => {
   });
 
   it('the width and the corner keep a pair even too', () => {
-    const s = centralTable(standardStraight()).config; // 14+30 | 32 | 30+14
+    const s = centralTable(standardStraight()).config; // 14+34 | 24 | 34+14
     const t = tableIn(s, 'back');
-    expect(tableSeats(ok(setMeasurements(s, { W: 131 })), t)).toEqual([35.5, 35.5]);
+    expect(tableSeats(ok(setMeasurements(s, { W: 131 })), t)).toEqual([39.5, 39.5]);
     const leg = nickTable(); // corner 55″
     const lt = tableIn(leg, 'left');
     for (const next of [ok(setWedge(leg, 60)), ok(resetWedge(leg)), ok(setWedge(leg, 50))]) {
@@ -113,19 +113,19 @@ describe('seats even around a table stay even', () => {
 
 describe('the table ± grows from the middle', () => {
   const pair = () => {
-    const c = centralTable(standardStraight({ W: 140 })).config; // 14+40 | 32 | 40+14 (lock on)
+    const c = centralTable(standardStraight({ W: 140 })).config; // 14+44 | 24 | 44+14 (lock on)
     return { c, t: tableIn(c, 'back') };
   };
 
   it('each seat gives half: +1″ takes ½″ from each side, −1″ gives ½″ back; uneven seats stay uneven', () => {
     const { c, t } = pair();
-    expect(tableSeats(c, t)).toEqual([40, 40]);
-    expect(tableSeats(ok(resizeTable(c, t, 33)), t)).toEqual([39.5, 39.5]);
-    expect(tableSeats(ok(resizeTable(c, t, 31)), t)).toEqual([40.5, 40.5]);
-    const uneven = ok(resizePiece(c, c.runs.back![0]!.id, c.runs.back![0]!.length + 6)); // 46 | 32 | 34
-    expect(tableSeats(uneven, t)).toEqual([46, 34]);
-    expect(tableSeats(ok(resizeTable(uneven, t, 34)), t)).toEqual([45, 33]);
-    expect(ok(resizeTable(c, t, 33)).W).toBe(140);
+    expect(tableSeats(c, t)).toEqual([44, 44]);
+    expect(tableSeats(ok(resizeTable(c, t, 25)), t)).toEqual([43.5, 43.5]);
+    expect(tableSeats(ok(resizeTable(c, t, 23)), t)).toEqual([44.5, 44.5]);
+    const uneven = ok(resizePiece(c, c.runs.back![0]!.id, c.runs.back![0]!.length + 6)); // 50 | 24 | 38
+    expect(tableSeats(uneven, t)).toEqual([50, 38]);
+    expect(tableSeats(ok(resizeTable(uneven, t, 26)), t)).toEqual([49, 37]);
+    expect(ok(resizeTable(c, t, 25)).W).toBe(140);
   });
 
   it('16–40″; never pushes a seat under 23″ (narrowing always works); same reference when unchanged', () => {
@@ -133,7 +133,7 @@ describe('the table ± grows from the middle', () => {
     deepFreeze(c);
     expect(resizeTable(c, t, 41).rejected?.message).toBe('A table is 16–40″');
     expect(resizeTable(c, t, 15).config).toBe(c);
-    expect(resizeTable(c, t, 32)).toEqual({ config: c, rejected: null });
+    expect(resizeTable(c, t, 24)).toEqual({ config: c, rejected: null });
     const nickC = deepFreeze(nickTable()); // 24½ | 24 | 24½
     const nt = tableIn(nickC, 'left');
     const grown = ok(resizeTable(nickC, nt, 27)); // 23 | 27 | 23
@@ -146,10 +146,10 @@ describe('the table ± grows from the middle', () => {
 
   it('"Sofa size changes": the sofa grows and the seats stay; a table at an end takes from its one seat', () => {
     const { c, t } = pair();
-    const off = ok(resizeTable(setLock(c, false).config, t, 36));
-    expect(tableSeats(off, t)).toEqual([40, 40]);
+    const off = ok(resizeTable(setLock(c, false).config, t, 28));
+    expect(tableSeats(off, t)).toEqual([44, 44]);
     expect(off.W).toBe(144);
-    const u = standardU(); // back: table 32 by the corner | armless 36
+    const u = standardU({ table: 32 }); // back: table 32 by the corner | armless 36
     const ut = tableIn(u, 'back');
     const r = ok(resizeTable(u, ut, 30));
     expect(desc(r, 'back')).toEqual(['table 30', 'armless 38']);

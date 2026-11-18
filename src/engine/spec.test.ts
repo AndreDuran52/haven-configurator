@@ -46,7 +46,7 @@ describe('§12 spec tests', () => {
   });
 
   it('T2 D = 36: C 52 (auto); back [32][52]; legs 80 (66 + 14); seat depth 18; opening 116 × 96; Seats 7–8', () => {
-    for (const c of [op.setMeasurements(U(), { D: 36 }), standardU({ D: 36 })]) {
+    for (const c of [op.setMeasurements(U(), { D: 36 }), standardU({ D: 36, table: 32 })]) {
       const b = valid(c);
       expect(b.wedge).toMatchObject({ C: 52, auto: true });
       expect(desc(c, 'back')).toEqual(['table 32', 'armless 52']);
@@ -98,7 +98,7 @@ describe('§12 spec tests', () => {
   });
 
   it('T5 W = 300: back [table 32][74][74] (one split group), legs 72, Seats 11–12', () => {
-    for (const c of [standardU({ W: 300 }), op.setMeasurements(U(), { W: 300 })]) {
+    for (const c of [standardU({ W: 300, table: 32 }), op.setMeasurements(U(), { W: 300 })]) {
       expect(desc(c, 'back')).toEqual(['table 32', 'armless 74', 'armless 74']);
       const [, a, b] = c.runs.back!;
       expect(a!.splitGroup).toBeDefined();
@@ -151,7 +151,7 @@ describe('§12 spec tests', () => {
       op.moveTable(u, tableId(u), { run: 'left', at: 'replaceArm' }),
       test3b(),
       standardL('right', { W: 120, R: 100 }),
-      standardU({ W: 300 }),
+      standardU({ W: 300, table: 32 }),
       op.setWedge(u, 55),
       op.setEndCap(u, 'right', 'open'),
       blankConfig('U'),

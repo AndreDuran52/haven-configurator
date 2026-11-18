@@ -9,7 +9,8 @@ const SHOTS = 'test-results'
 const T1 = '1UW188L132R132D44_bt32s36_la72_ra72.wh'
 const T3A = '1UW188L132R132D44_bs68_ls40t32_ra72.j9'
 
-async function open(browser, base, path = '', viewport = VIEWPORTS.ipadLandscape) {
+// The drag tests start from the Standard U as it was (32″ table): old links open as saved (Andre, 2026-11-18).
+async function open(browser, base, path = `#c=${T1}`, viewport = VIEWPORTS.ipadLandscape) {
   const context = await browser.newContext({ viewport, hasTouch: true, deviceScaleFactor: 2 })
   const page = await context.newPage()
   const errors = []
@@ -195,13 +196,13 @@ export async function h4(browser, base, check) {
     const n = (c) => Object.values(c.runs).flat().filter((p) => p.kind === 'armless').length
     check(n(await config(page)) === 2 && (await undoDepth(page)) === d0 + 1 && !(await page.$('[data-pins]')), 'tapping a pin adds an armless seat in one step')
     await page.getByRole('button', { name: 'Undo', exact: true }).click()
-    // Drag a table chip into the right leg (near its corner): a 32″ table between cushions, no split.
+    // Drag a table chip into the right leg (near its corner): a new table is 24″ (2026-11-18), between cushions, no split.
     const chip = await centreOf(page, '[data-tray-item=table]')
     const r = (await config(page)).runs.right[0]
     const rb0 = await page.$eval(`[data-piece="${r.id}"]`, (e) => e.getBoundingClientRect().toJSON())
     await drag(line(chip, [rb0.left + rb0.width / 2, rb0.top + 30], 16))
     const legLine = (await config(page)).runs.right.map((p) => p.kind + p.length).join(' ')
-    check(legLine === 'table32 oneArm40' && (await undoDepth(page)) === d0 + 1, `dragging "Table" from the tray into the right leg: a 32″ table at the corner seam, seat 26 + arm (${legLine})`)
+    check(legLine === 'table24 oneArm48' && (await undoDepth(page)) === d0 + 1, `dragging "Table" from the tray into the right leg: a 24″ table at the corner seam, seat 34 + arm (${legLine})`)
     await page.getByRole('button', { name: 'Undo', exact: true }).click()
     // An old layout (old links still load as they were): a 20″ table between two 19″ seats.
     await page.evaluate(() => {

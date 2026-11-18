@@ -59,6 +59,8 @@ export interface PresetOptions {
   tableFinish?: TableFinish;
   tableStyle?: TableStyle;
   dims?: Partial<HavenDims>;
+  /** The Standard U's table width (default TABLE_DEFAULT, 24″ since 2026-11-18; tests build the older 32″ U with it). */
+  table?: number;
 }
 
 function base(shape: Shape, o: PresetOptions, W: number): Config {
@@ -93,11 +95,12 @@ function build(shape: Shape, o: PresetOptions, fill: 'standardU' | 'default' | '
     if (len < 0) throw new Error(`measurements too small for ${shape}: ${run} has ${len}"`);
     if (fill === 'blank') {
       draft.runs[run] = len > 0 ? [{ id: alloc('p'), kind: 'gap', length: len }] : [];
-    } else if (run === 'back' && fill === 'standardU' && len - TABLE_DEFAULT >= ABSORB_FLOOR) {
-      // §2: [wedge][table 32][armless rest][wedge]
+    } else if (run === 'back' && fill === 'standardU' && len - (o.table ?? TABLE_DEFAULT) >= ABSORB_FLOOR) {
+      // §2: [wedge][table 24][armless rest][wedge] (Andre, 2026-11-18: 60 | 24 | 44 | 60; 32 | 36 before)
+      const t = o.table ?? TABLE_DEFAULT;
       draft.runs[run] = [
-        { id: alloc('p'), kind: 'table', length: TABLE_DEFAULT },
-        seat(alloc('p'), len - TABLE_DEFAULT, null),
+        { id: alloc('p'), kind: 'table', length: t },
+        seat(alloc('p'), len - t, null),
       ];
     } else {
       draft.runs[run] = defaultFill(len, openEnds(shape, run), A, alloc);

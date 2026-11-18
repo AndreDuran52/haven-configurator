@@ -2,7 +2,7 @@
 // what works in the current view; plan pillows match the 3D Top (same
 // position, angle and size, pillow by pillow); the Room tab's two rows (arrows
 // and typed gaps, one Undo per hold); the tray's Table tapped goes to the
-// middle (straight 120″ with 10″ arms: 10 | 34 | 32 | 34 | 10) and a sofa with
+// middle (straight 120″ with 10″ arms: 10 | 38 | 24 | 38 | 10, the 24″ table since 2026-11-18) and a sofa with
 // no room for one refuses cleanly. Judged by outcome: the DOM, the store, the
 // 3D meshes' own bounds.
 import { config, panel, setField, viewMenu } from './lib.mjs'
@@ -129,10 +129,10 @@ export async function fixes2(browser, base, check) {
     await panel(page, 'Pieces')
     await page.locator('[data-tray-item=table]').click()
     const c = await config(page)
-    check(back(c) === 'oneArm44 table32 oneArm44' && c.W === 120, `Table tapped: 10 | 34 | 32 | 34 | 10 (${back(c)})`)
+    check(back(c) === 'oneArm48 table24 oneArm48' && c.W === 120, `Table tapped: 10 | 38 | 24 | 38 | 10 (${back(c)})`)
     check((await undoDepth(page)) === d + 1 && (await page.$('[data-pins]')) === null, 'one undo step; no pins to pick')
     const line = await page.textContent('[data-testid=result-text]')
-    check(line.includes('Added table 32″') && line.includes('Seats 50″ | 50″ → 34″ | 34″'), `the result line: "${line}"`)
+    check(line.includes('Added table 24″') && line.includes('Seats 50″ | 50″ → 38″ | 38″'), `the result line: "${line}"`)
     await page.getByRole('button', { name: 'Undo', exact: true }).click()
     check((await code(page)) === before, 'Undo restores the sofa before the table')
     // No room for a table anywhere: refused in plain words, nothing changes.

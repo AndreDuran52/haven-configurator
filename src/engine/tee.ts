@@ -115,6 +115,8 @@ export function setTeeSharedBack(l: Layout, on: boolean): LayoutResult {
   if (t.sharedBack === on) return { layout: l, rejected: null };
   const joined: Layout = { ...l, sections: [l.sections[0]!, { ...l.sections[1]!, join: { ...l.sections[1]!.join!, sharedBack: on } }] };
   const [WA, WB] = teeHalves(t.total, on);
-  return setHalves(joined, WA, WB, on, t.total);
+  const r = setHalves(joined, WA, WB, on, t.total);
+  // Refused: the layout as it was (same reference), not the copy with the switch already flipped.
+  return r.rejected ? { layout: l, rejected: r.rejected } : r;
 }
 

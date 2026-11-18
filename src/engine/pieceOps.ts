@@ -136,6 +136,13 @@ export function convertPiece(config: Config, id: string, arm?: RunEnd): EditResu
 
 /** Tap menu: end cap of a run's open end (arm / table in place of the arm / open). `end` picks one on a straight run. */
 export function setEndCap(config: Config, run: RunId, cap: EndCap, end?: RunEnd): EditResult {
+  // A new end table starts at the standard width and steps down like every new table (tablePlace addTable; Andre, 2026-11-18).
+  const at = capEnd(openEnds(config.shape, run), end);
+  const now = config.runs[run];
+  if (cap === 'table' && at && now) {
+    const state = endCapState(now, at);
+    if (state === 'arm' || state === 'open') return addTable(config, { run, at: 'replaceArm', end: at });
+  }
   return edit(config, (d, alloc): Outcome => {
     const pieces = d.runs[run];
     const open = capEnd(openEnds(d.shape, run), end);

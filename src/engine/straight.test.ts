@@ -12,6 +12,7 @@ import { addPiece, convertPiece, deletePiece, fillGap, setEndCap } from './piece
 import { setShape } from './shape';
 import { anchoredTargets, moveTable } from './tableOps';
 import { tableSeats } from './balance';
+import { resizeTable } from './tableSize';
 import { canon, deepFreeze, desc, valid } from './testing';
 import type { Config } from './types';
 
@@ -33,6 +34,15 @@ function photo(): Config {
     { id: 'p2', kind: 'oneArm', length: 63, arm: 'end' },
   ];
   return { ...c, runs: { back }, nextId: 6 };
+}
+
+/** The v4 end-table link, made when a new table was 32″: a table in the start arm's place, widened to 32″ (it takes from its one seat). */
+function endTable32(): Config {
+  const c = setEndCap(standardStraight({ W: 150 }), 'back', 'table', 'start').config;
+  const r = resizeTable(c, c.runs.back![0]!.id, 32);
+  expect(r.rejected).toBeNull();
+  expect(desc(r.config, 'back')).toEqual(['table 32', 'armless 43', 'oneArm 75=61+14@end']);
+  return r.config;
 }
 
 describe('straight sofa: the shape', () => {
@@ -67,7 +77,7 @@ describe('straight sofa: the shape', () => {
     const c = standardStraight();
     expect(setWedge(c, 70).config).toBe(c);
     expect(setShape(c, 'U').config.shape).toBe('U');
-    expect(setShape(standardU(), 'straight').config.shape).toBe('straight');
+    expect(setShape(standardU({ table: 32 }), 'straight').config.shape).toBe('straight');
   });
 });
 
@@ -76,7 +86,7 @@ describe('straight sofa: ends', () => {
     const c = standardStraight({ W: 150 });
     const s = setEndCap(c, 'back', 'table', 'start');
     valid(s.config);
-    expect(desc(s.config, 'back')).toEqual(['table 32', 'armless 43', 'oneArm 75=61+14@end']);
+    expect(desc(s.config, 'back')).toEqual(['table 24', 'armless 51', 'oneArm 75=61+14@end']); // a new table: the standard 24″
     expect(buildHaven(s.config).runs[0]!.endCaps).toEqual({ start: 'table', end: 'arm' });
     const e = setEndCap(s.config, 'back', 'open', 'end');
     expect(buildHaven(e.config).runs[0]!.endCaps).toEqual({ start: 'table', end: 'open' });
@@ -129,7 +139,7 @@ describe('straight sofa: balance and arms', () => {
 describe('link v4', () => {
   it('the goldens decode and re-encode exactly', () => {
     expect(LINK_VERSION).toBe(6); // v5 added the room (H6c), v6 the snug count; v4 straight links are unchanged
-    const made: Record<string, Config> = { standard: standardStraight(), midTable: photo(), endTable: setEndCap(standardStraight({ W: 150 }), 'back', 'table', 'start').config };
+    const made: Record<string, Config> = { standard: standardStraight(), midTable: photo(), endTable: endTable32() };
     for (const [name, c] of Object.entries(made)) {
       valid(c);
       expect(encode(c), name).toBe(GOLDEN_V4[name]);

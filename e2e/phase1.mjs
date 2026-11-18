@@ -31,8 +31,8 @@ export async function phase1(browser, base, check) {
     const t = await dimTexts(page)
     const c = await config(page)
     check(
-      t.slice(0, 4).join(' | ') === '54" | 32" | 48" | 54"' && c.D === 38 && c.W === 188 && c.L === 132 && c.R === 132,
-      `Enter: D 38, corners 54, back armless 48, W/L/R 188/132/132 (${t.slice(0, 4).join(' | ')})`,
+      t.slice(0, 4).join(' | ') === '54" | 24" | 56" | 54"' && c.D === 38 && c.W === 188 && c.L === 132 && c.R === 132,
+      `Enter: D 38, corners 54, back armless 56 (the 24″ table), W/L/R 188/132/132 (${t.slice(0, 4).join(' | ')})`,
     )
     check(t.filter((x) => x === '64"').length === 2, 'each leg one-arm 78 reads seat 64 | arm 14')
     await page.getByRole('button', { name: 'Undo', exact: true }).click()
