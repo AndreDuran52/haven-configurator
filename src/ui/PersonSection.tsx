@@ -1,13 +1,17 @@
 // The View menu's Person section, in 3D (Andre, 2026-11-11, plan Q79): show a
-// person sitting on the sofa (in the Side drawing and the 3D views), Lounge |
-// Upright (Upright puts a square pillow behind the back), and the height: the
-// average US man, 5'9″, or the client's own (± 1″, hold to repeat, or typed
-// like 6'2). The height and pose are remembered on this device; never in links.
-import { useState } from 'react';
+// person sitting on the sofa (in the Side drawing and the 3D views), with or
+// without an extra back pillow (Andre, 2026-11-18: "just with and without
+// additional back pillows"; Without = he sits back into the sofa's own back
+// cushions, the `lounge` pose; With = a throw pillow behind his back,
+// `upright`), and the height: the average US man, 5'9″, or the client's own
+// (± 1″, hold to repeat, or typed like 6'2). The height and pose are
+// remembered on this device; never in links.
+import { useMemo, useState } from 'react';
 import { feetInches, parseHeight } from '@/ortho/personHeight';
 import { PERSON_MAX, PERSON_MIN, type PersonPose } from '@/ortho/personLimits';
+import { figureOnSofa } from '@/ortho/personSeat';
 import { writePerson } from '@/state/prefs';
-import { useHaven, useHavenStore } from '@/state/store';
+import { builtOf, useHaven, useHavenStore, useLive } from '@/state/store';
 import { Stepper } from './Stepper';
 import { Toggle } from './Toggle';
 
@@ -17,6 +21,9 @@ export function PersonSection() {
   const pose = useHaven((s) => s.ui.personPose);
   const height = useHaven((s) => s.ui.personHeight);
   const [typed, setTyped] = useState<string | null>(null);
+  const built = builtOf(useLive());
+  // With: on a shallow seat the back is upright already, so there is no room for the pillow.
+  const noRoom = useMemo(() => on && pose === 'upright' && figureOnSofa(built, height, 'upright').pillow === null, [on, pose, built, height]);
   const set = (h: number, p: PersonPose) => {
     const height = Math.min(PERSON_MAX, Math.max(PERSON_MIN, Math.round(h)));
     store.getState().setUi({ personHeight: height, personPose: p });
@@ -38,13 +45,21 @@ export function PersonSection() {
       <Toggle label="Show person" on={on} onChange={(v) => store.getState().setUi({ person: v })} testId="person" />
       {on && (
         <>
-          <div role="radiogroup" aria-label="How the person sits" className="mx-3 my-1 flex gap-1 rounded-lg border border-line bg-panel-2 p-0.5">
+          <span id="person-pillow" className="px-3 pt-1 text-[15px] text-ink">
+            Extra back pillow
+          </span>
+          <div role="radiogroup" aria-labelledby="person-pillow" className="mx-3 my-1 flex gap-1 rounded-lg border border-line bg-panel-2 p-0.5">
             {(['lounge', 'upright'] as const).map((v) => (
               <button key={v} type="button" role="radio" aria-checked={pose === v} onClick={() => set(height, v)} className={`min-h-11 flex-1 rounded-md px-3 text-[15px] font-medium ${pose === v ? 'bg-panel text-ink shadow-sm' : 'text-ink-muted'}`}>
-                {v === 'lounge' ? 'Lounge' : 'Upright'}
+                {v === 'lounge' ? 'Without' : 'With'}
               </button>
             ))}
           </div>
+          {noRoom && (
+            <span className="px-3 pb-1 text-sm text-ink-muted" data-testid="person-no-pillow">
+              No room for an extra pillow at this depth.
+            </span>
+          )}
           <div className="flex items-center gap-2 px-3 py-1">
             <Stepper label="Height minus 1" onStep={() => step(-1)}>
               −

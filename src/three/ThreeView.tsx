@@ -6,10 +6,8 @@ import { Box3, NeutralToneMapping, Vector3, type DirectionalLight, type Texture 
 import { Canvas, useFrame } from '@react-three/fiber';
 import { ContactShadows } from '@react-three/drei';
 import { BACK_CUSHION, pillowAnchors, planCentre, seatMarkers, type BuildResult } from '@/engine';
-import { cushionSide } from '@/engine/cushionProfile';
 import { fitPoints, FLOOR_THICKNESS, FLOOR_TOP } from '@/ortho/fitPoints';
-import { personFigure } from '@/ortho/person';
-import { personPoints, personSeat } from '@/ortho/personSeat';
+import { figureOnSofa, personPoints, personSeat } from '@/ortho/personSeat';
 import { isElevation } from '@/ortho/presets';
 import { SideSection } from '@/ortho/SideSection';
 import { builtOf, layoutBuiltOf, useHaven, useHavenStore, useLive, useLiveLayout } from '@/state/store';
@@ -73,7 +71,7 @@ export default function ThreeView() {
   // The 3D person: on the back run's widest seat, from the Side drawing's own joints.
   const seat = useMemo(() => (person ? personSeat(built) : null), [person, built]);
   const fig = useMemo(
-    () => (seat ? personFigure(personHeight, personPose, { seatHeight: built.heights.seatHeight, pillowFront: built.heights.backFrame + BACK_CUSHION.depth, pillowTop: built.heights.backHeight + BACK_CUSHION.rise, backFront: cushionSide(built.heights).front, D: built.D }) : null),
+    () => (seat ? figureOnSofa(built, personHeight, personPose) : null),
     [seat, personHeight, personPose, built],
   );
   const points = useMemo(
@@ -150,7 +148,7 @@ export default function ThreeView() {
         <group position={[world.offset[0], 0, world.offset[1]]}>
           <SofaModel parts={parts} mats={mats} showLoose={showLoose} />
           <Pillows anchors={pillows} mats={mats.pillow} models={models} />
-          {fig && seat && <Person fig={fig} seat={seat} pillowMat={mats.pillow.taupe} />}
+          {fig && seat && <Person fig={fig} seat={seat} pillowMat={mats.pillow.taupe} models={models} />}
         </group>
         <mesh name="floor" position={[floor.at[0], FLOOR_TOP - FLOOR_THICKNESS / 2, floor.at[1]]} material={mats.floor}>
           <boxGeometry args={[floor.w, FLOOR_THICKNESS, floor.d]} />

@@ -1,6 +1,5 @@
 // Andre's Blender models (plan Q16; H5c): `.glb` files dropped into
-// src/three/models/ replace the procedural pillow of the same name. None
-// ships since 2026-11-11 (the knife-edge square is made in code). Vite lists
+// src/three/models/ replace the procedural pillow of the same name. Vite lists
 // only the files that exist (no 404 probing) and hashes them; the service
 // worker precaches them, so they work offline. GLTFLoader without Draco (never
 // drei useGLTF: it fetches the Draco decoder from gstatic, rule 7). Each model

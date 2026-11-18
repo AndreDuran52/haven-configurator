@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_DIMS } from '@/engine';
+import { DEFAULT_DIMS, SQUARE_PILLOW } from '@/engine';
 import { cushionSide } from '@/engine/cushionProfile';
 import { bodySizes, feetInches, parseHeight, PERSON_HEIGHT, personFigure, SEAT_SINK, type PersonFigure } from './person';
 import { buildFor } from './personBuild';
@@ -96,11 +96,11 @@ describe('the person (plan Q79)', () => {
     expect(f.measures.edgeSink).toBeLessThan(1);
   });
 
-  it("Upright's pillow: the loose 20″ knife-edge pillow, leaning with the back cushion, pressed where the back leans", () => {
+  it("Upright's pillow: the sofa's own 20″ karate-chop pillow, leaning with the back cushion, pressed where the back leans", () => {
     const f = sit(70, 'upright', 44);
     const p = f.pillow!;
     expect(p).not.toBeNull();
-    expect([p.w, p.h, p.t]).toEqual([20, 20, 6]);
+    expect([p.w, p.h, p.t]).toEqual([SQUARE_PILLOW.w, SQUARE_PILLOW.h, SQUARE_PILLOW.t]);
     expect(p.lean).toBeGreaterThan(8);
     expect(p.lean).toBeLessThan(24);
     expect(p.press!.depth).toBeGreaterThan(0);

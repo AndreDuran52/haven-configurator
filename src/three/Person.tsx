@@ -9,7 +9,8 @@ import { MeshStandardMaterial, Quaternion, Vector3, type BufferGeometry, type Ma
 import type { PersonFigure, Pt2 } from '@/ortho/person';
 import type { PersonSeat } from '@/ortho/personSeat';
 import { headGeometry, limbGeometry, torsoGeometry } from './personGeometry';
-import { knifeEdgePillow } from './softGeometry';
+import type { SoftModels } from './models';
+import { chopPillow, pressPillow } from './softGeometry';
 
 // A little lighter than the drawing's #9a948c: the 3D lights shade it down to about that.
 const BODY = '#b0aaa2';
@@ -37,7 +38,21 @@ function Limb({ name, a, b, ra, rb, mat }: { name: string; a: Vector3; b: Vector
   );
 }
 
-export function Person({ fig, seat, pillowMat }: { fig: PersonFigure; seat: PersonSeat; pillowMat: Material }) {
+/**
+ * The pillow behind an upright back: the same square pillow as the sofa's
+ * (Andre's Blender model, or the procedural chop until it has loaded), pressed
+ * where the back leans on it. Always its own copy: the shared model is never
+ * disposed here.
+ */
+function backPillow(p: NonNullable<PersonFigure['pillow']>, model: BufferGeometry | null | undefined): BufferGeometry {
+  const own = model ? null : chopPillow(p.w, p.h, p.t);
+  const src = model ?? own!;
+  const g = p.press ? pressPillow(src, p.w, p.h, p.t, p.press) : src.clone();
+  own?.dispose();
+  return g;
+}
+
+export function Person({ fig, seat, pillowMat, models }: { fig: PersonFigure; seat: PersonSeat; pillowMat: Material; models?: SoftModels | null }) {
   const mat = useMemo(() => new MeshStandardMaterial({ color: BODY, roughness: 1, metalness: 0 }), []);
   useEffect(() => () => mat.dispose(), [mat]);
   const b = fig.build;
@@ -45,7 +60,8 @@ export function Person({ fig, seat, pillowMat }: { fig: PersonFigure; seat: Pers
   const torso = useGeometry(() => torsoGeometry(fig.spine, b), [fig.spine, b]);
   const head = useGeometry(() => headGeometry(b.headW, b.headH, b.headD), [b.headW, b.headH, b.headD]);
   const p = fig.pillow;
-  const pillow = useGeometry(() => (p ? knifeEdgePillow(p.w, p.h, p.t, p.press ?? undefined) : null), [p?.w, p?.h, p?.t, p?.press?.depth, p?.press?.at]);
+  const model = models?.square;
+  const pillow = useGeometry(() => (p ? backPillow(p, model) : null), [p?.w, p?.h, p?.t, p?.press?.depth, p?.press?.at, model]);
   return (
     <group name="person" position={[seat.x, 0, seat.back]}>
       <mesh name="person:torso" geometry={torso} material={mat}>

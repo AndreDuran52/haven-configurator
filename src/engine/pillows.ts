@@ -1,6 +1,6 @@
 // Throw pillow anchors (plan §7.4, 3D-07, Q15), as pure data from the built
 // layout. Andre (2026-09-27/28, showroom photos and his own top view): a
-// touching pair of knife-edge squares (taupe + oatmeal linen; plain since 2026-11-11)
+// touching pair of down-feather "karate chop" squares (taupe + oatmeal linen; Andre's Blender model)
 // at each corner wedge and each arm end, resting on the back cushions, and one
 // light ball pillow on each wedge.
 // They sit on the tight 18″ seat and lean on the loose back cushions: each one
@@ -25,11 +25,12 @@ export interface PillowAnchor extends OrientedBox {
 export const PILLOW_COLOR: Record<PillowTone, string> = { taupe: '#9a897c', oatmeal: '#e2dbcf', cream: '#eee8de', mocha: '#7c675b' };
 
 /**
- * 20″ knife-edge pillows (Andre's close-ups, 2026-11-11: plain, no chop):
- * about 6″ thick in the middle, leaning back 20–25° on the back cushions,
- * their bottoms on the seat just in front of them.
+ * 20″ down "karate chop" pillows: Andre's Blender model (three/models/
+ * pillow-square.glb), fitted into this box. 8″ thick (Andre's showroom photo,
+ * 2026-11-18), leaning back 22° on the back cushions, their bottoms on the
+ * seat just in front of them.
  */
-export const SQUARE_PILLOW = { w: 20, h: 20, t: 6, lean: 22 };
+export const SQUARE_PILLOW = { w: 20, h: 20, t: 8, lean: 22 };
 export const BALL_PILLOW = 11;
 /** How far a pillow sinks into the seat under it. */
 const SINK = 1;

@@ -14,6 +14,7 @@
 //   pelvis rolls back and the back bends through its middle until the upper
 //   back rests on the back cushion near its top; the lower back does not
 //   touch it; the head stays upright, about 6″ lower than in Upright.
+import { SQUARE_PILLOW } from '@/engine';
 import { bodySizes, buildFor, type BodySizes, type Build } from './personBuild';
 import type { PersonPose } from './personLimits';
 import { gapAt, settle, spineFrom, type Pt2, type SpinePoint } from './personSpine';
@@ -88,8 +89,8 @@ const add = (p: Pt2, len: number, d: number): Pt2 => [p[0] + len * Math.cos(rad(
 
 /** The seat gives under a person: how far the hips sink into it (Andre: 3″, tapering toward the knee; the legs' own lengths bring the thigh up to the seat's top at its front edge). */
 export const SEAT_SINK = { hip: 3, knee: 1 };
-/** The throw pillow behind an upright back (the loose 20″ knife-edge pillow, engine SQUARE_PILLOW). */
-export const UPRIGHT_PILLOW = { size: 20, t: 6, min: 3, max: 6.5 } as const;
+/** The throw pillow behind an upright back: the sofa's own 20″ karate-chop pillow (engine SQUARE_PILLOW); the space it fills, min to max. */
+export const UPRIGHT_PILLOW = { size: SQUARE_PILLOW.w, t: SQUARE_PILLOW.t, min: 3, max: 6.5 } as const;
 /** How far a back presses into the cushion it leans on, and the buttock into the cushion's soft foot. */
 const BACK_SQUASH = 1;
 const FOOT_SQUASH = 2;

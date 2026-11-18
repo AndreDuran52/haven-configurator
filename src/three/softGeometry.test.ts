@@ -2,7 +2,7 @@ import { Euler, Matrix4, Quaternion, Vector3, type BufferGeometry } from 'three'
 import { describe, expect, it } from 'vitest';
 import { backCushions, BALL_PILLOW, buildHaven, DEFAULT_DIMS, SQUARE_PILLOW, standardL, standardU, type OrientedBox } from '@/engine';
 import { cushionSide } from '@/engine/cushionProfile';
-import { ballPillow, boxTransform, knifeEdgePillow, looseCushion } from './softGeometry';
+import { ballPillow, boxTransform, chopPillow, looseCushion, pressPillow } from './softGeometry';
 
 const vertices = (g: BufferGeometry): Vector3[] => {
   const p = g.getAttribute('position');
@@ -86,25 +86,27 @@ describe('soft geometry stays inside the engine’s boxes (what the anchors and 
     expect(r).toBeLessThan(4.2);
   });
 
-  it('knife-edge squares (no chop) and ball pillows stay inside their boxes', () => {
+  it('karate-chop squares (the stand-in for the Blender model) and ball pillows stay inside their boxes; a back presses only the front', () => {
     const { w, h, t } = SQUARE_PILLOW;
-    const sq = knifeEdgePillow(w, h, t);
+    const sq = chopPillow(w, h, t);
     expect(inBox(sq, w, h, t)).toBe(true);
     const vs = vertices(sq);
-    // 6″ thick in the middle, a seam at the edges.
-    const zs = (pick: (v: Vector3) => boolean) => vs.filter(pick).map((v) => v.z);
-    expect(Math.max(...zs((v) => Math.hypot(v.x, v.y) < 0.8)) - Math.min(...zs((v) => Math.hypot(v.x, v.y) < 0.8))).toBeCloseTo(t, 1);
-    expect(Math.max(...zs((v) => Math.abs(v.y) > h / 2 - 0.3).map(Math.abs))).toBeLessThan(0.6);
-    // No chop: the top edge is as high in the middle as the bottom edge is low.
+    // The chop: the top is lower in the middle than at its ears.
     const topAt = (x: number) => Math.max(...vs.filter((v) => Math.abs(v.x - x) < 0.8).map((v) => v.y));
-    const bottomAt = (x: number) => Math.min(...vs.filter((v) => Math.abs(v.x - x) < 0.8).map((v) => v.y));
-    expect(topAt(0)).toBeCloseTo(-bottomAt(0), 6);
-    expect(topAt(8) - topAt(0)).toBeLessThan(1.1);
-    // A back leaning on it presses the front in where it leans, and leaves the top full.
-    const pressed = vertices(knifeEdgePillow(w, h, t, { depth: 2, at: -0.2 }));
+    expect(topAt(7) - topAt(0)).toBeGreaterThan(2);
+    // A back leaning on it presses the front in where it leans, and leaves the back panel and the top alone.
+    const pressedGeo = pressPillow(sq, w, h, t, { depth: 2, at: -0.2 });
+    const pressed = vertices(pressedGeo);
+    expect(inBox(pressedGeo, w, h, t)).toBe(true);
     const front = (list: Vector3[], y: number) => Math.max(...list.filter((v) => Math.abs(v.x) < 0.8 && Math.abs(v.y - y) < 0.5).map((v) => v.z));
     expect(front(vs, -2) - front(pressed, -2)).toBeGreaterThan(1.5);
-    expect(front(vs, 8) - front(pressed, 8)).toBeLessThan(0.3);
+    expect(front(vs, 6) - front(pressed, 6)).toBeLessThan(0.6);
+    vs.forEach((v, i) => {
+      if (v.z <= 0) expect(pressed[i]!.z).toBe(v.z);
+      else expect(pressed[i]!.z).toBeGreaterThanOrEqual(0); // never past the middle
+    });
+    // Its own copy: the source is untouched.
+    expect(vertices(sq).every((v, i) => v.z === vs[i]!.z)).toBe(true);
     const ball = ballPillow(BALL_PILLOW);
     expect(vertices(ball).every((v) => v.length() <= BALL_PILLOW / 2 + 1e-6)).toBe(true);
   });

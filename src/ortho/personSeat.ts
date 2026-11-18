@@ -1,8 +1,9 @@
 // Where the 3D person sits (Andre, 2026-11-11, plan Q79): the middle of the
 // back run's widest seat, facing out. Pure; plan inches. The figure's side
 // plane (t from the sofa's back, z up) maps to plan (x = seat.x, y = seat.back + t).
-import { planCentre, planToWorld, type BuildResult } from '@/engine';
-import type { PersonFigure } from './person';
+import { BACK_CUSHION, planCentre, planToWorld, type BuildResult } from '@/engine';
+import { cushionSide } from '@/engine/cushionProfile';
+import { personFigure, type PersonFigure, type PersonPose } from './person';
 import type { Vec3 } from './screenBasis';
 
 export interface PersonSeat {
@@ -26,6 +27,12 @@ export function personSeat(built: BuildResult): PersonSeat | null {
     }
   }
   return best;
+}
+
+/** The person sitting on this sofa (the 3D view and the View menu read the same figure). */
+export function figureOnSofa(built: BuildResult, height: number, pose: PersonPose): PersonFigure {
+  const h = built.heights;
+  return personFigure(height, pose, { seatHeight: h.seatHeight, pillowFront: h.backFrame + BACK_CUSHION.depth, pillowTop: h.backHeight + BACK_CUSHION.rise, backFront: cushionSide(h).front, D: built.D });
 }
 
 /** The figure's bounding box as world points, for the ortho fit (the head is well above the sofa). */
