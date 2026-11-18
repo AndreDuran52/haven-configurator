@@ -162,6 +162,9 @@ export interface MaterialSet {
 
 export const FLOOR_MARGIN = 60;
 
+/** The pillows' outline: thinner and lighter than the sofa's (Andre, 2026-11-18). */
+export const PILLOW_OUTLINE = { thickness: 0.75, color: '#9a9088' } as const;
+
 export function makeMaterials(fabric: string, finish: TableFinish): MaterialSet {
   const f = fabricOf(fabric);
   const bump = boucleBump();
@@ -172,18 +175,18 @@ export function makeMaterials(fabric: string, finish: TableFinish): MaterialSet 
   const wMap = woodMap(fin.color, fin.grain);
   const wood = new MeshStandardMaterial({ map: wMap, roughness: 0.5 });
   const weaveMap = linenBump();
-  const taupe = new MeshStandardMaterial({ color: PILLOW_COLOR.taupe, roughness: 0.85, bumpMap: weaveMap, bumpScale: 0.25 });
-  const oatmeal = new MeshStandardMaterial({ color: PILLOW_COLOR.oatmeal, roughness: 0.9, bumpMap: weaveMap, bumpScale: 0.3 });
-  const cream = new MeshStandardMaterial({ color: PILLOW_COLOR.cream, roughness: 0.95, bumpMap: bump, bumpScale: 0.35 });
-  const mocha = new MeshStandardMaterial({ color: PILLOW_COLOR.mocha, roughness: 0.6 });
+  // Matte linen, no sheen (Andre, 2026-11-18): full roughness and only a faint weave.
+  const taupe = new MeshStandardMaterial({ color: PILLOW_COLOR.taupe, roughness: 1, metalness: 0, bumpMap: weaveMap, bumpScale: 0.1 });
+  const oatmeal = new MeshStandardMaterial({ color: PILLOW_COLOR.oatmeal, roughness: 1, metalness: 0, bumpMap: weaveMap, bumpScale: 0.1 });
+  const cream = new MeshStandardMaterial({ color: PILLOW_COLOR.cream, roughness: 1, metalness: 0, bumpMap: bump, bumpScale: 0.3 });
   const leg = new MeshStandardMaterial({ color: '#2a221c', roughness: 0.6 });
   const fm = floorMap();
   const floor = new MeshStandardMaterial({ map: fm, roughness: 0.85 });
   const silhouette = new MeshBasicMaterial({ color: '#000000' });
-  const all = [body, cushion, wood, leg, floor, silhouette, taupe, oatmeal, cream, mocha];
+  const all = [body, cushion, wood, leg, floor, silhouette, taupe, oatmeal, cream];
   return {
     byId: { body, cushion, wood, leg },
-    pillow: { taupe, oatmeal, cream, mocha },
+    pillow: { taupe, oatmeal, cream },
     floor,
     silhouette,
     dispose: () => {

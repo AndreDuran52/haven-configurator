@@ -4,12 +4,13 @@
 // tapered limbs, an upright egg of a head. Drawn twice, an outline pass under a
 // fill pass, so the parts read as one silhouette; the near arm keeps its own
 // outline over the body. No three import.
+import { PILLOW_COLOR } from '@/engine';
 import type { PersonFigure, Pt2 } from './person';
 import { pillowProfile } from './pillowShape';
 
 const BODY = '#9a948c';
 const LINE = '#6f6a63';
-const PILLOW = '#b79f86';
+const PILLOW = PILLOW_COLOR.taupe;
 const INK = '#1c1b19';
 
 interface Draw {

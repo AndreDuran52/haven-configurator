@@ -10,6 +10,7 @@ import type { PersonFigure, Pt2 } from '@/ortho/person';
 import type { PersonSeat } from '@/ortho/personSeat';
 import { headGeometry, limbGeometry, torsoGeometry } from './personGeometry';
 import type { SoftModels } from './models';
+import { PILLOW_OUTLINE } from './materials';
 import { chopPillow, pressPillow } from './softGeometry';
 
 // A little lighter than the drawing's #9a948c: the 3D lights shade it down to about that.
@@ -82,7 +83,7 @@ export function Person({ fig, seat, pillowMat, models }: { fig: PersonFigure; se
       ))}
       {p && pillow && (
         <mesh name="person:pillow" geometry={pillow} position={[0, p.c[1], p.c[0]]} rotation={[(-p.lean * Math.PI) / 180, 0, 0]} material={pillowMat}>
-          <Outlines thickness={1.25} color="#4a4038" />
+          <Outlines thickness={PILLOW_OUTLINE.thickness} color={PILLOW_OUTLINE.color} />
         </mesh>
       )}
     </group>

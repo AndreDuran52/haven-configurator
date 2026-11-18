@@ -4,8 +4,8 @@ import { decode, encode, FABRIC_CODES, FINISH_CODES } from './codec';
 import { standardL, standardStraight, standardU } from './defaults';
 import { FABRICS, FINISHES } from './fabrics';
 import { backCushions } from './cushions';
-import { BALL_PILLOW, PAIR_PRESS, PILLOW_PRESS, pillowAnchors, pillowCorners } from './pillows';
-import { boxDistance, boxesClash } from './softBox';
+import { BALL_PILLOW, PAIR_PRESS, PILLOW_MAX_LEAN, PILLOW_PRESS, SQUARE_PILLOW, pillowAnchors, pillowCorners } from './pillows';
+import { boxDistance, boxesClash, runInward } from './softBox';
 import { setFabric, setMeasurements, setTableFinish } from './ops';
 import { moveTable } from './tableOps';
 import type { Config, Pt } from './types';
@@ -20,27 +20,32 @@ const inPoly = (pt: Pt, poly: Pt[]) => {
   return inside;
 };
 
-describe('pillows (Q15, Andre 2026-09-26/27: like the showroom photos)', () => {
-  it('Standard U (Andre, 2026-09-27): a touching pair of squares at each wedge and arm end (8), one light ball on each wedge', () => {
+describe('pillows (Q15; Andre 2026-11-18: like his styled Haven picture)', () => {
+  const group = (key: string) => key.split(':').slice(0, -1).join(':');
+
+  it('Standard U: at every corner and arm end two squares (one taupe, one light) and one ball: cream at an arm end, taupe at a corner', () => {
     const b = buildHaven(standardU());
     const a = pillowAnchors(b);
-    expect(a).toHaveLength(10);
-    const groups = new Map<string, string[]>();
-    for (const p of a) groups.set(p.key.split(':').slice(0, -1).join(':'), [...(groups.get(p.key.split(':').slice(0, -1).join(':')) ?? []), p.kind]);
+    expect(a).toHaveLength(12);
+    const groups = new Map<string, typeof a>();
+    for (const p of a) groups.set(group(p.key), [...(groups.get(group(p.key)) ?? []), p]);
     expect(groups.size).toBe(4);
-    for (const [g, kinds] of groups) expect(kinds.sort()).toEqual(g.startsWith('wedge') ? ['ball', 'square', 'square'] : ['square', 'square']);
-    expect(a.filter((p) => p.kind === 'ball').every((p) => p.tone === 'cream')).toBe(true);
+    for (const [g, ps] of groups) {
+      expect(ps.map((p) => p.kind).sort(), g).toEqual(['ball', 'square', 'square']);
+      expect(ps.filter((p) => p.kind === 'square').map((p) => p.tone).sort(), g).toEqual(['oatmeal', 'taupe']);
+      expect(ps.find((p) => p.kind === 'ball')!.tone, g).toBe(g.startsWith('wedge') ? 'taupe' : 'cream');
+    }
   });
 
   it('none at table or open ends: 3a (table in place of the left arm) loses that arm group', () => {
     const u = standardU();
     const id = u.runs.back!.find((p) => p.kind === 'table')!.id;
     const a = pillowAnchors(buildHaven(moveTable(u, id, { run: 'left', at: 'replaceArm' }).config));
-    expect(a).toHaveLength(8);
+    expect(a).toHaveLength(9);
   });
 
   it('L shapes: one wedge and two arm ends', () => {
-    for (const side of ['left', 'right'] as const) expect(pillowAnchors(buildHaven(standardL(side)))).toHaveLength(7);
+    for (const side of ['left', 'right'] as const) expect(pillowAnchors(buildHaven(standardL(side)))).toHaveLength(9);
   });
 
   it('every pillow sits over the sofa (footprint), never over an arm or a table; all sit on the 18″ seat', () => {
@@ -56,14 +61,53 @@ describe('pillows (Q15, Andre 2026-09-26/27: like the showroom photos)', () => {
           expect(polys.some((poly) => inPoly([x, y], poly)), `${p.key} (${x.toFixed(1)}, ${y.toFixed(1)})`).toBe(true);
           expect(blocked.some((r) => x > r.x + 0.01 && x < r.x + r.w - 0.01 && y > r.y + 0.01 && y < r.y + r.h - 0.01), `${p.key} over an arm or table`).toBe(false);
         }
-        // Squares rest on their bottom-back edge, balls on their underside, both sunk into the seat.
+        // Squares rest on their bottom-back edge, settled 1½″ into the seat; balls on their underside, ¾″ in.
         const bottom = p.kind === 'square' ? Math.min(...corners.map((q) => q[2])) : p.z - p.h / 2;
-        expect(bottom, p.key).toBeCloseTo(p.kind === 'square' ? 17 : 17.5, 9);
+        expect(bottom, p.key).toBeCloseTo(p.kind === 'square' ? 16.5 : 17.25, 9);
       }
     }
   });
 
-  it('nothing passes through anything: squares only press into the back cushions and their pair; balls clear both (D 30–48)', () => {
+  it('they stand up (Andre, 2026-11-18): 6″ thick, leaning 10°, never more than 15°, facing straight out (0–8°), tops 5–6½″ above the back cushions', () => {
+    expect(SQUARE_PILLOW).toEqual({ w: 20, h: 20, t: 6, lean: 10 });
+    for (const D of [36, 40, 44]) {
+      for (const c of [standardU({ D }), standardL('left', { D }), standardL('right', { D }), standardStraight({ D })]) {
+        const b = buildHaven(c);
+        for (const p of pillowAnchors(b).filter((q) => q.kind === 'square')) {
+          expect(p.lean, p.key).toBeLessThanOrEqual(PILLOW_MAX_LEAN);
+          const piece = b.pieces.find((q) => p.key.startsWith(`${q.id}:`))!;
+          const inward = piece.run ? runInward(piece.run) : runInward('back');
+          const yaw = (Math.acos(Math.min(1, p.facing[0] * inward[0] + p.facing[1] * inward[1])) * 180) / Math.PI;
+          expect(yaw, p.key).toBeLessThanOrEqual(8 + 1e-9);
+          const top = Math.max(...pillowCorners(p).map((q) => q[2]));
+          expect(top - 31, `D${D} ${p.key}`).toBeGreaterThan(5);
+          expect(top - 31, `D${D} ${p.key}`).toBeLessThan(6.5);
+        }
+      }
+    }
+  });
+
+  it('a pair overlaps by about a third, the front one 2–3″ forward of the other (Andre, 2026-11-18)', () => {
+    const b = buildHaven(standardU());
+    const a = pillowAnchors(b);
+    for (const g of ['p3', 'p4', 'wedge:backLeft', 'wedge:backRight']) {
+      const [s1, s2] = [a.find((p) => p.key === `${g}:sq1`)!, a.find((p) => p.key === `${g}:sq2`)!];
+      const piece = b.pieces.find((q) => q.id === g)!;
+      const run = piece.run ?? 'back';
+      const inward = runInward(run);
+      const along: Pt = run === 'back' ? [1, 0] : [0, 1];
+      const ds = Math.abs((s1.x - s2.x) * along[0] + (s1.y - s2.y) * along[1]);
+      const dt = (s1.x - s2.x) * inward[0] + (s1.y - s2.y) * inward[1];
+      expect(ds / SQUARE_PILLOW.w, g).toBeGreaterThan(0.6);
+      expect(ds / SQUARE_PILLOW.w, g).toBeLessThan(0.72);
+      // Arm ends: the taupe at the arm, in front. Corners: the taupe tucked in, the light one in front.
+      expect(Math.abs(dt), g).toBeGreaterThan(2);
+      expect(Math.abs(dt), g).toBeLessThan(3);
+      expect(dt > 0, g).toBe(!g.startsWith('wedge'));
+    }
+  });
+
+  it('nothing passes through anything: squares only press into the back cushions and other groups; a pair leans together; balls press only into their squares (D 30–48)', () => {
     for (const D of [30, 34, 36, 40, 44, 48]) {
       for (const c of [standardU({ D }), standardL('left', { D }), standardL('right', { D }), standardU({ W: 240, D })]) {
         const b = buildHaven(c);
@@ -71,74 +115,52 @@ describe('pillows (Q15, Andre 2026-09-26/27: like the showroom photos)', () => {
         const all = pillowAnchors(b);
         const squares = all.filter((p) => p.kind === 'square');
         for (const p of all) {
-          const others = [...cushions, ...squares.filter((q) => q !== p)];
           if (p.kind === 'square') {
             // A down pillow presses into the soft back cushion it leans on (PILLOW_PRESS), no further.
             for (const o of cushions) expect(boxesClash(p, o, -PILLOW_PRESS - 1e-6), `D${D} ${p.key} × ${o.key}`).toBe(false);
-            // A pair touches: its squares press into each other (PAIR_PRESS), no further.
-            for (const o of squares) if (o !== p) expect(boxesClash(p, o, -PAIR_PRESS - 1e-6), `D${D} ${p.key} × ${o.key}`).toBe(false);
+            for (const o of squares) if (o !== p && group(o.key) !== group(p.key)) expect(boxesClash(p, o, -PAIR_PRESS - 1e-6), `D${D} ${p.key} × ${o.key}`).toBe(false);
+          } else {
+            for (const o of cushions) expect(boxDistance(o, [p.x, p.y, p.z]), `D${D} ${p.key}`).toBeGreaterThanOrEqual(BALL_PILLOW / 2);
+            for (const o of squares) expect(boxDistance(o, [p.x, p.y, p.z]), `D${D} ${p.key} × ${o.key}`).toBeGreaterThanOrEqual(BALL_PILLOW / 2 - 2 - 1e-6);
           }
-          else for (const o of others) expect(boxDistance(o, [p.x, p.y, p.z]), `D${D} ${p.key}`).toBeGreaterThanOrEqual(BALL_PILLOW / 2);
         }
       }
     }
   });
 
-  it('the standard layouts keep their pillows at 44″, 40″ and 36″ deep (Andre, 2026-11-11: none gained or lost with the knife-edge pillows)', () => {
+  it('the standard layouts at 44″, 40″ and 36″ deep: two squares and a ball at every corner and arm end (Andre, 2026-11-18: balls at the arm ends too)', () => {
     const count = (c: Config, D: number) => {
       const a = pillowAnchors(buildHaven(setMeasurements(c, { D }).config));
       return [a.filter((p) => p.kind === 'square').length, a.filter((p) => p.kind === 'ball').length];
     };
     for (const D of [44, 40, 36]) {
-      expect(count(standardU(), D), `U ${D}`).toEqual([8, 2]);
-      expect(count(standardL('left'), D), `L left ${D}`).toEqual([6, 1]);
-      expect(count(standardL('right'), D), `L right ${D}`).toEqual([6, 1]);
-      expect(count(standardStraight(), D), `Straight ${D}`).toEqual([3, 0]);
+      expect(count(standardU(), D), `U ${D}`).toEqual([8, 4]);
+      expect(count(standardL('left'), D), `L left ${D}`).toEqual([6, 3]);
+      expect(count(standardL('right'), D), `L right ${D}`).toEqual([6, 3]);
+      expect(count(standardStraight(), D), `Straight ${D}`).toEqual([4, 2]);
     }
   });
 
-  it('shallow seats get fewer, never more: 36″ deep still takes all 10, 34″ fewer', () => {
-    expect(pillowAnchors(buildHaven(standardU({ D: 36 })))).toHaveLength(10);
-    expect(pillowAnchors(buildHaven(standardU({ D: 34 }))).length).toBeLessThan(10);
-    expect(pillowAnchors(buildHaven(standardU({ D: 48 })))).toHaveLength(10);
+  it('shallow seats get fewer, never more', () => {
+    expect(pillowAnchors(buildHaven(standardU({ D: 36 })))).toHaveLength(12);
+    expect(pillowAnchors(buildHaven(standardU({ D: 30 }))).length).toBeLessThan(12);
+    expect(pillowAnchors(buildHaven(standardU({ D: 48 })))).toHaveLength(12);
   });
 
-  it('they touch (Andre, 2026-09-28): each square presses into a back cushion, each pair into each other, each ball against its square', () => {
+  it('they touch: the back square of each pair rests on a back cushion, the front one on it; each ball against its pair', () => {
     for (const c of [standardU(), standardL('left'), standardL('right'), standardU({ D: 36 })]) {
       const b = buildHaven(c);
       const cushions = backCushions(b);
       const all = pillowAnchors(b);
       for (const p of all.filter((q) => q.kind === 'square')) {
-        expect(cushions.some((o) => boxesClash(p, o, -PILLOW_PRESS + 0.5)), `${p.key} rests on a cushion`).toBe(true);
-        const mate = all.find((q) => q.kind === 'square' && q !== p && q.key.split(':').slice(0, -1).join(':') === p.key.split(':').slice(0, -1).join(':'));
-        // Settling the second square back on its (differently leaning) cushion can ease the pair apart by up to 1″.
-        if (mate) expect(boxesClash(p, mate, -PAIR_PRESS + 1), `${p.key} touches ${mate.key}`).toBe(true);
+        const mate = all.find((q) => q.kind === 'square' && q !== p && group(q.key) === group(p.key));
+        expect(cushions.some((o) => boxesClash(p, o)) || (!!mate && boxesClash(p, mate)), `${p.key} rests on something`).toBe(true);
       }
       for (const ball of all.filter((q) => q.kind === 'ball')) {
-        const light = all.find((q) => q.key === ball.key.replace(':ball', ':sq1'))!;
-        expect(boxDistance(light, [ball.x, ball.y, ball.z]) - BALL_PILLOW / 2, `${ball.key} against its square`).toBeLessThan(0.6);
+        const pairOf = all.filter((q) => q.kind === 'square' && group(q.key) === group(ball.key));
+        expect(Math.min(...pairOf.map((q) => boxDistance(q, [ball.x, ball.y, ball.z]))) - BALL_PILLOW / 2, `${ball.key} against its pair`).toBeLessThan(0.6);
       }
     }
-  });
-
-  it('like Andre’s top view: at a wedge the light square in the corner on the back run, the taupe on the leg facing the room diagonal, the ball beside the light one', () => {
-    const a = pillowAnchors(buildHaven(standardU()));
-    const at = (k: string) => a.find((p) => p.key === k)!;
-    const light = at('wedge:backLeft:sq1');
-    const taupe = at('wedge:backLeft:sq2');
-    const ball = at('wedge:backLeft:ball');
-    expect([light.tone, taupe.tone, ball.tone]).toEqual(['oatmeal', 'taupe', 'cream']);
-    expect(light.x).toBeGreaterThan(22);
-    expect(light.x).toBeLessThan(32);
-    expect(light.y).toBeLessThan(30);
-    const turn = (Math.atan2(taupe.facing[1], taupe.facing[0]) * 180) / Math.PI; // from the leg's inward (+x) toward +y
-    expect(turn).toBeGreaterThan(25);
-    expect(turn).toBeLessThan(45);
-    expect(ball.x).toBeGreaterThan(36);
-    expect(ball.x).toBeLessThan(48);
-    // Arm ends: the taupe at the arm, the light one beyond it.
-    expect(at('p3:sq1').tone).toBe('taupe');
-    expect(at('p3:sq1').y).toBeGreaterThan(at('p3:sq2').y);
   });
 
   it('the same arrangement after the layout travels through a share link', () => {

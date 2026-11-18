@@ -142,7 +142,7 @@ export async function phase3b(browser, base, check) {
     const count = () => page.$$eval('[data-plan-svg] [data-pillow]', (els) => els.map((e) => e.getAttribute('data-pillow')))
     await page.waitForSelector('[data-plan-svg] [data-pillow]')
     const on = await count()
-    check(on.filter((k) => k === 'square').length === 8 && on.filter((k) => k === 'ball').length === 2, `the Standard U plan shows 8 square pillows and 2 balls (${on.length})`)
+    check(on.filter((k) => k === 'square').length === 8 && on.filter((k) => k === 'ball').length === 4, `the Standard U plan shows 8 square pillows and 4 balls (a ball at every corner and arm end since 2026-11-18) (${on.length})`)
     await shot(browser, page, 'phase3b-plan-pillows-1440')
     await viewMenu(page)
     await page.getByRole('menuitemcheckbox', { name: 'Pillows' }).click()

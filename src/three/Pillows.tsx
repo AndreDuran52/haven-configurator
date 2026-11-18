@@ -8,6 +8,7 @@ import { useEffect, useMemo } from 'react';
 import { Outlines } from '@react-three/drei';
 import type { Material } from 'three';
 import { BALL_PILLOW, SQUARE_PILLOW, type PillowAnchor, type PillowTone } from '@/engine';
+import { PILLOW_OUTLINE } from './materials';
 import type { SoftModels } from './models';
 import { ballPillow, boxTransform, chopPillow } from './softGeometry';
 
@@ -24,7 +25,7 @@ export function Pillows({ anchors, mats, models }: { anchors: PillowAnchor[]; ma
     <group name="pillows">
       {anchors.map((a) => (
         <mesh key={a.key} name={`pillow:${a.key}`} geometry={a.kind === 'square' ? sqGeo : ballGeo} material={mats[a.tone]} {...boxTransform(a)} userData={{ part: true }}>
-          <Outlines thickness={1.25} color="#4a4038" />
+          <Outlines thickness={PILLOW_OUTLINE.thickness} color={PILLOW_OUTLINE.color} />
         </mesh>
       ))}
     </group>

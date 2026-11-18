@@ -1,6 +1,6 @@
 // Pillows in the plan (Phase 3b; Andre, 2026-11-09): from the same anchors as
 // the 3D, each square drawn as Andre's Blender model's own top-down outline
-// (about 20 × 11″ leaning on the back cushion, not a 20″ square), each ball a circle at
+// (about 20 × 7½″ standing up against the back cushion, not a 20″ square), each ball a circle at
 // its true size, each inside the sofa's outline.
 import { describe, expect, it } from 'vitest';
 import { BALL_PILLOW, buildHaven, pillowAnchors, SQUARE_PILLOW, standardStraight, standardU } from '@/engine';
@@ -9,23 +9,23 @@ import { PILLOW_OUTLINE, planPillows } from './pillowShapes';
 const extent = (pts: readonly (readonly [number, number])[], k: 0 | 1) => Math.max(...pts.map((p) => p[k])) - Math.min(...pts.map((p) => p[k]));
 
 describe('plan pillows', () => {
-  it('the outline is the karate-chop pillow seen from above as it leans: 20″ across, about 11″ deep, inside the leaning box', () => {
+  it('the outline is the karate-chop pillow seen from above as it stands (6″, 10°): 20″ across, about 7½″ deep, inside the leaning box', () => {
     expect(extent(PILLOW_OUTLINE, 0)).toBeGreaterThan(SQUARE_PILLOW.w - 0.5);
     expect(extent(PILLOW_OUTLINE, 0)).toBeLessThanOrEqual(SQUARE_PILLOW.w);
     const deep = extent(PILLOW_OUTLINE, 1);
     const lean = (SQUARE_PILLOW.lean * Math.PI) / 180;
-    expect(deep).toBeGreaterThan(9);
-    expect(deep).toBeLessThan(13);
+    expect(deep).toBeGreaterThan(6.5);
+    expect(deep).toBeLessThan(9.5);
     expect(deep).toBeLessThanOrEqual(SQUARE_PILLOW.t * Math.cos(lean) + SQUARE_PILLOW.h * Math.sin(lean) + 0.01);
   });
 
-  it('one shape per 3D pillow: the Standard U has 8 squares and 2 balls at their true size', () => {
+  it('one shape per 3D pillow: the Standard U has 8 squares and 4 balls at their true size', () => {
     const b = buildHaven(standardU());
     const p = planPillows(b);
     expect(p.map((x) => x.key)).toEqual(pillowAnchors(b).map((a) => a.key));
     expect(p.filter((x) => x.kind === 'square')).toHaveLength(8);
     const balls = p.filter((x) => x.kind === 'ball');
-    expect(balls).toHaveLength(2);
+    expect(balls).toHaveLength(4);
     for (const x of balls) expect(x.r).toBe(BALL_PILLOW / 2);
   });
 

@@ -75,9 +75,9 @@ export async function fixes2(browser, base, check) {
     await page.screenshot({ path: 'test-results/fixes2-pillows-3d-top.png', clip: box })
     const keys = Object.keys(plan)
     const off = keys.map((k) => (three[k] ? Math.max(...plan[k].map((v, i) => Math.abs(v - three[k][i]))) : Infinity))
-    check(keys.length === 10 && Object.keys(three).length === 10, `10 pillows in the plan and in 3D (${keys.length}, ${Object.keys(three).length})`)
+    check(keys.length === 12 && Object.keys(three).length === 12, `12 pillows in the plan and in 3D (${keys.length}, ${Object.keys(three).length})`)
     check(Math.max(...off) <= 0.5, `each plan pillow covers the same ground as its 3D pillow from above (worst ${Math.max(...off).toFixed(2)}″)`)
-    // From above a square pillow is about 20 × 10″ (leaning on the back cushion), not a 20″ square (400 sq in).
+    // From above a square pillow is about 20 × 7½″ (standing up against the back cushion), not a 20″ square (400 sq in).
     check(areas.length === 8 && areas.every((a) => a < 300), `square pillows read narrow from above (${areas.map((a) => a.toFixed(0)).join(', ')} sq in, not 400)`)
     check(errors.length === 0, `no console errors ${errors.join('; ')}`)
     await context.close()
