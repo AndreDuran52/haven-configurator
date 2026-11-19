@@ -74,13 +74,14 @@ describe('shapes', () => {
 });
 
 describe('lock outside size', () => {
-  it('E1 lockOff_tableReplacesArm_growsLegBy18: W 156, L 150; setEndCap(left, table) instead: W 188, L 150 (G5)', () => {
+  it('E1 lockOff_tableReplacesArm_growsLegBy18: W 156, L 150; setEndCap(left, table) instead: a new 24″ table, W 188, L 142 (G5)', () => {
     const off = op.setLock(U(), false);
     const c = op.moveTable(off, tableId(off), { run: 'left', at: 'replaceArm' });
     expect(desc(c, 'left')).toEqual(['armless 58', 'table 32']);
     expect([c.W, c.L]).toEqual([156, 150]);
     const cap = op.setEndCap(off, 'left', 'table');
-    expect([cap.W, cap.L]).toEqual([188, 150]);
+    expect(desc(cap, 'left')).toEqual(['armless 58', 'table 24']);
+    expect([cap.W, cap.L]).toEqual([188, 142]);
   });
 
   it('G5: adding / removing an arm keeps the footprint (lock on) or the cushion (lock off)', () => {
@@ -134,7 +135,7 @@ describe('lock outside size', () => {
   it('lock ON refuses what nothing can absorb, with the same reference back', () => {
     const u = U();
     refused(raw.resizePiece(u, idAt(u, 'back', 1), 60), u, 'noRoom'); // tables never absorb
-    const small = standardU({ W: 140 }); // the preset drops the table instead
+    const small = standardU({ W: 140, table: 32 }); // the preset drops the table instead
     expect(desc(small, 'back')).toEqual(['armless 20']);
     expect(valid(small).warnings.map((w) => w.code)).toContain('openingUnder60');
   });

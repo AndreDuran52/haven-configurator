@@ -49,12 +49,21 @@ export const smallText = (page) =>
 /** Save a screenshot and the same at half scale (how it reads through Zoom). */
 export async function shot(browser, page, name) {
   const path = `${SHOTS}/${name}.png`
-  await page.screenshot({ path })
+  // Evidence, not a check: headless Chromium sometimes answers "Unable to capture screenshot" after heavy 3D; try again, then go on without the picture.
+  const capture = async (pg, file) => {
+    for (let i = 0; i < 3; i++) {
+      if (await pg.screenshot({ path: file }).then(() => true, () => false)) return true
+      await pg.waitForTimeout(400)
+    }
+    console.log(`note screenshot ${file} could not be captured`)
+    return false
+  }
+  if (!(await capture(page, path))) return
   const vp = page.viewportSize()
   const p = await browser.newPage({ viewport: { width: Math.round(vp.width / 2), height: Math.round(vp.height / 2) } })
   await p.setContent(`<body style="margin:0"><img src="data:image/png;base64,${readFileSync(path).toString('base64')}" style="width:100%;display:block"></body>`)
   await p.waitForTimeout(100)
-  await p.screenshot({ path: `${SHOTS}/${name}-half.png` })
+  await capture(p, `${SHOTS}/${name}-half.png`)
   await p.close()
 }
 
@@ -105,7 +114,7 @@ export async function phase3(browser, base, check) {
     const { context, page, errors } = await fresh(browser, base)
     await setField(page, 'W', 200)
     await page.waitForSelector('[data-testid=result-text]')
-    check((await result(page)) === 'Width 188″ → 200″ · Seat 36″ → 48″', `result line: "${await result(page)}"`)
+    check((await result(page)) === 'Width 188″ → 200″ · Seat 44″ → 56″ · Seats 7 → 8', `result line: "${await result(page)}"`)
     check((await page.getByTestId('unsaved-dot').count()) === 1, 'Save shows the unsaved dot')
     await page.waitForTimeout(4000)
     check((await result(page)) !== null, 'the result line stays (no fade)')

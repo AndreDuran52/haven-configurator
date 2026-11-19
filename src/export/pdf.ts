@@ -66,9 +66,10 @@ export async function makeSheet(req: SheetRequest): Promise<SheetFile> {
   const views: SheetViews = lb.solo ? req.views : { plan: true, views: [] };
   const layout = new SheetLayout(views);
   const renders: SheetRender[] = [];
-  if (layout.cells.length) {
+  if (layout.cells.some((c) => c.preset !== 'side')) {
     const { exportView } = await import('@/three/export');
     for (const cell of layout.cells) {
+      if (cell.preset === 'side') continue; // the sheet draws the side drawing itself
       const px = layout.renderPx(cell);
       const r = await exportView(config, cell.preset, px.w, px.h, { pillows: req.pillows });
       renders.push({ preset: cell.preset, url: r.url });

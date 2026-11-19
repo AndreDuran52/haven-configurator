@@ -18,7 +18,7 @@ function mulberry32(seed: number) {
 
 function randomConfig(seed: number): Config {
   const r = mulberry32(seed);
-  const starts = [standardU(), standardL('left'), standardL('right', { W: 150, R: 110 }), blankConfig('U'), standardU({ W: 300 })];
+  const starts = [standardU({ table: 32 }), standardL('left'), standardL('right', { W: 150, R: 110 }), blankConfig('U'), standardU({ W: 300, table: 32 })];
   let c = starts[Math.floor(r() * starts.length)]!;
   for (let i = 0; i < 12; i++) {
     const all = runIds(c.shape).flatMap((run) => c.runs[run]!.map((p) => ({ run, p })));
@@ -44,11 +44,11 @@ function randomConfig(seed: number): Config {
 
 describe('share link v1', () => {
   it('Standard U is short and exact (38 characters)', () => {
-    const link = encode(standardU());
+    const link = encode(standardU({ table: 32 }));
     expect(link).toBe('1UW188L132R132D44_bt32s36_la72_ra72.wh');
     expect(link).toMatch(/^[A-Za-z0-9._~-]+[a-z0-9]$/);
     const d = decode(link);
-    expect('config' in d && canon(d.config)).toEqual(canon(standardU()));
+    expect('config' in d && canon(d.config)).toEqual(canon(standardU({ table: 32 })));
   });
 
   it('E16 codec_roundTrip: the 9 fixtures and 400 random sequences round-trip (incl. joinedBy, snug, dims, finish, bboxes)', () => {

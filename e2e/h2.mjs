@@ -18,39 +18,39 @@ export async function h2(browser, base, check) {
     await page.getByTestId('new-standardU').click()
     await page.waitForSelector('[data-plan-svg]')
     const t = await dimTexts(page)
-    check(t.slice(0, 5).join(' | ') === `60" | 32" | 36" | 60" | 188" (15'-8")`, `Standard U: back chain 60 | 32 | 36 | 60, overall 188" (got ${t.slice(0, 5).join(' | ')})`)
+    check(t.slice(0, 5).join(' | ') === `60" | 24" | 44" | 60" | 188" (15'-8")`, `Standard U (24″ table since 2026-11-18): back chain 60 | 24 | 44 | 60, overall 188" (got ${t.slice(0, 5).join(' | ')})`)
     check(t.filter((x) => x === '58"').length === 2 && t.filter((x) => x === '14"').length === 2 && !t.includes('72"') && t.includes('44"D'), 'legs one-arm 72 read seat 58 | arm 14 (Andre, 2026-09-28), 44"D')
     check((await seats(page)) === 'Seats 7', 'Seats 7')
     await context.close()
   }
 
-  // 2. D = 36: back 52, legs 80, Seats 7 (test 2; one seat number since 2026-11-09: comfortable unless Snug).
+  // 2. D = 36: back seat 60 (the 24″ table), legs 80, Seats 8 (test 2; one seat number since 2026-11-09: comfortable unless Snug).
   {
     const { context, page } = await openApp(browser, base)
     await setField(page, 'D', 36)
     const t = await dimTexts(page)
-    check(t.includes('52"') && t.filter((x) => x === '66"').length === 2 && (await seats(page)) === 'Seats 7', 'D = 36: back 52, legs 80 (seat 66 | arm 14), Seats 7')
+    check(t.includes('60"') && t.filter((x) => x === '66"').length === 2 && (await seats(page)) === 'Seats 8', `D = 36: back seat 60, legs 80 (seat 66 | arm 14), Seats 8 (${await seats(page)})`)
     await context.close()
   }
 
-  // 3. The slider at 55: legs 77, back 46 (test 6).
+  // 3. The slider at 55: legs 77, back seat 54 (test 6, with the 24″ table).
   {
     const { context, page } = await openApp(browser, base)
     await slide(page, 'ArrowLeft', 5)
     const t = await dimTexts(page)
-    check(t.filter((x) => x === '63"').length === 2 && t.includes('46"'), 'slider at 55: legs 77 (seat 63 | arm 14), back 46')
+    check(t.filter((x) => x === '63"').length === 2 && t.includes('54"'), 'slider at 55: legs 77 (seat 63 | arm 14), back seat 54')
     check((await config(page)).wedgeC === 55, 'wedge C stored as 55 (manual)')
     await context.close()
   }
 
-  // 4. W = 300: 74 | 74 (test 5). 5. W = 140: "min 158″" and reverts.
+  // 4. W = 300: 78 | 78 (test 5, with the 24″ table). 5. W = 140: "min 150″" and reverts.
   {
     const { context, page } = await openApp(browser, base)
     await setField(page, 'W', 300)
-    check((await dimTexts(page)).filter((x) => x === '74"').length === 2, 'W = 300: back 74 | 74')
+    check((await dimTexts(page)).filter((x) => x === '78"').length === 2, 'W = 300: back 78 | 78')
     await setField(page, 'W', 140)
     const err = await page.textContent('[data-error=W]')
-    check(err === 'min 158″', `W = 140 shows "min 158″" (got ${err})`)
+    check(err === 'min 150″', `W = 140 shows "min 150″" (got ${err})`)
     check((await page.inputValue('#m-W')) === '300' && (await config(page)).W === 300, 'W = 140 reverts (field and layout)')
     await context.close()
   }
@@ -94,7 +94,7 @@ export async function h2(browser, base, check) {
     await projectMenu(page, 'reset')
     await page.getByRole('dialog').getByRole('button', { name: 'Reset' }).click()
     const t = await dimTexts(page)
-    check(t.slice(0, 4).join(' | ') === '60" | 32" | 36" | 60"', 'Reset restores the Standard U')
+    check(t.slice(0, 4).join(' | ') === '60" | 24" | 44" | 60"', 'Reset restores the Standard U')
     await page.getByRole('button', { name: 'Undo', exact: true }).click()
     const c = await config(page)
     check(c.W === 300 && c.D === 36, 'one Undo brings the edited layout back')
@@ -121,7 +121,7 @@ export async function h2(browser, base, check) {
     check(page.url().includes('#c=1UW300'), 'commit writes the #c= hash')
     await page.reload()
     await page.waitForSelector('[data-plan-svg]')
-    check((await dimTexts(page)).filter((x) => x === '74"').length === 2, 'reload restores the layout from the hash')
+    check((await dimTexts(page)).filter((x) => x === '78"').length === 2, 'reload restores the layout from the hash')
     await context.close()
   }
   {

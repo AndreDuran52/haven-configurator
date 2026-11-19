@@ -1,11 +1,11 @@
 // The T sectional (Andre's client, 2026-10-26): an L-right (left half) and an
 // L-left (right half), their legs back to back down the stem. With a shared
-// back the two leg frames are one, so the halves overlap by the back frame B:
-// total = W_left + W_right − B. The left half gets the extra half inch when the
+// back the two leg frames are one, so the halves overlap by TEE_SHARED_BACK (10″, the
+// back frame when T links were first written): total = W_left + W_right − 10. The left half gets the extra half inch when the
 // width does not split evenly (§5.4 "the start end gets the extra 0.5").
-import { DEFAULT_DIMS, standardL } from './defaults';
+import { standardL } from './defaults';
 import { editSection, type LayoutResult } from './layoutOps';
-import type { Layout } from './layoutTypes';
+import { TEE_SHARED_BACK, type Layout } from './layoutTypes';
 import { setMeasurements } from './ops';
 import type { Config, Rejection } from './types';
 
@@ -17,7 +17,7 @@ export interface TeeSpec {
 }
 
 /** Split a total width into the two halves' W on the half-inch grid (left gets the extra 0.5). */
-export function teeHalves(total: number, sharedBack: boolean, B = DEFAULT_DIMS.B): [number, number] {
+export function teeHalves(total: number, sharedBack: boolean, B = TEE_SHARED_BACK): [number, number] {
   const S = Math.round((total + (sharedBack ? B : 0)) * 2); // half-inches
   const left = Math.ceil(S / 2);
   return [left / 2, (S - left) / 2];
@@ -53,7 +53,7 @@ export function teeOf(l: Layout): TeeInfo | null {
   if (l.sections.length !== 2) return null;
   const [a, b] = l.sections as [Layout['sections'][0], Layout['sections'][0]];
   if (a.config.shape !== 'L-right' || b.config.shape !== 'L-left' || b.join?.kind !== 'legs' || b.join.to !== a.id) return null;
-  const B = a.config.dims.B;
+  const B = TEE_SHARED_BACK;
   const shared = b.join.sharedBack;
   return {
     left: a.config,
@@ -70,17 +70,16 @@ const notTee = (l: Layout): LayoutResult => ({ layout: l, rejected: { code: 'not
 /** Apply W to both halves; on refusal, name the smallest total the even split can take. */
 function setHalves(l: Layout, WA: number, WB: number, sharedBack: boolean, total: number): LayoutResult {
   const ra = editSection(l, 'a', (c) => setMeasurements(c, { W: WA }));
-  if (ra.rejected) return { layout: l, rejected: minTotal(ra.rejected, sharedBack, l, total) };
+  if (ra.rejected) return { layout: l, rejected: minTotal(ra.rejected, sharedBack, total) };
   const rb = editSection(ra.layout, 'b', (c) => setMeasurements(c, { W: WB }));
-  if (rb.rejected) return { layout: l, rejected: minTotal(rb.rejected, sharedBack, l, total) };
+  if (rb.rejected) return { layout: l, rejected: minTotal(rb.rejected, sharedBack, total) };
   return rb;
 }
 
-function minTotal(r: Rejection, sharedBack: boolean, l: Layout, total: number): Rejection {
+function minTotal(r: Rejection, sharedBack: boolean, total: number): Rejection {
   const minW = r.min?.W;
   if (minW === undefined) return r;
-  const B = l.sections[0]!.config.dims.B;
-  const min = 2 * minW - (sharedBack ? B : 0);
+  const min = 2 * minW - (sharedBack ? TEE_SHARED_BACK : 0);
   return { code: r.code, message: total < min ? `min ${min}″` : r.message, min: { W: min } };
 }
 
@@ -88,7 +87,7 @@ function minTotal(r: Rejection, sharedBack: boolean, l: Layout, total: number): 
 export function setTeeWidth(l: Layout, total: number): LayoutResult {
   const t = teeOf(l);
   if (!t) return notTee(l);
-  const [WA, WB] = teeHalves(total, t.sharedBack, t.left.dims.B);
+  const [WA, WB] = teeHalves(total, t.sharedBack);
   if (WA === t.left.W && WB === t.right.W) return { layout: l, rejected: null };
   return setHalves(l, WA, WB, t.sharedBack, total);
 }
@@ -115,7 +114,9 @@ export function setTeeSharedBack(l: Layout, on: boolean): LayoutResult {
   if (!t) return notTee(l);
   if (t.sharedBack === on) return { layout: l, rejected: null };
   const joined: Layout = { ...l, sections: [l.sections[0]!, { ...l.sections[1]!, join: { ...l.sections[1]!.join!, sharedBack: on } }] };
-  const [WA, WB] = teeHalves(t.total, on, t.left.dims.B);
-  return setHalves(joined, WA, WB, on, t.total);
+  const [WA, WB] = teeHalves(t.total, on);
+  const r = setHalves(joined, WA, WB, on, t.total);
+  // Refused: the layout as it was (same reference), not the copy with the switch already flipped.
+  return r.rejected ? { layout: l, rejected: r.rejected } : r;
 }
 

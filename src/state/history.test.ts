@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { dragSeam, setLock, setMeasurements, standardU, type Config } from '@/engine';
 import { commit, initHistory, redo, setDraft, cancelDraft, undo, HISTORY_LIMIT } from './history';
 
-const u = standardU();
+const u = standardU({ table: 32 });
 const seam = (c: Config, dx: number) => dragSeam(c, 'back', 1, dx).config;
 
 describe('history (plan §8)', () => {

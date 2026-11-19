@@ -8,6 +8,7 @@ import { Outlines } from '@react-three/drei';
 import { GAP_DECAL_HEIGHT } from '@/ortho/fitPoints';
 import { roundedPrism } from './prism';
 import { decalMaterial, type MaterialSet } from './materials';
+import type { BackCushion } from '@/engine';
 import type { Parts } from './parts';
 import { boxTransform, looseCushion } from './softGeometry';
 
@@ -19,13 +20,13 @@ export function SofaModel({ parts, mats, showLoose }: { parts: Parts; mats: Mate
   // Loose back cushions: one soft geometry per size (most seats share one).
   const backs = useMemo(() => {
     const bySize = new Map<string, ReturnType<typeof looseCushion>>();
-    const geoFor = (w: number, h: number, t: number) => {
-      const k = `${w.toFixed(2)}x${h.toFixed(2)}x${t.toFixed(2)}`;
+    const geoFor = (b: BackCushion) => {
+      const k = `${b.w.toFixed(2)}x${b.h.toFixed(2)}x${b.lean.toFixed(2)}`;
       let g = bySize.get(k);
-      if (!g) bySize.set(k, (g = looseCushion(w, h, t)));
+      if (!g) bySize.set(k, (g = looseCushion(b.w, b)));
       return g;
     };
-    return { items: parts.backs.map((b) => ({ part: b, geo: geoFor(b.w, b.h, b.t) })), all: [...bySize.values()] };
+    return { items: parts.backs.map((b) => ({ part: b, geo: geoFor(b) })), all: [...bySize.values()] };
   }, [parts]);
   const decals = useMemo(
     () =>

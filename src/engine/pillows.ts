@@ -1,19 +1,22 @@
 // Throw pillow anchors (plan §7.4, 3D-07, Q15), as pure data from the built
-// layout. Andre (2026-09-27/28, showroom photos and his own top view): a
-// touching pair of down-feather "karate chop" squares (taupe + oatmeal linen)
-// at each corner wedge and each arm end, resting on the back cushions, and one
-// light ball pillow on each wedge.
-// They sit on the tight 18″ seat and lean on the loose back cushions: each one
-// starts inside what it leans on and slides forward until it just touches
-// (softBox clearAlong), so no pillow passes through a cushion or another pillow.
-// None at table or open ends; a seat too short (or shallow) for one gets fewer.
+// layout. Andre (2026-11-18, his styled Haven picture and showroom photo): at
+// every arm end and every corner, two down-feather "karate chop" squares (one
+// grey-taupe, one light; Andre's Blender model) standing up against the back
+// cushions, the front one 2–3″ forward and overlapping the other by about a
+// third, and one ball on the seat in front of them (cream at an arm end, taupe
+// at a corner).
+// They sit on the tight 18″ seat and lean on the loose back cushions: each
+// back square starts inside what it leans on and slides forward until it just
+// touches (softBox clearAlong); the front one leans on the back one. None at
+// table or open ends; a spot too short (or shallow) gets fewer, never a
+// pillow lying back more than 15° or touching nothing.
 import { backCushions } from './cushions';
 import { BACK_CUSHION } from './profiles';
-import { boxCorners, boxDistance, boxesClash, clearAlong, leaningBox, planToRun, runAlong, runInward, type OrientedBox, type RunFrame } from './softBox';
+import { boxCorners, boxDistance, boxesClash, clearAlong, leaningBox, planToRun, runAlong, runInward, runToPlanPt, type OrientedBox, type RunFrame } from './softBox';
 import type { BuildResult, BuiltPiece, Pt } from './types';
 
 export type PillowKind = 'square' | 'ball';
-export type PillowTone = 'taupe' | 'oatmeal' | 'cream' | 'mocha';
+export type PillowTone = 'taupe' | 'oatmeal' | 'cream';
 
 export interface PillowAnchor extends OrientedBox {
   key: string;
@@ -21,20 +24,26 @@ export interface PillowAnchor extends OrientedBox {
   tone: PillowTone;
 }
 
-/** Pillow fabrics from the showroom photos: taupe and oatmeal linen squares, cream bouclé and mocha velvet balls (the 3D and the plan). */
-export const PILLOW_COLOR: Record<PillowTone, string> = { taupe: '#9a897c', oatmeal: '#e2dbcf', cream: '#eee8de', mocha: '#7c675b' };
+/** Pillow fabrics (Andre, 2026-11-18): a cool grey-taupe and a soft off-white linen, matte; cream bouclé balls (the 3D and the plan). */
+export const PILLOW_COLOR: Record<PillowTone, string> = { taupe: '#8c8279', oatmeal: '#ebe6de', cream: '#eee8de' };
 
 /**
- * 20″ down pillows, leaning back on the back cushions. 12″ deep: Andre's
- * Blender pillow (2026-09-27) as modelled (about 12½″; "thicker, like the og
- * Haven").
+ * 20″ down "karate chop" pillows: Andre's Blender model (three/models/
+ * pillow-square.glb), fitted into this box. 6″ at the belly, standing up
+ * 10° off upright like the taupe pillow in his showroom photo (2026-11-18),
+ * so each takes about 9″ of seat; their bottoms on the seat just in front of
+ * the back cushions, their tops resting on them.
  */
-export const SQUARE_PILLOW = { w: 20, h: 20, t: 12, lean: 10 };
+export const SQUARE_PILLOW = { w: 20, h: 20, t: 6, lean: 10 };
 export const BALL_PILLOW = 11;
-/** How far a pillow sinks into the seat under it. */
-const SINK = 1;
+/** No square ever lies back further than this from upright (Andre, 2026-11-18). */
+export const PILLOW_MAX_LEAN = 15;
+/** How far a down pillow settles into the seat under it (its top ends about 5–6″ above the back cushions'). */
+const SINK = 1.5;
 /** The space kept between soft things that touch, inches. */
 const PAD = 0.25;
+/** How far a ball presses into the down squares behind it (their boxes are fuller than the pillows' tapered bottoms). */
+const BALL_PRESS = 2;
 /**
  * How far a down pillow presses into the soft back cushion it leans on, and
  * two pillows into each other where they touch, inches: the boxes are
@@ -43,10 +52,12 @@ const PAD = 0.25;
  */
 export const PILLOW_PRESS = 2.5;
 export const PAIR_PRESS = 2.5;
-/** Yaw, degrees (Andre's top view): arm-end squares turn into the arm corner; at a wedge the back run's square barely, the leg's one to face the room diagonal. */
-const YAW_ARM = 15;
-const YAW_WEDGE_BACK = 5;
-const YAW_WEDGE_LEG = 35;
+/** Yaw, degrees (Andre, 2026-11-18: "face straight out from the cushion they lean on", 0–8°): a little into the arm at an arm end, square at a corner. */
+const YAW_ARM = 4;
+const YAW_WEDGE = 0;
+/** A pair (Andre, 2026-11-18): the two overlap by about a third of a pillow along the back, the front one this far forward. */
+export const PAIR_OVERLAP = 1 / 3;
+export const PAIR_FORWARD = 2.5;
 
 /** The 8 corners of a pillow's box (for the ortho fit). */
 export const pillowCorners = boxCorners;
@@ -81,9 +92,10 @@ export function pillowAnchors(b: BuildResult): PillowAnchor[] {
   const squares: OrientedBox[] = [];
   const zPivot = d.seatHeight - SINK;
   // Everything starts 2″ inside the back cushions, then slides forward.
-  const tStart = F + BACK_CUSHION.depth - 2;
+  const tStart = F + BACK_CUSHION.reach - 2;
   const onCushions = (q: OrientedBox) => cushions.some((c) => boxesClash(q, c, -PILLOW_PRESS));
-  const ballBlocked = (q: OrientedBox) => [...cushions, ...squares].some((c) => boxDistance(c, [q.x, q.y, q.z]) < r + PAD);
+  // A ball rests against the cushions, and presses BALL_PRESS into the soft down squares in front of which it sits.
+  const ballBlocked = (q: OrientedBox) => cushions.some((c) => boxDistance(c, [q.x, q.y, q.z]) < r + PAD) || squares.some((c) => boxDistance(c, [q.x, q.y, q.z]) < r - BALL_PRESS);
   const ballAt = ([x, y]: Pt): OrientedBox => ({ x, y, z: d.seatHeight - SINK / 2 + r, facing: [0, 1], lean: 0, w: BALL_PILLOW, h: BALL_PILLOW, t: BALL_PILLOW });
   const keep = (key: string, kind: PillowKind, tone: PillowTone, q: OrientedBox) => {
     if (kind === 'square') squares.push(q);
@@ -91,7 +103,7 @@ export function pillowAnchors(b: BuildResult): PillowAnchor[] {
   };
   const moved = (q: OrientedBox, v: Pt, k: number): OrientedBox => ({ ...q, x: q.x + v[0] * k, y: q.y + v[1] * k });
 
-  const pressing = (q: OrientedBox) => squares.some((c) => boxesClash(q, c, -PAIR_PRESS));
+  const pressing = (q: OrientedBox, partner?: OrientedBox) => squares.some((c) => c !== partner && boxesClash(q, c, -PAIR_PRESS));
   /**
    * A square resting on the back cushions of a straight back: turned `yaw`
    * into the corner (the end nearer `s0` swings forward), its nearest corner
@@ -108,22 +120,27 @@ export function pillowAnchors(b: BuildResult): PillowAnchor[] {
     q = moved(q, along, near - Math.min(...boxCorners(q).map(ds)));
     return clearAlong(q, inward, onCushions, b.D);
   };
-  /** Slide a square along its back (away from what it overlaps) until it only presses into the squares already placed, then settle it back on the cushions. */
-  const besideAlong = (q: OrientedBox | null, f: RunFrame, dir: 1 | -1): OrientedBox | null => {
-    const along = runAlong(f.run).map((v) => v * dir) as Pt;
-    // Settling on a neighbouring cushion (each leans a little differently) can press it back into
-    // the first square, so slide and settle until both hold.
-    for (let i = 0; q && i < 4; i++) {
-      q = clearAlong(q, along, pressing, sq.w + sq.t);
-      q = q && clearAlong(q, runInward(f.run), onCushions, 6);
-      if (q && !pressing(q)) return q;
-    }
-    return null;
+  /** Its top rests on something: a back cushion, or the square behind it. */
+  const touches = (q: OrientedBox, behind?: OrientedBox) => cushions.some((c) => boxesClash(q, c)) || (!!behind && boxesClash(q, behind));
+  /**
+   * A pair along one back, from s0 going `dir`: `first` is the square nearer
+   * s0 (its nearest corner `near` along), `second` the one a third of a pillow further along; the one named
+   * `front` stands PAIR_FORWARD in front of the other, leaning on it.
+   */
+  const pair = (f: RunFrame, s0: number, dir: 1 | -1, yaw: number, front: 'first' | 'second', near: number) => {
+    const inward = runInward(f.run);
+    let a = resting(f, s0, dir, near, yaw);
+    let c = resting(f, s0, dir, near + sq.w * (1 - PAIR_OVERLAP), yaw);
+    if (front === 'first' && a) a = moved(a, inward, PAIR_FORWARD);
+    if (front === 'second' && c) c = moved(c, inward, PAIR_FORWARD);
+    return { first: a, second: c };
   };
+  /** A ball on the seat: from `start`, slid `v` until it is clear of the cushions and squares. */
+  const ballFrom = (start: Pt, v: Pt) => clearAlong(ballAt(start), v, ballBlocked, b.D);
 
-  // Arm ends (Andre's top view, 2026-09-28): the taupe square at the arm, the
-  // light one just beyond it, both on the leg's cushions, touching, both
-  // turned a little into the arm corner. No ball.
+  // Arm ends (Andre, 2026-11-18): the taupe square at the arm, in front; the
+  // light one a third of a pillow further along, behind it; both turned a
+  // little into the arm; a cream ball on the seat in front of them, by the arm.
   for (const p of b.pieces) {
     if (!p.arm || !p.run) continue;
     const run = b.runs.find((x) => x.id === p.run)!;
@@ -131,45 +148,47 @@ export function pillowAnchors(b: BuildResult): PillowAnchor[] {
     const dir = p.arm.at === 'end' ? -1 : 1; // from the arm toward the seat
     const armInner = p.arm.at === 'end' ? p.offset! + p.length - d.A : p.offset! + d.A;
     const span = p.length - d.A;
-    const ok = (q: OrientedBox | null): q is OrientedBox =>
-      !!q &&
-      !pressing(q) &&
-      boxCorners(q).every((c) => {
-        const [s, t] = planToRun(f, c);
-        const at = (s - armInner) * dir;
-        return at >= 0.5 - 1e-6 && at <= span - 0.5 && t <= b.D - 0.5;
-      });
-    const first = resting(f, armInner, dir, 0.5, YAW_ARM);
-    if (!ok(first)) continue;
-    keep(`${p.id}:sq1`, 'square', 'taupe', first);
-    const second = besideAlong(resting(f, armInner, dir, 0.5 + sq.w / 2, YAW_ARM), f, dir);
-    if (ok(second)) keep(`${p.id}:sq2`, 'square', 'oatmeal', second);
+    const within = (c: Pt | [number, number, number], m: number) => {
+      const [s, t] = planToRun(f, c);
+      const at = (s - armInner) * dir;
+      return at >= m - 1e-6 && at <= span - m && t <= b.D - m;
+    };
+    const ok = (q: OrientedBox | null, partner?: OrientedBox, behind?: OrientedBox): q is OrientedBox =>
+      !!q && q.lean <= PILLOW_MAX_LEAN && !pressing(q, partner) && touches(q, behind) && boxCorners(q).every((c) => within(c, 0.5));
+    const { first: taupe, second: light } = pair(f, armInner, dir, YAW_ARM, 'first', 0.5);
+    if (!ok(light)) continue;
+    keep(`${p.id}:sq2`, 'square', 'oatmeal', light);
+    if (!ok(taupe, light, light)) continue;
+    keep(`${p.id}:sq1`, 'square', 'taupe', taupe);
+    // The ball against the arm, slid forward until it is clear of the squares.
+    const ball = ballFrom(runToPlanPt(f, armInner + dir * (0.5 + r), F + BACK_CUSHION.reach + r), runInward(f.run));
+    if (ball && within([ball.x, ball.y], r + 0.5)) keep(`${p.id}:ball`, 'ball', 'cream', ball);
   }
 
-  // Corner wedges (Andre's top view, 2026-09-28): the light square on the back
-  // run's cushion, tucked into the corner against the leg's; the taupe one on
-  // the leg's cushion below it, turned to face the room diagonal, its corner
-  // end resting on the light one; the light ball beside the light square.
+  // Corner wedges (Andre, 2026-11-18): both squares against the back run's
+  // cushion, facing straight out; the taupe one tucked into the corner (against
+  // the leg's soft back cushion), the
+  // light one a third of a pillow along and in front of it; a taupe ball on
+  // the seat in front of the pair.
   for (const w of b.pieces.filter((q): q is BuiltPiece & { corner: NonNullable<BuiltPiece['corner']> } => q.kind === 'wedge' && q.corner !== null)) {
     const right = w.corner === 'backRight';
     const C = b.wedge.C;
     const m = ([x, y]: Pt): Pt => (right ? [b.W - x, y] : [x, y]);
     // The wedge's seat (§8 polygon, in the left corner's frame).
     const seat: Pt[] = [[F, F], [C, F], [C, b.D], [b.D, C], [F, C]];
-    const ok = (q: OrientedBox | null): q is OrientedBox => !!q && !pressing(q) && boxCorners(q).every(([x, y]) => insideConvex(seat, m([x, y]), 0.5));
-    const corner = F + BACK_CUSHION.depth; // the front of the other back's cushions
+    const ok = (q: OrientedBox | null, partner?: OrientedBox, behind?: OrientedBox): q is OrientedBox =>
+      !!q && q.lean <= PILLOW_MAX_LEAN && !pressing(q, partner) && touches(q, behind) && boxCorners(q).every(([x, y]) => insideConvex(seat, m([x, y]), 0.5));
+    const corner = F + BACK_CUSHION.reach; // the front of the leg's cushions
     const fA: RunFrame = { run: 'back', origin: [0, 0], W: b.W };
     const dirA = right ? -1 : 1;
-    const light = resting(fA, right ? b.W - corner : corner, dirA, 0.5, YAW_WEDGE_BACK);
-    if (!ok(light)) continue;
-    keep(`${w.id}:sq1`, 'square', 'oatmeal', light);
-    const fB: RunFrame = { run: right ? 'right' : 'left', origin: [0, 0], W: b.W };
-    const taupe = besideAlong(resting(fB, corner, 1, 0.5, YAW_WEDGE_LEG), fB, 1);
-    if (ok(taupe)) keep(`${w.id}:sq2`, 'square', 'taupe', taupe);
-    // The ball beside the light square, along the back run, just clear of it.
-    const start = m([m([light.x, light.y])[0], corner + r + 2]);
-    const ball = clearAlong(ballAt(start), [dirA, 0], ballBlocked, sq.w);
-    if (ball && insideConvex(seat, m([ball.x, ball.y]), r + 0.5)) keep(`${w.id}:ball`, 'ball', 'cream', ball);
+    const { first: taupe, second: light } = pair(fA, right ? b.W - corner : corner, dirA, YAW_WEDGE, 'second', 0);
+    if (!ok(taupe)) continue;
+    keep(`${w.id}:sq1`, 'square', 'taupe', taupe);
+    if (ok(light, taupe, taupe)) keep(`${w.id}:sq2`, 'square', 'oatmeal', light);
+    // The ball in front of the pair, between them.
+    const mid = light ? (taupe.x + light.x) / 2 : taupe.x;
+    const ball = ballFrom([mid, corner + r], [0, 1]);
+    if (ball && insideConvex(seat, m([ball.x, ball.y]), r + 0.5)) keep(`${w.id}:ball`, 'ball', 'taupe', ball);
   }
   return out;
 }

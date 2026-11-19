@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { buildHaven, setArmWidth, standardL, standardU, type BuildResult, type Pt } from '@/engine';
 import { buildParts, LEG_INSET } from './parts';
 
-const built = buildHaven(standardU());
+const built = buildHaven(standardU({ table: 32 }));
 const kindOf = (b: BuildResult, id: string) => b.pieces.find((q) => q.id === id)?.kind;
 const bbox = (poly: Pt[]) => [Math.min(...poly.map((p) => p[0])), Math.min(...poly.map((p) => p[1])), Math.max(...poly.map((p) => p[0])), Math.max(...poly.map((p) => p[1]))];
 
@@ -21,10 +21,10 @@ function edgeDistance(poly: Pt[], [x, y]: Pt): number {
 describe('table style (Andre, 2026-09-26/27): the top flush with the seat', () => {
   const tableParts = (style: 'standard' | 'allWood') => buildParts(built, style).prisms.filter((p) => kindOf(built, p.pieceId) === 'table');
 
-  it('standard: a 2″ wood top on a fabric base with the seat’s seam, 1–10–16–18', () => {
+  it('standard: a 2″ wood top on a fabric base with the seat’s seam, 1–9½–16–18', () => {
     const [base, band, top] = tableParts('standard');
-    expect(base).toMatchObject({ mat: 'body', z0: 1, z1: 10 });
-    expect(band).toMatchObject({ mat: 'body', z0: 10, z1: 16 });
+    expect(base).toMatchObject({ mat: 'body', z0: 1, z1: 9.5 });
+    expect(band).toMatchObject({ mat: 'body', z0: 9.5, z1: 16 });
     expect(top).toMatchObject({ mat: 'wood', z0: 16, z1: 18 });
     expect(base!.poly).toEqual(top!.poly);
     expect(bbox(band!.poly)).toEqual([60.125, 0, 91.875, 44]);
@@ -41,38 +41,38 @@ describe('the real Haven (Andre, 2026-09-27)', () => {
   const parts = buildParts(built);
   const part = (key: string) => parts.prisms.find((p) => p.key === key)!;
 
-  it('seat pieces: a 10″ back frame 1–27, a tight seat (base 1–10, flat band 10–18, the seam between), 23″ arms', () => {
+  it('seat pieces: an 8″ back frame 1–27 (2026-11-18), a tight seat (base 1–9½, flat band 9½–18, the stitch line in the exact middle, Andre 2026-11-11), 23″ arms', () => {
     // p2: the armless 36 on the back run, x 92..128.
     expect(part('p2:frame')).toMatchObject({ z0: 1, z1: 27, mat: 'body' });
-    expect(bbox(part('p2:frame').poly)).toEqual([92, 0, 128, 10]);
-    expect(part('p2:base')).toMatchObject({ z0: 1, z1: 10, mat: 'body' });
-    expect(bbox(part('p2:base').poly)).toEqual([92, 10, 128, 44]);
-    expect(part('p2:seat')).toMatchObject({ z0: 10, z1: 18, mat: 'cushion' });
-    expect(bbox(part('p2:seat').poly)).toEqual([92.125, 10, 127.875, 44]);
+    expect(bbox(part('p2:frame').poly)).toEqual([92, 0, 128, 8]);
+    expect(part('p2:base')).toMatchObject({ z0: 1, z1: 9.5, mat: 'body' });
+    expect(bbox(part('p2:base').poly)).toEqual([92, 8, 128, 44]);
+    expect(part('p2:seat')).toMatchObject({ z0: 9.5, z1: 18, mat: 'cushion' });
+    expect(bbox(part('p2:seat').poly)).toEqual([92.125, 8, 127.875, 44]);
     // p3: the left leg's one-arm 72, its arm at the front end (y 118..132); the frame stops at the arm.
     expect(part('p3:arm')).toMatchObject({ z0: 1, z1: 23 });
     expect(bbox(part('p3:arm').poly)).toEqual([0, 118, 44, 132]);
-    expect(bbox(part('p3:frame').poly)).toEqual([0, 60, 10, 118]);
-    expect(bbox(part('p3:seat').poly)).toEqual([10, 60.125, 44, 117.875]);
+    expect(bbox(part('p3:frame').poly)).toEqual([0, 60, 8, 118]);
+    expect(bbox(part('p3:seat').poly)).toEqual([8, 60.125, 44, 117.875]);
     // Nothing is crowned any more: every seat top is flat at 18.
     for (const p of parts.prisms.filter((q) => q.key.endsWith(':seat'))) expect(p.z1).toBe(18);
   });
 
   it('arm width (Andre, 2026-09-28): a 10″ arm renders 10″ wide, the frame and seat take the rest of the piece', () => {
-    const b10 = buildHaven(setArmWidth(standardU(), 10).config);
+    const b10 = buildHaven(setArmWidth(standardU({ table: 32 }), 10).config);
     const p10 = buildParts(b10);
     const get = (k: string) => p10.prisms.find((p) => p.key === k)!;
     expect(bbox(get('p3:arm').poly)).toEqual([0, 122, 44, 132]);
-    expect(bbox(get('p3:frame').poly)).toEqual([0, 60, 10, 122]);
+    expect(bbox(get('p3:frame').poly)).toEqual([0, 60, 8, 122]);
   });
 
-  it('wedges: 10″ frames on both outside edges, the tight seat on the §8 polygon', () => {
-    expect(part('wedge:backLeft:frameA').poly).toEqual([[0, 0], [60, 0], [60, 10], [0, 10]]);
-    expect(part('wedge:backLeft:frameB').poly).toEqual([[0, 10], [10, 10], [10, 60], [0, 60]]);
-    expect(part('wedge:backLeft:seat').poly).toEqual([[10, 10], [60, 10], [60, 44], [44, 60], [10, 60]]);
-    expect(part('wedge:backLeft:base')).toMatchObject({ z0: 1, z1: 10 });
-    expect(part('wedge:backLeft:seat')).toMatchObject({ z0: 10, z1: 18 });
-    expect(bbox(part('wedge:backRight:seat').poly)).toEqual([128, 10, 178, 60]);
+  it('wedges: 8″ frames on both outside edges, the tight seat on the §8 polygon', () => {
+    expect(part('wedge:backLeft:frameA').poly).toEqual([[0, 0], [60, 0], [60, 8], [0, 8]]);
+    expect(part('wedge:backLeft:frameB').poly).toEqual([[0, 8], [8, 8], [8, 60], [0, 60]]);
+    expect(part('wedge:backLeft:seat').poly).toEqual([[8, 8], [60, 8], [60, 44], [44, 60], [8, 60]]);
+    expect(part('wedge:backLeft:base')).toMatchObject({ z0: 1, z1: 9.5 });
+    expect(part('wedge:backLeft:seat')).toMatchObject({ z0: 9.5, z1: 18 });
+    expect(bbox(part('wedge:backRight:seat').poly)).toEqual([128, 8, 180, 60]);
   });
 
   it(`legs: 1″ tall, at least ${LEG_INSET}″ in from every outside edge (barely visible)`, () => {

@@ -12,7 +12,8 @@ import { buildHaven, buildLayout, encodeLayout, replaceSection, sectionConfig, s
 import { DEFAULT_PRESET, type PresetName } from '@/ortho/presets';
 import type { TrayKind } from '@/plan/placementTargets';
 import * as H from './history';
-import { readDimsMode, readPanelHidden } from './prefs';
+import type { PersonPose } from '@/ortho/personLimits';
+import { readDimsMode, readPanelHidden, readPerson } from './prefs';
 import { DEFAULT_START, startForOpened, type StartChoice } from './start';
 
 /** The plan view's exact scale (CSS px per inch) and the plan point at its centre. */
@@ -66,6 +67,10 @@ export interface UiState {
   mirror: boolean;
   /** UX Phase 5 (Andre 2026-11-11): the side panel hidden, so the plan or 3D fills the screen (per device). UI only. */
   panelHidden: boolean;
+  /** The person sitting on the sofa (side drawing and 3D; Andre 2026-11-11): shown, its height (inches) and pose. UI only; height and pose per device. */
+  person: boolean;
+  personHeight: number;
+  personPose: PersonPose;
 }
 
 /** Make the two sides of a U alike again after an edit (engine/sides.ts mirrorSides; loaded with the switch). */
@@ -191,6 +196,9 @@ export function createHavenStore(initial: Layout | Config, ui: Partial<UiState> 
         dims: readDimsMode(),
         mirror: false,
         panelHidden: readPanelHidden(),
+        person: false,
+        personHeight: readPerson().height,
+        personPose: readPerson().pose,
         ...ui,
       },
       mirrorFn: null,

@@ -6,14 +6,15 @@
 // Top, the numbered seat markers (Andre, 2026-11-09), the same as the plan's.
 import { useSyncExternalStore } from 'react';
 import { BACK_CUSHION, type HavenDims } from '@/engine';
-import { isElevation, type PresetName } from '@/ortho/presets';
+import type { PresetName } from '@/ortho/presets';
 import type { ViewStore } from './viewStore';
 
 export function Overlay({ view, preset, heights, markers }: { view: ViewStore; preset: PresetName; heights: HavenDims; markers: [number, number, number][] | null }) {
   const s = useSyncExternalStore(view.subscribe, view.get);
   if (!s) return null;
   if (markers?.length) return <SeatMarkers points={markers.map(s.project)} />;
-  if (!isElevation(preset)) return null;
+  // Side is its own drawing with its measurements (2026-11-11): the ticks are for Front.
+  if (preset !== 'front') return null;
   const all = [
     { h: heights.legHeight, label: 'leg' },
     { h: heights.seatHeight, label: 'seat' },

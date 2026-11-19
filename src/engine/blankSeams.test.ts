@@ -11,7 +11,7 @@ describe('blank mode', () => {
     expect(g).toMatchObject({ offset: 0, length: 22, label: 'unfilled 22"', rect: { x: 0, y: 60, w: 44, h: 22 } });
     expect(runOf(valid(b1), 'left')).toMatchObject({ filled: 50, unfilled: 22, endCap: 'arm' });
     const b2 = op.addPiece(b1, 'table', { run: 'back', at: 'seam', seam: 0 });
-    expect(desc(b2, 'back')).toEqual(['table 32', 'gap 36']);
+    expect(desc(b2, 'back')).toEqual(['table 24', 'gap 44']); // a new table: the standard 24″ (Andre, 2026-11-18)
     expect(valid(b2).exportBlocked).toBe(true);
     const b3 = op.addPiece(b1, 'armless', { run: 'left', at: 'seam', seam: 0 }, { length: 30 });
     expect(desc(b3, 'left')).toEqual(['armless 30', 'oneArm 42=28+14@end']);
@@ -20,10 +20,10 @@ describe('blank mode', () => {
   it('in a partially filled run, deletes leave gaps in place (placed pieces do not move)', () => {
     const b2 = op.addPiece(blankConfig('U'), 'table', { run: 'back', at: 'seam', seam: 0 });
     const b4 = op.addPiece(b2, 'armless', { run: 'back', at: 'seam', seam: 1 }, { length: 20 });
-    expect(desc(b4, 'back')).toEqual(['table 32', 'armless 20', 'gap 16']);
+    expect(desc(b4, 'back')).toEqual(['table 24', 'armless 20', 'gap 24']);
     const b5 = op.deletePiece(b4, tableId(b4));
-    expect(desc(b5, 'back')).toEqual(['gap 32', 'armless 20', 'gap 16']);
-    expect(valid(b5).gaps.filter((x) => x.run === 'back').map((x) => [x.offset, x.length])).toEqual([[0, 32], [52, 16]]);
+    expect(desc(b5, 'back')).toEqual(['gap 24', 'armless 20', 'gap 24']);
+    expect(valid(b5).gaps.filter((x) => x.run === 'back').map((x) => [x.offset, x.length])).toEqual([[0, 24], [44, 24]]);
     // deleting the last piece of a filled run leaves a gap too (nothing to absorb)
     expect(desc(op.deletePiece(U(), idAt(U(), 'left', 0)), 'left')).toEqual(['gap 72']);
   });
@@ -43,7 +43,7 @@ describe('blank mode', () => {
     const b = valid(c);
     expect(b.gaps).toEqual([]);
     expect(b.exportBlocked).toBe(false);
-    expect(shapeOf(c)).toEqual(shapeOf(U()));
+    expect(shapeOf(c)).toEqual(shapeOf(standardU())); // table 24 | armless 44
     expect(b.seats.label).toBe('Seats 7');
   });
 
@@ -60,14 +60,14 @@ describe('blank mode', () => {
     refused(raw.fillGap(b, 'nope', 'armless'), b, 'notAllowed');
   });
 
-  it('E24 blank_lockOff_takesGapsFirst: table at back seam 0 gives [table 32][gap 36], W 188', () => {
+  it('E24 blank_lockOff_takesGapsFirst: table at back seam 0 gives [table 24][gap 44], W 188', () => {
     const c = op.addPiece(op.setLock(blankConfig('U'), false), 'table', { run: 'back', at: 'seam', seam: 0 });
-    expect(desc(c, 'back')).toEqual(['table 32', 'gap 36']);
+    expect(desc(c, 'back')).toEqual(['table 24', 'gap 44']);
     expect(c.W).toBe(188);
     // beyond the gap, the run grows
     const more = op.addPiece(c, 'armless', { run: 'back', at: 'seam', seam: 1 }, { length: 50 });
-    expect(desc(more, 'back')).toEqual(['table 32', 'armless 50']);
-    expect(more.W).toBe(202);
+    expect(desc(more, 'back')).toEqual(['table 24', 'armless 50']);
+    expect(more.W).toBe(194);
   });
 });
 
@@ -81,12 +81,12 @@ describe('seam handles', () => {
     const u = U();
     refused(raw.dragSeam(u, 'back', 0, 5), u, 'notAllowed'); // wedge edge: use the wedge slider
     refused(raw.dragSeam(u, 'left', 1, 5), u, 'notAllowed'); // open end: no neighbour
-    const big = standardU({ W: 300 });
+    const big = standardU({ W: 300, table: 32 });
     expect(desc(op.dragSeam(big, 'back', 2, 50), 'back')).toEqual(['table 32', 'armless 108', 'armless 40']);
   });
 
   it('a split group on one side of a seam moves as one logical seat (stays equal, keeps its group)', () => {
-    const big = standardU({ W: 300 }); // [T 32][74 g][74 g]
+    const big = standardU({ W: 300, table: 32 }); // [T 32][74 g][74 g]
     const wider = op.dragSeam(big, 'back', 1, 4);
     expect(desc(wider, 'back')).toEqual(['table 36', 'armless 72', 'armless 72']);
     expect(wider.runs.back![1]!.splitGroup).toBe(big.runs.back![1]!.splitGroup);
@@ -96,14 +96,14 @@ describe('seam handles', () => {
   it('dragging into a blank-mode gap resizes the piece; the gap disappears at 0', () => {
     const b2 = op.addPiece(blankConfig('U'), 'table', { run: 'back', at: 'seam', seam: 0 });
     const b4 = op.addPiece(b2, 'armless', { run: 'back', at: 'seam', seam: 1 }, { length: 20 });
-    expect(desc(op.dragSeam(b4, 'back', 2, 10), 'back')).toEqual(['table 32', 'armless 30', 'gap 6']);
+    expect(desc(op.dragSeam(b4, 'back', 2, 10), 'back')).toEqual(['table 24', 'armless 30', 'gap 14']);
     const full = op.dragSeam(b4, 'back', 2, 99);
-    expect(desc(full, 'back')).toEqual(['table 32', 'armless 36']);
+    expect(desc(full, 'back')).toEqual(['table 24', 'armless 44']);
     expect(runOf(valid(full), 'back')).toMatchObject({ unfilled: 0, filled: 68 });
   });
 
   it('seam drags must use the cumulative dx from the gesture start (per-event 0.5" snapping drifts)', () => {
-    const s = standardU({ W: 272 });
+    const s = standardU({ W: 272, table: 32 });
     let inc = s;
     for (let k = 0; k < 10; k++) inc = raw.dragSeam(inc, 'back', 2, 0.3).config;
     expect(desc(op.dragSeam(s, 'back', 2, 3), 'back')).toEqual(['table 32', 'armless 63', 'armless 57']);
@@ -124,7 +124,7 @@ describe('pieces menu', () => {
     refused(raw.reorderPiece(u, 'wedge:backLeft', 0), u, 'notAllowed');
   });
 
-  it('E27 cushionFloor: standardU({L: 79}) gives left [armless 19] (no arm)', () => {
-    expect(desc(standardU({ L: 79 }), 'left')).toEqual(['armless 19']);
+  it('E27 cushionFloor: standardU({L: 79, table: 32 }) gives left [armless 19] (no arm)', () => {
+    expect(desc(standardU({ L: 79, table: 32 }), 'left')).toEqual(['armless 19']);
   });
 });

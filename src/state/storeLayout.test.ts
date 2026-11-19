@@ -7,7 +7,7 @@ import { createHavenStore, isDirty } from './store';
 
 describe('store over layouts', () => {
   it('a one-sofa layout behaves exactly as before', () => {
-    const c = standardU();
+    const c = standardU({ table: 32 });
     const s = createHavenStore(c);
     expect(s.getState().config).toBe(c);
     expect(s.getState().layout.sections[0]!.config).toBe(c);
@@ -44,7 +44,7 @@ describe('store over layouts', () => {
   });
 
   it('dirty compares the layout code with the saved project code', () => {
-    const c = standardU();
+    const c = standardU({ table: 32 });
     const s = createHavenStore(solo(c));
     s.getState().open(solo(c), { project: { id: 'p', name: 'Mitchell', code: '1UW188L132R132D44_bt32s36_la72_ra72.wh' } });
     expect(isDirty(s.getState())).toBe(false);
@@ -58,7 +58,7 @@ describe('Reset for an opened layout (QA 2026-11-06)', () => {
     const s = createHavenStore(t);
     expect(s.getState().ui.lastStart).toEqual({ kind: 'tee', total: 229, stem: 110, D: 44, sharedBack: false });
     expect(startLabel(s.getState().ui.lastStart)).toBe('T shape');
-    s.getState().open(solo(standardU()));
+    s.getState().open(solo(standardU({ table: 32 })));
     expect(s.getState().ui.lastStart).toEqual({ kind: 'standardU' });
     s.getState().open(t);
     expect(s.getState().ui.lastStart.kind).toBe('tee');

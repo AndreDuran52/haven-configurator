@@ -255,8 +255,8 @@ export interface RunPiece {
 export interface LoosePiece { id: string; kind: 'ottoman' | 'coffeeTable'; x: number; y: number; w: number; d: number }  // coffeeTable: w === d (§4 "free square")
 
 export interface HavenDims {           // §3, kept as data so §14 answers are data changes
-  A: number; B: number; backFrame: number;        // 14 (arm width, editable 6–14 since H5d), 10, 10 (H5b: the real 10″ back, Andre 2026-09-27)
-  legHeight: number; deckHeight: number; seatHeight: number;   // 1, 10, 18
+  A: number; B: number; backFrame: number;        // 14 (arm width, editable 6–14 since H5d), 8, 8 (the real back frame: 10″ in H5b, 8″ measured on the showroom Haven, Andre 2026-11-18; links never carry it)
+  legHeight: number; deckHeight: number; seatHeight: number;   // 1, 9.5 (the stitch line; 10 before 2026-11-11), 18
   cushionCrown: number; cushionEdge: number;      // 8, 8 (H5b: the tight seat is flat; kept so old links decode)
   armHeight: number; backHeight: number; tableHeight: number;  // 23, 27, 18 (H5b: table top flush with the seat)
   ottomanHeight: number; coffeeTableHeight: number;            // 18, 16 (Q29)
@@ -436,7 +436,7 @@ A no-op (e.g. `setLock` to its current value) returns `{config: input, rejected:
 | **arm** | open | Adds an arm to the end seat |
 | | armTable | Removes the table (absorbed) |
 | | table | Removes the table, then adds the arm |
-| **table** | arm or open | 32″ table in place of the arm |
+| **table** | arm or open | a new table (24″, stepping down to 20″; 32″ before 2026-11-18) in place of the arm |
 | | armTable | Drops the arm, keeps the table |
 | **open** | any | Removes the arm and/or the table |
 
@@ -474,10 +474,10 @@ Refused on wedge-only runs and on unfilled ends.
 
 **Presets.**
 - **Default fill** of a run = one seat for the whole length, with an arm at the open end if its cushion is ≥ 6 (spec §8); auto-split if over 108.
-- **`standardU()`:** W 188, L 132, R 132, D 44; back = [table 32][armless rest] if rest ≥ 6, else default fill; legs default fill.
+- **`standardU()`:** W 188, L 132, R 132, D 44; back = [table 24][armless rest] if rest ≥ 6, else default fill; legs default fill. **Andre, 2026-11-18:** the standard table is 24″ (60 | 24 | 44 | 60, still 188″; 32 | 36 before). The L's, the Straight and Blank open without a table. `standardU({ table: 32 })` builds the older U, which the §12 tests and golden links below are written against (links keep every table's width forever).
 - **`standardL(side)`:** W 132, kept leg 132 (the other leg's value stays 132), default fill, no table (Q5). The literal spec wording ("the same pieces minus one leg") would leave a 188″ back with the table at the open end and no arm; spec test 4 instead shows the L's back as a plain one-arm fill, so the plan follows test 4. The shape picker on an edited U (G2) deliberately keeps the user's pieces instead.
 - **`blankConfig(shape)`:** one gap per run of length > 0.
-- **`addPiece` defaults:** armless 36, one-arm 50 (36 + 14), table 32.
+- **`addPiece` defaults:** armless 36, one-arm 50 (36 + 14), table 24 (`TABLE_DEFAULT`; 32 before 2026-11-18).
 
 **Reorder.**
 - Seats and gaps move within their run.
@@ -684,12 +684,12 @@ Dimetric 45/30 was evaluated and **not shipped**: it looks almost identical to I
 |---|---|
 | Armless / one-arm | back frame t 0..10 · 1–27 · tight seat t 10..D: base 1–10 and a flat band 10–18 (0.25″ seam gaps between pieces; the two bevels meet in the seam at the 10″ deck) · loose back cushions on the seat (engine `backCushions`, soft geometry, below) · arm (one-arm, last 14″) t 0..D · 1–23 |
 | Table | full footprint; top flush with the seat at 18 (Q9, 2026-09-27): **standard** = fabric base 1–10 + band 10–16 (the seat's seam) + 2″ wood top 16–18, or **all wood** 1–18; walnut or dark wood; back and cushions stop at the table (3D-01) |
-| Wedge | §8 polygon (mirrored for back-right). Two 10″ frames along the outside edges · 1–27. Tight seat (B,B)(C,B)(C,D)(D,C)(B,C): base 1–10 + band 10–18. One loose back cushion along each outside edge |
+| Wedge | §8 polygon (mirrored for back-right). Two 8″ frames along the outside edges · 1–27. Tight seat (B,B)(C,B)(C,D)(D,C)(B,C): base 1–10 + band 10–18. One loose back cushion along each outside edge |
 | Legs | 1.5″ dia × 1″, 5″ in from every outside edge of the piece (barely visible, Andre 2026-09-27), instanced |
 | Ottoman | rounded prism w × d on 1″ legs, top at `ottomanHeight` 18, fabric |
 | Coffee table | slab w × d, top at `coffeeTableHeight` 16, `tableFinish` |
 | Gap (Blank) | flat hatched floor decal, 0.1″ thick, same hatch as the plan, with its "unfilled 68″" label drawn into the decal texture (H3; an HTML label was the alternative); included in bounds and fit |
-| Pillows (H5, H5b, H5c) | down-feather "karate chop" squares (20 × 20 × 12″, Andre's Blender model `src/three/models/pillow-square.glb`, refitted into the anchor's box by `three/models.ts`) and procedural ball pillows at the wedge and arm-end anchors (engine `pillowAnchors`) |
+| Pillows (H5, H5b, H5c; 2026-11-18) | down-feather "karate chop" squares (20 × 20 × 6″ standing 10° off upright, Andre's Blender model `src/three/models/pillow-square.glb`, refitted into the anchor's box by `three/models.ts`; matte grey-taupe `#8c8279` and off-white `#ebe6de`, a thin light outline) and procedural ball pillows: two squares and one ball at every corner and arm end (engine `pillowAnchors`) |
 
 Loose pieces are hidden in the Front/Side presets and in the vector elevation by default (a centred coffee table would hide the back run), with a "show loose pieces" toggle.
 
@@ -698,7 +698,7 @@ Loose pieces are hidden in the Front/Side presets and in the vector elevation by
 - Then `rotateX(+π/2)`, translate, and `toCreasedNormals(π/5)`.
 - The side walls sit exactly on the polygon, so the Top silhouette equals the SVG plan.
 - **No two parts may share a face.** Coplanar body and frame faces z-fought as a visible band in the elevations.
-- **Tight seat (H5b, Andre 2026-09-27; replaces the H3 crowned cushion):** the real Haven's seat is one upholstered block with a seam, not a separate cushion: a base prism to the 10″ deck and a flat band to 18″, whose bevels meet in a groove that reads as the seam. `cushionCrown` / `cushionEdge` stay in `HavenDims` only so old links decode.
+- **Tight seat (H5b, Andre 2026-09-27; replaces the H3 crowned cushion):** the real Haven's seat is one upholstered block with a seam, not a separate cushion: a base prism to the 10″ deck and a flat band to 18″, whose bevels meet in a groove that reads as the seam. `cushionCrown` / `cushionEdge` stay in `HavenDims` only so old links decode. *(2026-11-11: the seam is at 9½″, the exact middle of the 1″–18″ seat; Q78.)*
 
 **Soft parts (H5b, `engine/softBox.ts`, `engine/cushions.ts`, `engine/pillows.ts`, `three/softGeometry.ts`).**
 - The engine places loose back cushions and pillows as **oriented boxes** (centre, facing, lean, w × h × t): pure data, also used by the ortho fit.
@@ -1014,7 +1014,7 @@ Two profiles:
   - Tighten the `check:bundle` budget to measured + 15 % (§3).
 - **Files:** `src/{App.tsx, main.tsx}`, `src/state/**`, `src/plan/{PlanView,PlanDrawing,DimsLayer,dims,format,textMetrics,geometry,theme}.*`, `src/ui/{HavenLayout,TopBar,Sidebar,MeasureField,WedgeSlider,StartMenu,WarningsList,UpdateChip}.tsx`, `vite.config.ts`, `scripts/check-bundle.mjs`, `e2e/**`; dependencies `zustand`, the Radix primitives, `vite-plugin-pwa` (dev).
 - **Done when:**
-  - `/` opens on the Standard U (even with a saved draft) showing back chain `60 | 32 | 36 | 60`, overall `188"`, legs `72` (drawn as seat `58` | arm `14` since H5d), `44"D`, "Seats 7".
+  - `/` opens on the Standard U (even with a saved draft) showing back chain `60 | 24 | 44 | 60` (`60 | 32 | 36 | 60` before 2026-11-18), overall `188"`, legs `72` (drawn as seat `58` | arm `14` since H5d), `44"D`, "Seats 7".
   - Typing D = 36 shows back 52, legs 80, "Seats 7–8" (test 2).
   - The slider at 55 shows legs 77 and back 46 (test 6).
   - W = 300 shows `74 | 74` (test 5).
@@ -1143,7 +1143,7 @@ Two profiles:
 - **Answers:** frame 27″, back cushions to 31″, arms 23″, seat 18″; back cushions 8″ deep; seat depth shown to the back cushions (26″ at 44″ D), warning only where it fired before (under 16).
 - **As built:**
   - Engine data only, **no codec change**: `DEFAULT_DIMS` backFrame 10, tableHeight 18, cushionEdge 8; `BACK_CUSHION` {depth 8, rise 4} and the cushion shape are constants, not `HavenDims`, so `DIM_KEYS` and every golden link are untouched. `seatDepth` = D − B − 8; `seatDepthShort` under 16 (§5.4).
-  - Parts (§7.4): 10″ frame 1–27, tight seat (base 1–10 + flat band 10–18, seam at the deck), arms 1–23, standard table 1–10 / 10–16 / 2″ wood 16–18 or all wood 1–18, legs 5″ in.
+  - Parts (§7.4): 8″ frame 1–27 (10″ until 2026-11-18), tight seat (base 1–10 + flat band 10–18, seam at the deck), arms 1–23, standard table 1–10 / 10–16 / 2″ wood 16–18 or all wood 1–18, legs 5″ in.
   - Soft parts (§7.4): loose back cushions from `engine/cushions.ts` (one per ~36″ of seat, two per wedge), karate-chop squares and balls from `engine/pillows.ts`, placed without clipping.
   - 3D ticks: 1 / 18 / 23 / 27 / 31, a tick dropped when it would sit under 12 px from the previous one (phones).
   - The 3D budget check now follows ThreeView's static imports (three.js sits in a chunk shared with the export scene since H6): 261 kB gzip of 300.
@@ -1194,7 +1194,7 @@ The UX brief runs in phases (0 audit, 1 safety, 2 editor clean-up, 3 understanda
 Also queued for later phases:
 - Phase 2: restyle the seam handle as a grip;
 - Phase 3: the camera refits only when the sofa would leave the view;
-- Phase 5: confirm with Andre how seat depth is computed (D − 10 frame − 8 cushion) before Present shows it.
+- Phase 5: confirm with Andre how seat depth is computed (D − 8 frame − 10 the cushion takes, since 2026-11-18) before Present shows it.
 
 As built in Phase 1:
 - **Typing:** measurement fields no longer preview while typing; Enter or blur commits once.
@@ -1211,7 +1211,7 @@ A client asked for a T: 229″ across the top, a 110″ stem, seating on each si
 Andre's decisions:
 - **Combine standard shapes.** Free placement of single pieces is out. *(Superseded 2026-11-06: see "Freeform pieces" below.)*
 - **Stem back:** offer both, per T:
-  - **Shared back:** one 10″ frame with cushions on both sides; stem 2D − B, so 78″ at 44 deep.
+  - **Shared back:** one frame with cushions on both sides; stem 2D − 10, so 78″ at 44 deep. The overlap stays 10″ (`TEE_SHARED_BACK`) after the frame became 8″ (2026-11-18), so every T link opens at the size it was saved with.
   - **Two backs:** two standard L's pushed together; stem 2D = 88″.
 - **Order:** shapes first, then UX Phases 2–6.
 
@@ -1378,7 +1378,7 @@ Andre's answers (Q50–Q53): a rectangle only (width × depth, no doors or windo
 
 **Measured:** vitest `changes.test.ts` (the result line's words); e2e `phase3.mjs` (42 checks: top bar, name menu, labels, tabs, Settings, leftovers, no text under 14 px at 1440 × 900 and 1280 × 800, the result line staying and its Undo, Let sofa grow, the keyboard, the shape guard's three buttons, Undo and Save first, grips on the selected piece only, Overall kept after a reload, the View menu, Overview | Front | Side, one background in plan, room and 3D; screenshots at 1440, 1280, iPad and phone, each also at half scale). Existing e2e updated for the new menus (Start and Reset in the name menu, presets through the store, grips after a selection).
 
-**Seat depth (Q54):** D − 10 (back frame depth) − 8 (loose back cushion depth, front to back): 26″ / 22″ / 18″ at 44″ / 40″ / 36″. Hidden in Phase 3; **confirmed by Andre and shown again in Phase 3b.**
+**Seat depth (Q54):** D − 8 (back frame depth) − 10 (the seat the leaning back cushion takes; 10 + 8 until 2026-11-18): 26″ / 22″ / 18″ at 44″ / 40″ / 36″. Hidden in Phase 3; **confirmed by Andre and shown again in Phase 3b.**
 
 ### UX Phase 3b: the quick notes (Andre's notes, 2026-11-08; built)
 Andre's 16 notes after testing Phase 3, reviewed with him over six rounds of questions, then approved with five changes. **The order from here (one PR each, stop after each):** 1. Phase 3b (this). 2. Seat markers. 3. Phase 3c, keep my work. 4. Phase 5, options A | B | C and the hide-panel button. 5. The 3D person. 6. The look (link v7 since the seat markers took v6; waits on Andre's fabric list and logo). 7. Phase 4. 8. Phase 6. Later, only when Andre says: realistic rendering, lumbar pillows, drag-and-drop pillows, a spec sheet.
@@ -1397,7 +1397,7 @@ Andre's 16 notes after testing Phase 3, reviewed with him over six rounds of que
    - Seat width stays in Settings until the seat markers phase.
 5. **3D:** the cameras are **Overview, Top, Front, Side** (Top is back). **No snap-back:** the camera stays where it is released; a camera button (even the one already on) or a **double-click / double-tap** returns to the exact preset (the Q1 spring-back is retired). The **scale bar is gone** from the live 3D (Andre read it as a "4 ft" tag); Front and Side keep the height ticks; the PDF keeps its own graphic scale.
 6. **One Pillows switch** (View menu) draws the throw pillows in the **plan** (top-down: a turned rounded square per pillow, a circle per ball, from the same anchors as the 3D) and in 3D; the **PDF follows it**. The plan's pillow geometry loads lazily (out of the entry chunk).
-7. **Seat depth shown again:** sofa depth − 18 (the 10″ back frame and the 8″ back cushion never change; only the seat in front of them does): 26″ / 22″ / 18″ at 44″ / 40″ / 36″. On the Size tab under the depth chips, in the view-only summary and in the PDF footer.
+7. **Seat depth shown again:** sofa depth − 18 (the 8″ back frame and the 10″ the back cushion takes never change; only the seat in front of them does): 26″ / 22″ / 18″ at 44″ / 40″ / 36″. On the Size tab under the depth chips, in the view-only summary and in the PDF footer.
 8. **Fix (a Phase 3 regression):** the top bar clipped its own menus (the project-name menu and Settings opened invisibly under the panel). The bar now clips sideways only (`overflow-x: clip`), so its menus drop down over the page; phones still never scroll sideways.
 - **Entry budget:** unchanged, 330 kB raw / 110 kB gzip (measured 325.0 / 108.9).
 
@@ -1421,7 +1421,7 @@ Andre tested Phase 3b and asked for five fixes as one PR before the seat markers
    - a table goes **between cushions** (at a seam), at an open end in the arm's place, or in the middle of a seat when both halves stay 23″ or more (Phase 3c fixes, Q72, Q73; this item first said "never cut into a seat");
    - **"Other seats adjust":** dropped between two seats, both shrink equally (`sharePair`), so the table sits centred: straight 120″ with 10″ arms + a table = 10 | 34 | 32 | 34 | 10 (14 | 30 | 32 | 30 | 14 with the default 14″ arms). Next to a corner, an open end or another table, the seat on the other side takes it, as before (the Standard U back stays 60 | 32 | 36 | 60);
    - **"Sofa size changes":** the seats keep their size and the sofa grows by the table;
-   - a new table starts at **32″**; if that leaves a seat under 23″ it steps down to 28, 24, then 20″, and the result line says why ("Added table 24″ (32″ would leave a seat under 23″)"); if none fits: **"Not enough seat for a table here."**;
+   - a new table starts at **24″** (Andre, 2026-11-18; 32″ stepping down to 28 / 24 / 20 before); if that leaves a seat under 23″ it steps down to 20″, and the result line says why ("Added table 20″ (24″ would leave a seat under 23″)"); if neither fits: **"Not enough seat for a table here."** The tap menu's end "Table" steps down the same way. Saved layouts and links keep the widths they were saved with;
    - the tray's **Table tapped** (not dragged) goes straight to the most central seam where it fits (nearest the middle of the back run): "Table in the middle", pulled forward from Phase 6;
    - **moving** a table follows the same rules and keeps its width (Q66): spots that would leave a seat it shrinks under 23″ are not offered; a move within the same run is still a pure reorder;
    - unchanged: the table's 18″ height, the backrest stopping at the table, decoding (old links and saved layouts load exactly as they were; only new edits use the rule).
@@ -1476,6 +1476,26 @@ Andre dropped the options A | B | C: "the goal is to close the client on the cal
 
 **Measured:** vitest `storage.test.ts` (the pref, shown by default, storage throwing reads as shown); e2e `panel.mjs` (at 1440 and 1280: shown by default, hidden gives the full width, labels in view and not overlapping, no text under 14 px, a tap opens the menu, a reload keeps it hidden, Show panel restores the same width; a 300″ U draws bigger; 3D widens to 1440; portrait gets the full height; `?view` has no toggle).
 
+### The side drawing and the person (Andre, 2026-11-11; built)
+Next after Phase 5: show a client "how it sits". Andre's decisions (Q63, Q78–Q80):
+- **Side is a drawing, not a 3D picture.** The Side button in 3D shows a clean cut through a seat with its measurements, in the style of the sketch Andre sent (rounded shapes, the back darker, the back pillow lighter, heavy dimension lines). The 3D side render is gone from the screen and the PDF: on a U it hid the seat behind the near side.
+- **The Haven's real numbers** (Andre's list; the sketch's 16.5″ / 9″ / 6.5″ were only an example): **1″ leg**, **18″ seat height**, **23″ arm**, **27″ back**, 14″ arm width; back pillows to **31″** (4″ above the back), "5″ at the stitching, fills to 8″".
+- **A tight seat:** one upholstered piece 17″ tall (1″–18″) with its **stitch line at the exact middle, 9½″** from the floor. `DEFAULT_DIMS.deckHeight` 10 → **9.5** and `cushionCrown` / `cushionEdge` 8 → 8.5 (`src/engine/defaults.ts`), so the 3D seam, the Front elevation and the drawing agree. Links: `deckHeight` is key `k`, written only when it differs from the default, so every existing link re-encodes byte for byte and simply draws the seam ½″ lower.
+- **What the drawing says:** `USABLE SEAT` = depth − 18″ (the 8″ back and the 10″ the back pillow takes, Andre 2026-11-18: 26″ at 44″ deep, 22″ at 40″, 18″ at 36″); along the bottom 8″ | (D − 8)″ seat and D″ TOTAL DEPTH; on the left 23″ arm, 27″ back, 31″ back pillows; on the right 17″ seat, 1″ leg, **18″ seat height**; the arm beyond the seat as a dashed outline; the back pillow's note.
+- **Code:** `src/ortho/sideSection.ts` (pure geometry: t = inches from the sofa's back, z = height), `src/ortho/SideSection.tsx` (the SVG, in display units with `fs` as the text size: 14 px on screen, 7 pt on paper; no three import). On screen `src/three/ThreeView.tsx` lays it over the 3D box when the preset is `side` (the canvas stays mounted underneath, so the other views are instant). Narrow boxes (an upright iPad, a phone, a sheet cell) turn the right-hand heights along their lines; the smallest (under 40 × the text size) keep only the main measurements. `src/three/Overlay.tsx`: the height ticks stay for Front only.
+- **The person** (off by default): **View menu → Person, in 3D** (`src/ui/PersonSection.tsx`, lazy): Show person, **Lounge | Upright**, **Height** − 5'9″ + (hold to repeat; typed feet and inches like `6'2` or inches; 4'6″–6'8″). The height and pose are remembered on this device (`haven:person`, `src/state/prefs.ts`); the person is never in links or projects and is not an undo step.
+  - **Numbers** (`src/ortho/person.ts`, pure): the average US man, **5'9″ (69″)**, with body sizes as ratios of height from the standard anthropometric tables: sitting height 0.52 (36″ at 5'9″), shoulder height sitting 0.34 (23½″), seat back to behind the knee 0.285 (19¾″), seat back to the front of the knee 0.345 (24″), floor to behind the knee 0.248 (17″), foot 0.152 (10½″), head 0.13 (9″).
+  - **How people sit (round 2, Andre's showroom photos at 5'10″, 2026-11-11):** the hips slide forward until the back of the knee is 1″ inside the front edge, and the **feet are always flat on the floor** (both poses, every depth and height). The depth shows as how far the back reclines: the recline is solved so the back rests on what is behind it (sinking 1″ into it), 6°–50°.
+  - **Lounge:** the back rests on the back pillow. At 5'10″: about 8° at 36″ deep, 22° at 40″, **37° at 44″** (the photo shows about 40°). The back curves as it reclines (`spine`, bowed toward the sofa's back, the same length however it bows); the hand rests on the seat beside the hip.
+  - **Upright (With the extra back pillow; Andre, 2026-11-18):** the sofa's own 6″ karate-chop pillow stands on the seat behind his spine as the sofa's do (10°), its back resting on the cushion; his back, 3–8° from vertical (about 5°), presses about 1″ into it, leaving about 19–20″ of seat in front of the pillow. The shins stand straight down, the feet 1″ ahead of the knees; at 5'10″ on 44″ the knees end just past the front edge (never inside it). The upper arms hang by the ribs, the elbows bent, the forearms along the thighs, the hands near the knees. Where the pillow would push the knees more than 6″ past the edge (36″ deep), there's no room for it. The 3D body has a square shoulder line, shoulder caps, tapered upper arms and a neck slimmer than the head (3.8″).
+  - On a seat shorter than the thigh the buttock presses 2″ into the back pillow's soft bottom and the knees go past the edge; a short person whose lower leg does not reach the floor perches forward until the thigh, sloping down over the rounded front edge, puts the feet flat (and sits up on their own when the back pillow is out of reach).
+  - **The figure** is a stick person like Andre's reference: round head, neck, a slim body (7% of the height across), thin arms and legs, one charcoal colour with a dark outline.
+  - **In the drawing:** the figure in profile in front of the sofa shapes, the body drawn along the curved spine; the usable-seat measurement moves inside the seat. **In 3D** (Overview, Top, Front): `src/three/Person.tsx`, the body a tube along the same spine, capsules for the limbs, a sphere head, from the same joints, at the middle of the back run's widest seat (`src/ortho/personSeat.ts`), facing out; the figure joins the camera fit so the head is never cut off.
+- **PDF:** the sheet's Side cell is the same drawing as vector text and lines, labelled "SIDE VIEW · cut through a seat", **without the person**; `src/export/pdf.ts` renders no 3D image for it.
+- **Entry budget:** unchanged, 332 kB raw / 112 kB gzip (measured 331.9 / 111.3): the drawing loads with the 3D view and the export, the Person section is lazy, and the entry chunk carries only the height limits (`src/ortho/personLimits.ts`).
+
+**Measured:** vitest `sideSection.test.ts` (the heights, the stitch line at the middle, usable seat at 44 / 40 / 36), `person.test.ts` (the numbers at 69″, scaling, feet on the floor at every height 4'6″–6'8″, depth and pose, knees at the edge, Lounge reclining more on a deeper sofa and 35°–40° at 5'10″ on 44″, the Upright pillow and its straight back, the curved spine's length, heights typed and shown), `personSeat.test.ts`; e2e `side.mjs` (at 1440, 1280, iPad landscape and portrait: Side is the drawing with every measurement, no labels overlapping or clipped, nothing under 14 px, the drawing covers the 3D box; 36″ deep says 18″; a phone shows the main measurements; the person is off by default, sits in the drawing and as 13 parts in 3D at the middle of the back seat, inside the frame in Overview, Front and Top; Height + and typed heights; Lounge | Upright; a reload keeps the height and pose; the PDF has the drawing's text, no rendered image and no person). **UNVERIFIED on a real iPad.**
+
 ### H7: Cloud saves + tracker hand-off (optional, later; Andre decides, do not start until told)
 The configurator is complete without H7. Options, in order of cost:
 - **(a) Stay local (default).** Layouts live on each device; share links and PDFs move them between devices and people. Nothing to build.
@@ -1502,7 +1522,7 @@ No cross-repo code coupling in any option: no shared packages, no shared databas
 - a JSON round trip is lossless;
 - the input is deep-frozen (purity).
 
-**§12 tests** (assertions extended with the unasserted numbers, verified on engine-A 2026-09-24):
+**§12 tests** (assertions extended with the unasserted numbers, verified on engine-A 2026-09-24). They are written against the Standard U as it was through 2026-11-18, with its 32″ table (`testing.ts` `U()` = `standardU({ table: 32 })`); the 24″ standard has its own tests:
 
 | Test | Assertions |
 |---|---|
@@ -1609,12 +1629,12 @@ Answer in a word. **Q1 is answered (camera, spring-back orbit), and Q9, Q10, Q12
 | Q7 | Arm side named as you face the piece (LAF/RAF)? *yes / no* | yes |
 | Q8 | "Opening under 60″" warns if either width or depth is under 60? *yes / no* | yes |
 | Q9 | Table top flush with the arm at 23″ (§14)? *yes / or give height* | **Default accepted 2026-09-25:** yes. **Changed 2026-09-27 (Andre, H5b):** flush with the **seat** at 18″ |
-| Q10 | Back = 4″ frame + 6″ cushion (§14)? *yes / or give split* | **Default accepted 2026-09-25:** yes. **Changed 2026-09-27 (Andre, H5b):** a **10″ frame** 27″ tall, and **loose 8″ back cushions** standing on the seat in front of it, tops at 31″; seat depth measured to the cushions (D − 18), warning under 16 |
+| Q10 | Back = 4″ frame + 6″ cushion (§14)? *yes / or give split* | **Default accepted 2026-09-25:** yes. **Changed 2026-09-27 (Andre, H5b):** a **10″ frame** 27″ tall, and **loose 8″ back cushions** standing on the seat in front of it, tops at 31″; seat depth measured to the cushions (D − 18), warning under 16. **Measured 2026-11-18 (Andre, showroom Haven):** an **8″ frame**; the cushion, 5″ at the seam and 8″ at the belly, leans back onto the frame's top edge (about 15°) and **takes 10″** of seat; D − 18 unchanged. A throw pillow then takes 8–9″, leaving about 18″ in front of it (not shown in the app) |
 | Q11 | Ottoman: free size (starts 36 × 36) and listed on the shop sheet? *yes / no* | yes |
 | Q12 | Back and back cushion stop at each table and at the arm? *yes / no* | **Default accepted 2026-09-25:** yes |
 | Q13 | One seat cushion and one back cushion per piece? *yes / or give max cushion width* | **Default accepted 2026-09-25:** yes. **Changed 2026-09-27 (Andre, H5b):** the seat is **tight** (one upholstered block per piece, a seam in the middle, no separate cushion); loose back cushions one per ~36″ of seat, split evenly, two per wedge |
 | Q14 | Legs 1.5″ round, 3″ in from each corner? *yes / or give spec* | **Default accepted 2026-09-25:** yes. **Changed 2026-09-27 (Andre, H5b):** inset more, barely visible: 5″ in from every outside edge |
-| Q15 | Pillows: 2 square + 1 ball per wedge, 1 square per arm? *yes / or give counts* | yes. **2026-09-26:** Andre wants pillows like the showroom photo, which shows 2 square (one taupe, one light) + 1 ball at each corner **and** each arm end (built that way in H5). **2026-09-27 (H5b):** down-feather "karate chop" squares (taupe + oatmeal linen). **2026-09-27 (H5c, photos):** a touching pair of squares at each wedge and arm end, 1 light (cream) ball on each wedge, none at the arms |
+| Q15 | Pillows: 2 square + 1 ball per wedge, 1 square per arm? *yes / or give counts* | yes. **2026-09-26:** Andre wants pillows like the showroom photo, which shows 2 square (one taupe, one light) + 1 ball at each corner **and** each arm end (built that way in H5). **2026-09-27 (H5b):** down-feather "karate chop" squares (taupe + oatmeal linen). **2026-09-27 (H5c, photos):** a touching pair of squares at each wedge and arm end, 1 light (cream) ball on each wedge, none at the arms. **2026-11-18 (Andre's styled picture):** two squares (one grey-taupe, one light) and **one ball at every corner and every arm end**, the ball on the seat in front of the pair (cream at an arm end, taupe at a corner). The squares are 6″ thick, stand 10° off upright (never more than 15°; one that can't stand at a spot is left out), face straight out (0–8°), and a pair overlaps by about a third with the front one 2½″ forward: at an arm end the taupe at the arm in front, at a corner the taupe tucked in and the light one in front. Standard U 8 squares + 4 balls, each L 6 + 3, the Straight 4 + 2, at 44″, 40″ and 36″ deep |
 | Q16 | Before H5: the pillow `.glb`s, fabric/wood textures, the sketch reference image, and which fabrics besides white bouclé (names + texture maps)? *yes / date* | **2026-09-26:** Andre said start H5 without them. Built with defaults: procedural pillows from the showroom photo, procedural bouclé/wood at true scale, Sketch per the §10 description. Still wanted: the fabric list (names + colours), and the sketch reference if the style should change. **2026-09-27 (H5c):** the square pillow comes from Andre's Blender model (`src/three/models/pillow-square.glb`) |
 | Q17 | Share links go to clients (no names, no prices)? *yes / no* | yes |
 | Q18 | *(Rewritten.)* Before H7: which option for saves across devices and hand-off to the production tracker? *(a) stay local + share links/PDFs / (b) own small backend / (c) PDF uploaded by hand* | (a), with (c) whenever a sheet should live on a tracker item; H7 not started unless Andre asks. 2026-10-02: Andre asked about a login; no login while he is the only user (the H6b backup file moves projects between devices); revisit H7 (b) when a second person needs the same projects |
@@ -1653,7 +1673,7 @@ Answer in a word. **Q1 is answered (camera, spring-back orbit), and Q9, Q10, Q12
 | Q51 | Where the sofa sits | **Answered:** centred by default; Center or Back wall (a typed gap places it) |
 | Q52 | Fill the width | **Answered:** the sofa grows or shrinks to the room less the side gaps |
 | Q53 | Room warnings | **Answered:** doesn't fit the room; walkway under 30″ |
-| Q54 | Seat depth formula | **Answered (2026-11-08):** the back frame (10″) and back cushion (8″) never change, only the seat: D − 18 = 26 / 22 / 18″ at 44 / 40 / 36″ deep. Shown again since Phase 3b |
+| Q54 | Seat depth formula | **Answered (2026-11-08):** the back frame (8″ since 2026-11-18, 10″ before) and what the back cushion takes (10″, 8″ before) never change, only the seat: D − 18 = 26 / 22 / 18″ at 44 / 40 / 36″ deep. Shown again since Phase 3b |
 | Q55 | Lock wording | **Answered, then changed (Phase 3b):** "When pieces change: Other seats adjust \| Sofa size changes", on the Pieces tab (was "Keep sofa size \| Let sofa grow") |
 | Q56 | Seat sizes on the plan | **Answered:** only on the selected piece; on every piece in Detailed |
 | Q57 | Dark mode | **Answered (Phase 3b):** none; one light look matching the PDF |
@@ -1662,7 +1682,7 @@ Answer in a word. **Q1 is answered (camera, spring-back orbit), and Q9, Q10, Q12
 | Q60 | Same both sides of the U | **Answered and built (Phase 3c, 2026-11-09):** first two Copy buttons; replaced by the Mirror sides switch (Q71) |
 | Q61 | Seat count | **Answered and built (2026-11-09):** one number everywhere; comfortable by default, "· snug" with Snug, "· 21″ seats" for a non-standard width; a wedge is 1 |
 | Q62 | Options | **Dropped (Andre, 2026-11-11):** no options A \| B \| C; the call ends with one configuration |
-| Q63 | The 3D person | **Answered:** typed height, plain grey figure, Lounge \| Upright; Andre checks a 5'7″ Side view at 44″ and 36″ before the PR is done |
+| Q63 | The 3D person | **Answered and built (2026-11-11):** the average US man, 5'9″, with a Height field; a stick figure, feet always on the floor (round 2, from Andre's showroom photos); Lounge \| Upright; Andre checks the Side drawings at 44″ and 36″ deep (Lounge and Upright) with the body numbers before the PR merges. **Rounds 3–4 (2026-11-11 to 11-18):** a real build (every size a ratio of height), the hips sink 3″ into the seat, the back a three-part curve; the choice is **Extra back pillow: Without \| With** (Without = Lounge, sliding forward into the back cushions; With = the sofa's own 6″ pillow behind him, back 3–8° from vertical, feet 1″ ahead, forearms along the thighs). Merged on Andre's word (2026-11-19) |
 | Q64 | Pillows, seat line, fabrics, logo | **Answered (for the look, link v7):** Colour 1, Colour 2, Same colour, Ball; None / 2 squares / 2 squares + ball per spot; Seats: Stitch line \| No line; waits on Andre's fabric list and logo |
 | Q65 | Pillow depth in the plan | **Answered (2026-11-09):** match the 3D exactly (20 × about 13″ from above, the 12″ model leaning); the 3D is unchanged |
 | Q66 | Moving a table where its width would leave a seat under 23″ | **Answered (2026-11-09):** it keeps its width; such spots are not offered |
@@ -1677,6 +1697,11 @@ Answer in a word. **Q1 is answered (camera, spring-back orbit), and Q9, Q10, Q12
 | Q75 | Inside the U | **Answered and built (2026-11-09):** width between the sides and depth to the end of the shorter side, on the plan, the Size tab and the PDF |
 | Q76 | Narrow seats | **Answered and built (2026-11-09):** a seat of 23″ or more counts as one person (and gets a marker) |
 | Q77 | Hide panel | **Answered and built (2026-11-11):** a Hide panel / Show panel button at the right of the view bar, remembered on this device |
+| Q78 | The Side view | **Answered and built (2026-11-11):** a cut-through drawing with measurements in place of the 3D side picture; 1″ leg, 18″ seat, 23″ arm, 27″ back, 31″ back pillows; a tight one-piece seat with its stitch line at the exact middle (9½″) |
+| Q79 | The person's controls | **Answered and built (2026-11-11):** View menu → Person, in 3D; off by default; height and pose remembered on this device, never in links |
+| Q80 | The PDF's Side view | **Answered and built (2026-11-11):** the drawing, without the person |
+| Q81 | The back cushion's shape | **Answered and built (2026-11-11, measured 2026-11-18):** 5″ at the seam, 8″ at a low belly, a half-round top at 31″; it leans about 15° back onto the 8″ frame's top edge and takes 10″ of seat (seat depth D − 18). One shape for the 3D, the Side drawing and the person (`engine/cushionProfile.ts`) |
+| Q82 | The square throw pillows | **Answered and built (2026-11-18):** Andre's Blender karate-chop model (`src/three/models/pillow-square.glb`), 20 × 20 × 6″, standing 10° off upright (never more than 15°), matte grey-taupe and off-white; the plan and the Side drawing read its baked outline (`scripts/pillow-outline.mjs`). A knife-edge pillow made in code was tried (2026-11-11) and dropped. Still wanted from the model: a 4–5″ V chop, flatter faces, straight sides |
 
 ---
 
@@ -1721,7 +1746,7 @@ Later milestones (H4–H6, and H7/H8 only when Andre asks) follow the same shape
 7. **§7 Views:** 3D uses an **orthographic camera**. Presets: Top (matches the plan), Front, Side, 3/4 (trimetric 30/30, mirrored for L-right), Iso (to scale). Orbit stays above the floor; pinch changes zoom (px/in). 3D is view-only.
 8. **§7:** The lock governs piece edits only. Lock off: arms keep the cushion and runs grow. Auto-split = the fewest equal pieces (arm included) with half-inch remainders away from the arm (pending Q6). Undo = one step per gesture.
 9. **§8:** Seat stretches are not broken by piece seams. Opening is U only; warn if either side is under 60. Clearance is measured to the seat fronts including the wedge faces. Add a coffee-table overlap warning.
-10. **§9:** Depth cues for orthographic (key light, outlines, contact shadow at the world origin, floor slab). No HDRI. The back stops at tables and arms. The seat is tight and flat at 18″ with a seam (H5b; the H3 crown is gone). Loose back cushions sit on the seat in front of a 10″ frame. Loose pieces and Blank gaps appear in 3D. Cushion, leg and pillow rules per Q12–Q15. Assets without Draco.
+10. **§9:** Depth cues for orthographic (key light, outlines, contact shadow at the world origin, floor slab). No HDRI. The back stops at tables and arms. The seat is tight and flat at 18″ with a seam (H5b; the H3 crown is gone). Loose back cushions sit on the seat in front of an 8″ frame (10″ until 2026-11-18), leaning back onto it. Loose pieces and Blank gaps appear in 3D. Cushion, leg and pillow rules per Q12–Q15. Assets without Draco.
 11. **§10:** Sheets are vector PDFs at an architectural scale with a scale bar. The client sheet adds a to-scale orthographic front elevation and, per Q30, a "not to scale" 3/4. The shop sheet adds a vector elevation with heights and the piece-list columns in §9. Live D callout. Share link = versioned text codec in the URL fragment encoding the whole config (incl. split tags, snug width, all dims), no personal data. Blender gets orthographic and perspective cameras (Q31).
 12. **§11:** A standalone Vite + React 19 + TypeScript app in its own repo and Vercel project, `src/` split into engine / ortho / state / plan / three / ui / export. No login and no backend; layouts live in the URL hash and localStorage. three.js and jsPDF are lazy chunks under an entry-chunk budget. Add camera-controls, svg2pdf.js, vitest, a precache service worker. One entry: a share link is the app URL with `#c=` (`?view` for read-only).
 13. **§12:** Explicit fixtures and the added assertions and edge tests in plan §11.

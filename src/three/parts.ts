@@ -1,7 +1,7 @@
 // Engine pieces -> procedural 3D parts (plan §7.4), as pure data in PLAN inches
 // (x, y) plus heights; prism.ts and softGeometry.ts turn them into geometry.
 // The real Haven (Andre, 2026-09-27): a tight seat (a base and a flat band,
-// the seam where their bevels meet at the 10″ deck), a 10″ back frame 27″ tall,
+// the seam where their bevels meet at the 10″ deck), an 8″ back frame 27″ tall (2026-11-18),
 // 23″ arms, loose back cushions on the seat (engine/cushions.ts), inset legs.
 // Run-local coordinates (s along the run, t depth from the back edge) map to plan:
 //   back (s, t) · left leg (t, s) · right leg (W − t, s), each from the run origin.
@@ -162,7 +162,7 @@ export function buildParts(built: BuildResult, tableStyle: TableStyle = 'standar
       if (piece.arm.at === 'end') a1 = c0;
       else a0 = c1;
     }
-    // The 10″ back frame, 27″ tall; its end rises 4″ above the arm (as on the real Haven).
+    // The 8″ back frame, 27″ tall; its end rises 4″ above the arm (as on the real Haven).
     add(piece, 'frame', rectST(f, a0, a1, 0, F), p.backFrame.z0, p.backFrame.z1, 1.5, 'body');
     tightBlock(add, piece, rectST(f, a0, a1, F, D), rectST(f, a0 + SEAM, a1 - SEAM, F, D), p.seatBase.z0, p.seatBase.z1, p.seat.z1);
   }
@@ -170,7 +170,7 @@ export function buildParts(built: BuildResult, tableStyle: TableStyle = 'standar
   return out;
 }
 
-/** Wedge: 10″ frames on both outside edges; the tight seat on the §8 polygon. */
+/** Wedge: 8″ frames on both outside edges; the tight seat on the §8 polygon. */
 function wedgeParts(piece: BuiltPiece, built: BuildResult, add: Add) {
   const d = built.heights;
   const p = profiles(d);

@@ -15,6 +15,7 @@ import { planPillows } from '@/plan/pillowShapes';
 import { SeatMarkersLayer } from '@/plan/SeatMarkersLayer';
 import { LIGHT, SKETCH } from '@/plan/theme';
 import { PRESET_LABELS, type PresetName } from '@/ortho/presets';
+import { SideSection } from '@/ortho/SideSection';
 import { fitPlan, headerLine } from './fit';
 import { LINK_LINE, linkLines, SheetLayout, type SheetViews } from './layout';
 import { RoomFloor, RoomGaps } from '@/plan/RoomLayer';
@@ -135,6 +136,15 @@ export function Sheet(p: SheetProps) {
       {L.cells.map((cell) => {
         const r = p.renders.find((q) => q.preset === cell.preset);
         const img = L.image(cell);
+        // Side is the cut-through drawing with its measurements (Andre, 2026-11-11, Q80): never the person.
+        if (cell.preset === 'side') {
+          return (
+            <g key={cell.preset} data-view={cell.preset}>
+              <T x={cell.x} y={cell.y + 9} s="SIDE VIEW  ·  cut through a seat" size={7} bold />
+              <SideSection width={img.w} height={img.h} dims={b.heights} D={b.D} fs={7} embed={{ x: img.x, y: img.y }} />
+            </g>
+          );
+        }
         return (
           <g key={cell.preset} data-view={cell.preset}>
             <T x={cell.x} y={cell.y + 9} s={`${PRESET_LABELS[cell.preset].toUpperCase()} VIEW  ·  illustration, not to scale`} size={7} bold />

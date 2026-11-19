@@ -2,7 +2,7 @@
 // what works in the current view; plan pillows match the 3D Top (same
 // position, angle and size, pillow by pillow); the Room tab's two rows (arrows
 // and typed gaps, one Undo per hold); the tray's Table tapped goes to the
-// middle (straight 120″ with 10″ arms: 10 | 34 | 32 | 34 | 10) and a sofa with
+// middle (straight 120″ with 10″ arms: 10 | 38 | 24 | 38 | 10, the 24″ table since 2026-11-18) and a sofa with
 // no room for one refuses cleanly. Judged by outcome: the DOM, the store, the
 // 3D meshes' own bounds.
 import { config, panel, setField, viewMenu } from './lib.mjs'
@@ -75,9 +75,9 @@ export async function fixes2(browser, base, check) {
     await page.screenshot({ path: 'test-results/fixes2-pillows-3d-top.png', clip: box })
     const keys = Object.keys(plan)
     const off = keys.map((k) => (three[k] ? Math.max(...plan[k].map((v, i) => Math.abs(v - three[k][i]))) : Infinity))
-    check(keys.length === 10 && Object.keys(three).length === 10, `10 pillows in the plan and in 3D (${keys.length}, ${Object.keys(three).length})`)
+    check(keys.length === 12 && Object.keys(three).length === 12, `12 pillows in the plan and in 3D (${keys.length}, ${Object.keys(three).length})`)
     check(Math.max(...off) <= 0.5, `each plan pillow covers the same ground as its 3D pillow from above (worst ${Math.max(...off).toFixed(2)}″)`)
-    // From above a square pillow is about 20 × 13″ (leaning on the back cushion), not a 20″ square (400 sq in).
+    // From above a square pillow is about 20 × 7½″ (standing up against the back cushion), not a 20″ square (400 sq in).
     check(areas.length === 8 && areas.every((a) => a < 300), `square pillows read narrow from above (${areas.map((a) => a.toFixed(0)).join(', ')} sq in, not 400)`)
     check(errors.length === 0, `no console errors ${errors.join('; ')}`)
     await context.close()
@@ -129,10 +129,10 @@ export async function fixes2(browser, base, check) {
     await panel(page, 'Pieces')
     await page.locator('[data-tray-item=table]').click()
     const c = await config(page)
-    check(back(c) === 'oneArm44 table32 oneArm44' && c.W === 120, `Table tapped: 10 | 34 | 32 | 34 | 10 (${back(c)})`)
+    check(back(c) === 'oneArm48 table24 oneArm48' && c.W === 120, `Table tapped: 10 | 38 | 24 | 38 | 10 (${back(c)})`)
     check((await undoDepth(page)) === d + 1 && (await page.$('[data-pins]')) === null, 'one undo step; no pins to pick')
     const line = await page.textContent('[data-testid=result-text]')
-    check(line.includes('Added table 32″') && line.includes('Seats 50″ | 50″ → 34″ | 34″'), `the result line: "${line}"`)
+    check(line.includes('Added table 24″') && line.includes('Seats 50″ | 50″ → 38″ | 38″'), `the result line: "${line}"`)
     await page.getByRole('button', { name: 'Undo', exact: true }).click()
     check((await code(page)) === before, 'Undo restores the sofa before the table')
     // No room for a table anywhere: refused in plain words, nothing changes.

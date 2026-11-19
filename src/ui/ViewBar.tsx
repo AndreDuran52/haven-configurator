@@ -14,6 +14,8 @@ import { useHaven, useHavenStore, useLive } from '@/state/store';
 import { Menu } from './Menu';
 // The Seating section loads when the menu first opens (it stays out of the entry chunk).
 const SeatingSection = lazy(() => import('./SeatingSection').then((m) => ({ default: m.SeatingSection })));
+// The Person section (3D only) loads with the menu too.
+const PersonSection = lazy(() => import('./PersonSection').then((m) => ({ default: m.PersonSection })));
 import { Toggle } from './Toggle';
 
 /** The 3D cameras offered (UX Phase 3; Top again in 3b): Overview is the 3/4 view. */
@@ -104,6 +106,7 @@ export function ViewBar() {
               )}
               <Suspense fallback={null}>
                 <SeatingSection view={view} preset={preset} />
+                {view === '3d' && <PersonSection />}
               </Suspense>
             </>
           )}

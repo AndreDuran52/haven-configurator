@@ -7,18 +7,22 @@ import type { Config, HavenDims, Shape, TableFinish, TableStyle } from './types'
 /**
  * §3 heights and depths. Q12, Q29 defaults accepted by Andre (2026-09-25);
  * Q9, Q10, Q13, Q14 answered from the real Haven (2026-09-27): a tight seat
- * (flat, 18″, seam at the 10″ deck), a 10″-thick back frame 27″ tall, loose
+ * (flat, 18″, one piece with a stitch line at its middle, 9½″), an 8″-deep back frame 27″ tall
+ * (measured on the showroom Haven, 2026-11-18; 10″ before), loose
  * back cushions standing on the seat (profiles.ts BACK_CUSHION), the table flush with the seat.
  */
 export const DEFAULT_DIMS: HavenDims = {
   A: 14,
-  B: 10, // the 10″ back frame (the loose back cushions sit on the seat, in front of it)
-  backFrame: 10,
+  B: 8, // the 8″ back frame (Andre, 2026-11-18; the loose back cushions sit on the seat, in front of it)
+  backFrame: 8,
   legHeight: 1,
-  deckHeight: 10, // the seam round the tight seat
+  // The tight seat is one upholstered piece, 17″ tall on its 1″ leg, with a stitch line at its
+  // exact middle (Andre, 2026-11-11): 9½″ from the floor. Links write this only when it differs,
+  // so every older link reads the same and simply draws the stitch line ½″ lower than before.
+  deckHeight: 9.5,
   seatHeight: 18,
-  cushionCrown: 8,
-  cushionEdge: 8, // tight seat: flat (10 + 8 = 18)
+  cushionCrown: 8.5,
+  cushionEdge: 8.5, // tight seat: flat (9.5 + 8.5 = 18)
   armHeight: 23,
   backHeight: 27, // top of the back frame
   tableHeight: 18, // Q9 (2026-09-27): flush with the seat
@@ -37,7 +41,7 @@ export const SEAT_WIDTH_DEFAULT = 28;
 export const SNUG_SEAT_WIDTH = 24;
 export const CLEARANCE_MIN = 14;
 export const OPENING_MIN = 60;
-/** Seat depth is measured to the back cushions (D − B − 8): under 16 warns (the old 24 to the frame). */
+/** Seat depth is measured to the back cushions (D − B − 10 = D − 18): under 16 warns (the old 24 to the frame). */
 export const SEAT_DEPTH_MIN = 16;
 export const WEDGE_FACE_MIN = 8;
 
@@ -55,6 +59,8 @@ export interface PresetOptions {
   tableFinish?: TableFinish;
   tableStyle?: TableStyle;
   dims?: Partial<HavenDims>;
+  /** The Standard U's table width (default TABLE_DEFAULT, 24″ since 2026-11-18; tests build the older 32″ U with it). */
+  table?: number;
 }
 
 function base(shape: Shape, o: PresetOptions, W: number): Config {
@@ -89,11 +95,12 @@ function build(shape: Shape, o: PresetOptions, fill: 'standardU' | 'default' | '
     if (len < 0) throw new Error(`measurements too small for ${shape}: ${run} has ${len}"`);
     if (fill === 'blank') {
       draft.runs[run] = len > 0 ? [{ id: alloc('p'), kind: 'gap', length: len }] : [];
-    } else if (run === 'back' && fill === 'standardU' && len - TABLE_DEFAULT >= ABSORB_FLOOR) {
-      // §2: [wedge][table 32][armless rest][wedge]
+    } else if (run === 'back' && fill === 'standardU' && len - (o.table ?? TABLE_DEFAULT) >= ABSORB_FLOOR) {
+      // §2: [wedge][table 24][armless rest][wedge] (Andre, 2026-11-18: 60 | 24 | 44 | 60; 32 | 36 before)
+      const t = o.table ?? TABLE_DEFAULT;
       draft.runs[run] = [
-        { id: alloc('p'), kind: 'table', length: TABLE_DEFAULT },
-        seat(alloc('p'), len - TABLE_DEFAULT, null),
+        { id: alloc('p'), kind: 'table', length: t },
+        seat(alloc('p'), len - t, null),
       ];
     } else {
       draft.runs[run] = defaultFill(len, openEnds(shape, run), A, alloc);

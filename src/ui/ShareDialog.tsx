@@ -19,7 +19,7 @@ const VIEW_LABELS: { key: keyof Views; label: string }[] = [
   { key: 'threeQuarter', label: '3/4 view' },
   { key: 'iso', label: 'Iso view' },
   { key: 'front', label: 'Front view' },
-  { key: 'side', label: 'Side view' },
+  { key: 'side', label: 'Side view (drawing with measurements)' },
 ];
 
 type Made = { pdf: Blob; svg: string; name: string; preview: string; sig: string };

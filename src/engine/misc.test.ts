@@ -17,12 +17,12 @@ describe('seat count and warnings', () => {
   });
 
   it('warning messages (amber, never blocking)', () => {
-    const shallow = standardU({ D: 30 });
+    const shallow = standardU({ D: 30, table: 32 });
     // Seat depth to the loose back cushions (Andre, 2026-09-27): 30 − 10 − 8 = 12, under 16.
     expect(valid(shallow).warnings.find((w) => w.code === 'seatDepthShort')!.message).toBe('Seat depth 12″ (under 16)');
     // The same sofas warn as before (the old rule: D − 10 under 24, i.e. D < 34).
-    expect(valid(standardU({ D: 33 })).warnings.some((w) => w.code === 'seatDepthShort')).toBe(true);
-    expect(valid(standardU({ D: 34 })).warnings.some((w) => w.code === 'seatDepthShort')).toBe(false);
+    expect(valid(standardU({ D: 33, table: 32 })).warnings.some((w) => w.code === 'seatDepthShort')).toBe(true);
+    expect(valid(standardU({ D: 34, table: 32 })).warnings.some((w) => w.code === 'seatDepthShort')).toBe(false);
     const narrow = op.setMeasurements(U(), { L: 100 });
     expect(valid(narrow).warnings.find((w) => w.code === 'openingUnder60')!.message).toBe('Opening 56″ deep (under 60)');
     expect(valid(narrow).exportBlocked).toBe(false);
@@ -100,19 +100,19 @@ describe('purity, undo and refusals (G6)', () => {
 
   it('limits() gives corners + tables + arms + 6" per seat unit', () => {
     expect(raw.limits(U())).toEqual({ W: 158, L: 80, R: 80 });
-    expect(raw.limits(standardU({ W: 300 }))).toEqual({ W: 158, L: 80, R: 80 }); // a split group is one unit
+    expect(raw.limits(standardU({ W: 300, table: 32 }))).toEqual({ W: 158, L: 80, R: 80 }); // a split group is one unit
     expect(raw.limits(standardL('right'))).toEqual({ W: 80, R: 80 });
   });
 });
 
 describe('profiles and world', () => {
-  it('profiles.ts (the real Haven, 2026-09-27): legs 0–1, tight seat 1–10–18, 10″ back frame 1–27, loose back cushions 17–31, arm 23, table 18', () => {
+  it('profiles.ts (the real Haven, 2026-09-27): legs 0–1, tight seat 1–9½–18 (stitch line in the middle, 2026-11-11), 8″ back frame 1–27 (2026-11-18), loose back cushions taking 10″, 17–31, arm 23, table 18', () => {
     const p = profiles(U().dims);
     expect(p.leg).toEqual({ z0: 0, z1: 1 });
-    expect(p.seatBase).toEqual({ z0: 1, z1: 10 });
-    expect(p.seat).toEqual({ z0: 10, z1: 18 });
-    expect(p.backFrame).toEqual({ t0: 0, t1: 10, z0: 1, z1: 27 });
-    expect(p.looseBack).toEqual({ t0: 10, t1: 18, z0: 17, z1: 31, sink: 1 });
+    expect(p.seatBase).toEqual({ z0: 1, z1: 9.5 });
+    expect(p.seat).toEqual({ z0: 9.5, z1: 18 });
+    expect(p.backFrame).toEqual({ t0: 0, t1: 8, z0: 1, z1: 27 });
+    expect(p.looseBack).toEqual({ t0: 8, t1: 18, z0: 17, z1: 31, sink: 1 });
     expect([p.arm.z1, p.table.z1, p.tableTop.z0, p.ottoman.z1, p.coffeeTable.z1]).toEqual([23, 18, 16, 18, 16]);
   });
 

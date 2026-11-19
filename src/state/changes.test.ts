@@ -5,7 +5,7 @@ import { setLayoutShape } from '@/engine/shapeLayout';
 import { copySide } from '@/engine/sides';
 import { describeChange } from './changes';
 
-const u = () => solo(standardU());
+const u = () => solo(standardU({ table: 32 }));
 const edit = (l: Layout, op: Parameters<typeof editSection>[2]) => editSection(l, 'a', op).layout;
 
 describe('describeChange', () => {
@@ -20,13 +20,17 @@ describe('describeChange', () => {
   it('a table dropped between two seats: one line for the pair, then the table (2026-11-09)', () => {
     const a = solo(standardStraight()); // 14+46 | 46+14
     const b = edit(a, (c) => addPiece(c, 'table', { run: 'back', at: 'seam', seam: 1 }));
-    expect(describeChange(a, b)).toBe('Seats 46″ | 46″ → 30″ | 30″ · Added table 32″ · Seats 3 → 2');
+    expect(describeChange(a, b)).toBe('Seats 46″ | 46″ → 34″ | 34″ · Added table 24″ · Seats 3 → 2');
   });
 
   it('a table that stepped down says why', () => {
-    const a = solo(standardU({ W: 170, L: 140, R: 140, wedgeC: 55, dims: { A: 12 } })); // a leg of one 73″ seat: split at 24″
-    const b = edit(a, (c) => addPiece(c, 'table', { run: 'left', at: 'split', pieceId: c.runs.left![0]!.id }));
-    expect(describeChange(a, b)).toMatch(/Added table 24″ \(32″ would leave a seat under 23″\)/);
+    const a = solo(standardStraight({ W: 94 })); // 14+33 | 33+14: 24″ would leave 21 | 21, so 20″ (23 | 23)
+    const b = edit(a, (c) => addPiece(c, 'table', { run: 'back', at: 'seam', seam: 1 }));
+    expect(describeChange(a, b)).toMatch(/Added table 20″ \(24″ would leave a seat under 23″\)/);
+    // The standard 24″ that fits says nothing more (a leg of one 73″ seat, split: 24½ | 24 | 24½).
+    const n = solo(standardU({ W: 170, L: 140, R: 140, wedgeC: 55, dims: { A: 12 }, table: 32 }));
+    const m = edit(n, (c) => addPiece(c, 'table', { run: 'left', at: 'split', pieceId: c.runs.left![0]!.id }));
+    expect(describeChange(n, m)).toMatch(/Added table 24″$/);
   });
 
   it('resizing a table between two seats: one line for the pair', () => {
@@ -74,9 +78,9 @@ describe('describeChange', () => {
   it('Mirror sides: a table added on one side reads once, not as removed and added pieces (round 2)', async () => {
     const { mirrorSides } = await import('@/engine/sides');
     const { addTable } = await import('@/engine');
-    const c = standardU({ L: 150, R: 150 });
+    const c = standardU({ L: 150, R: 150, table: 32 });
     const b = mirrorSides(c, addTable(c, { run: 'left', at: 'seam', seam: 0 }).config);
-    expect(describeChange(solo(c), solo(b))).toBe('Added table 32″ (both sides) · Seat 76″ → 44″ (both sides) · Seats 7 → 5');
+    expect(describeChange(solo(c), solo(b))).toBe('Added table 24″ (both sides) · Seat 76″ → 52″ (both sides) · Seats 7 → 5');
   });
 
   it('long lists are cut at four', () => {

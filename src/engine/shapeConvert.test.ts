@@ -18,7 +18,7 @@ import { deepFreeze, desc, valid } from './testing';
 import type { Config, Shape } from './types';
 
 const SHAPES: Shape[] = ['U', 'L-left', 'L-right', 'straight'];
-const standard = (s: Shape): Config => (s === 'U' ? standardU() : s === 'straight' ? standardStraight() : standardL(s === 'L-left' ? 'left' : 'right'));
+const standard = (s: Shape): Config => (s === 'U' ? standardU({ table: 32 }) : s === 'straight' ? standardStraight() : standardL(s === 'L-left' ? 'left' : 'right'));
 const to = (c: Config, s: Shape): Config => {
   const r = setShape(deepFreeze(c), s);
   expect(r.rejected).toBeNull();
@@ -50,7 +50,7 @@ const drawn = (c: Config) => {
 
 describe('switching shape keeps the seats', () => {
   it("Andre's examples: Standard U 188″ -> L left 142″; Straight 120″ -> U 212″ with 132″ legs", () => {
-    const l = to(standardU(), 'L-left');
+    const l = to(standardU({ table: 32 }), 'L-left');
     expect([l.W, l.L]).toEqual([142, 132]);
     expect(backLook(l)).toEqual(['table 32', 'seat 36']);
     const u = to(standardStraight(), 'U');
@@ -84,7 +84,7 @@ describe('switching shape keeps the seats', () => {
   });
 
   it('a kept leg is untouched; an L becoming a straight sofa keeps its back seat (one arm, the other end open)', () => {
-    const u = centralTable(standardU()).config;
+    const u = centralTable(standardU({ table: 32 })).config;
     const l = to(u, 'L-right');
     expect(l.runs.right).toEqual(u.runs.right);
     const s = to(standardL('left'), 'straight');
@@ -94,7 +94,7 @@ describe('switching shape keeps the seats', () => {
 
   it('many sofas (depths, widths, tables, seat widths), every target shape: valid, back seats and tables kept', () => {
     const configs: Config[] = [];
-    for (const D of [36, 44]) for (const W of [170, 240]) configs.push(setMeasurements(standardU(), { D, W }).config);
+    for (const D of [36, 44]) for (const W of [170, 240]) configs.push(setMeasurements(standardU({ table: 32 }), { D, W }).config);
     configs.push(standardL('left', { W: 200 }), standardL('right', { W: 120, R: 100 }), standardStraight({ W: 212 }));
     for (const c of [...configs]) {
       const t = centralTable(c);
@@ -112,7 +112,7 @@ describe('switching shape keeps the seats', () => {
   });
 
   it('loose pieces move with the back seats (and mirror between the two L’s)', () => {
-    const l = addLooseInLayout(solo(standardU()), 'a', 'coffeeTable').layout;
+    const l = addLooseInLayout(solo(standardU({ table: 32 })), 'a', 'coffeeTable').layout;
     const c = l.sections[0]!.config;
     const x = c.loose[0]!.x;
     expect(to(c, 'L-left').loose[0]!.x).toBe(x); // the left corner stays: nothing moves
@@ -124,7 +124,7 @@ describe('switching shape keeps the seats', () => {
 });
 
 describe('the layout switch', () => {
-  const u = (): Layout => solo(standardU());
+  const u = (): Layout => solo(standardU({ table: 32 }));
 
   it('keeps the room and Snug; a centred room follows the sofa', () => {
     const l = setSnug(setRoom(u(), { w: 240, d: 200 }).layout, true).layout;

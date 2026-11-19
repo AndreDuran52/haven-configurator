@@ -7,7 +7,7 @@ import { reorderIndex } from './usePlanGestures';
 const k = 0.25; // plan inches per px (4 px/in)
 
 describe('hitTest (plan §8)', () => {
-  const c = standardU();
+  const c = standardU({ table: 32 });
   const b = buildHaven(c);
   const grips = gripPoints(b, k);
 
@@ -43,7 +43,7 @@ describe('hitTest (plan §8)', () => {
 
 describe('table snapping (tableSnap, §5.4)', () => {
   it('a table snaps to seams only (no split where a seam fits); dropping on an anchor gives it; hysteresis keeps the current target', () => {
-    const c = standardU();
+    const c = standardU({ table: 32 });
     const id = c.runs.back!.find((p) => p.kind === 'table')!.id;
     const targets = anchoredTargets(c, id);
     expect(targets.some((t) => t.placement.at === 'split')).toBe(false);
@@ -59,14 +59,14 @@ describe('table snapping (tableSnap, §5.4)', () => {
 
 describe('tray placement targets', () => {
   it('armless: every seam and split where addPiece succeeds, each a different layout', () => {
-    const t = placementTargets(standardU(), 'armless');
+    const t = placementTargets(standardU({ table: 32 }), 'armless');
     expect(t.length).toBeGreaterThanOrEqual(2); // Standard U, lock on: one per leg (the back has no room)
     expect(new Set(t.map((x) => JSON.stringify(x.config.runs))).size).toBe(t.length);
   });
 
   it('one-arm L / R only at open ends, with the facing asked for', () => {
-    const l = placementTargets(standardU(), 'oneArmL');
-    const r = placementTargets(standardU(), 'oneArmR');
+    const l = placementTargets(standardU({ table: 32 }), 'oneArmL');
+    const r = placementTargets(standardU({ table: 32 }), 'oneArmR');
     for (const x of [...l, ...r]) expect(x.placement.run).not.toBe('back');
     expect(l.every((x) => x.placement.run !== r[0]?.placement.run || r.length === 0)).toBe(true);
   });
@@ -74,7 +74,7 @@ describe('tray placement targets', () => {
 
 describe('reorder index', () => {
   it('counts the other piece centres before the pointer', () => {
-    const c = standardU();
+    const c = standardU({ table: 32 });
     const seat = c.runs.back![1]!;
     const b = buildHaven(c);
     const x0 = b.runs[0]!.origin[0];

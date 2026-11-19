@@ -1,7 +1,8 @@
 // Balance seats around a table (Andre, 2026-11-06, with the Nick drawing: a U
 // 170 × 140, 55″ wedges, each leg 27 | table 20 | 26 + 12 arm). Since
-// 2026-11-09 a new table starts at 32″ and steps down to 28, 24, 20″ so no seat
-// goes under 23″ (tablePlace.ts); a 20″ table is set explicitly here.
+// 2026-11-09 a new table steps down so no seat goes under 23″ (tablePlace.ts);
+// since 2026-11-18 it starts at the standard 24″ and steps down to 20″ (32, 28,
+// 24, 20 before). A 20″ table is set explicitly here.
 import { describe, expect, it } from 'vitest';
 import { evenTableSeats, tableSeats } from './balance';
 import { standardL, standardU } from './defaults';
@@ -18,24 +19,24 @@ const drop20 = (c: Config, run: RunId) => dropTable(c, run, 0, 20);
 const tableIn = (c: Config, run: RunId) => c.runs[run]!.find((p) => p.kind === 'table')!.id;
 /** The first seat made 5″ wider by hand (the absorber rule takes it from the other seat). */
 const uneven = (c: Config) => resizePiece(c, c.runs.left![0]!.id, c.runs.left![0]!.length + 5).config;
-const nick = () => standardU({ W: 170, L: 140, R: 140, wedgeC: 55, dims: { A: 12 } });
+const nick = () => standardU({ W: 170, L: 140, R: 140, wedgeC: 55, dims: { A: 12 }, table: 32 });
 
-describe('a new table: 32″, stepping down so no seat goes under 23″ (2026-11-09)', () => {
-  it('Standard U leg (72 = 58 + 14): at the corner seam the seat takes 32″ and keeps 26″', () => {
-    const r = addPiece(deepFreeze(standardU()), 'table', { run: 'left', at: 'seam', seam: 0 });
+describe('a new table: 24″, stepping down to 20″ so no seat goes under 23″ (2026-11-18)', () => {
+  it('Standard U leg (72 = 58 + 14): at the corner seam the seat takes 24″ and keeps 34″', () => {
+    const r = addPiece(deepFreeze(standardU({ table: 32 })), 'table', { run: 'left', at: 'seam', seam: 0 });
     expect(r.rejected).toBeNull();
     valid(r.config);
-    expect(desc(r.config, 'left')).toEqual(['table 32', 'oneArm 40=26+14@end']);
+    expect(desc(r.config, 'left')).toEqual(['table 24', 'oneArm 48=34+14@end']);
   });
 
   it('Standard U leg split: no width leaves both halves at 23″, so it is refused in plain words', () => {
-    const c = deepFreeze(standardU());
+    const c = deepFreeze(standardU({ table: 32 }));
     const r = dropTable(c, 'left');
     expect(r.config).toBe(c);
     expect(r.rejected?.message).toBe('Not enough seat for a table here.');
   });
 
-  it("Nick's leg (140, wedge 55, arm 12): split, 32 and 28 leave a seat under 23, so 24″: 24½ | 24 | 24½", () => {
+  it("Nick's leg (140, wedge 55, arm 12): split, the standard 24″ leaves both seats 23″ or more: 24½ | 24 | 24½", () => {
     const c = nick();
     expect(desc(c, 'left')).toEqual(['oneArm 85=73+12@end']);
     const r = dropTable(c, 'left');
@@ -45,15 +46,15 @@ describe('a new table: 32″, stepping down so no seat goes under 23″ (2026-11
     expect(r.config.L).toBe(140);
   });
 
-  it('an explicit width is kept; a table at a seam or an end keeps the 32″ default', () => {
+  it('an explicit width is kept; a table at a seam or an end gets the 24″ standard', () => {
     const c = standardL('left', { W: 200 });
-    expect(desc(dropTable(c, 'back', 0, 24).config, 'back').filter((d) => d.startsWith('table'))).toEqual(['table 24']);
+    expect(desc(dropTable(c, 'back', 0, 28).config, 'back').filter((d) => d.startsWith('table'))).toEqual(['table 28']);
     const seam = addPiece(c, 'table', { run: 'back', at: 'seam', seam: 1 });
-    expect(desc(seam.config, 'back')).toContain('table 32');
+    expect(desc(seam.config, 'back')).toContain('table 24');
   });
 
   it('moving an existing table into a seat keeps its width', () => {
-    const c = standardU(); // back: table 32 | armless 36
+    const c = standardU({ table: 32 }); // back: table 32 | armless 36
     const t = tableIn(c, 'back');
     const r = moveTable(c, t, { run: 'left', at: 'split', pieceId: c.runs.left![0]!.id });
     expect(r.rejected).toBeNull();
@@ -75,7 +76,7 @@ describe('resizing the table keeps its seats equal', () => {
   });
 
   it('refused (same reference) when a seat would go under 6″', () => {
-    const c = drop20(standardU({ L: 112 }), 'left').config; // 9 | 20 | 9
+    const c = drop20(standardU({ L: 112, table: 32 }), 'left').config; // 9 | 20 | 9
     expect(tableSeats(c, tableIn(c, 'left'))).toEqual([9, 9]);
     const r = resizePiece(c, tableIn(c, 'left'), 28);
     expect(r.rejected).not.toBeNull();
@@ -83,7 +84,7 @@ describe('resizing the table keeps its seats equal', () => {
   });
 
   it('lock off: the run grows, the seats keep their size', () => {
-    const c = drop20(standardU({ lockOutside: false }), 'left').config;
+    const c = drop20(standardU({ lockOutside: false, table: 32 }), 'left').config;
     const id = tableIn(c, 'left');
     const before = tableSeats(c, id);
     const r = resizePiece(c, id, 24);
@@ -107,7 +108,7 @@ describe('Even seats', () => {
   it('already even, or no seat pair: same reference', () => {
     const c = drop20(nick(), 'left').config;
     expect(evenTableSeats(c, tableIn(c, 'left')).config).toBe(c);
-    const u = standardU();
+    const u = standardU({ table: 32 });
     const r = evenTableSeats(u, tableIn(u, 'back'));
     expect(r.config).toBe(u);
     expect(r.rejected?.message).toBe('This table needs a seat on each side');
@@ -116,7 +117,7 @@ describe('Even seats', () => {
 
 describe('arm width keeps an even pair even', () => {
   it('Standard U leg with a table, arms 14 → 10: 21 | 20 | 21, leg length held', () => {
-    const c = drop20(standardU(), 'left').config;
+    const c = drop20(standardU({ table: 32 }), 'left').config;
     const r = setArmWidth(c, 10);
     valid(r.config);
     expect(desc(r.config, 'left')).toEqual(['armless 21', 'table 20', 'oneArm 31=21+10@end']);

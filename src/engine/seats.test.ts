@@ -14,6 +14,7 @@ import { setRoom } from './room';
 import { layoutSeatMarkers, seatMarkers } from './seatMarkers';
 import { seatsIn, seatsLabel } from './seating';
 import { addTable, centralTable, tableTargets } from './tablePlace';
+import { resizeTable } from './tableSize';
 import { teeLayout } from './tee';
 import { buildHaven } from './buildHaven';
 import { deepFreeze, desc } from './testing';
@@ -36,15 +37,19 @@ describe('the seat label', () => {
   it('a seat of 23″ or more seats one even when narrower than 28″ (Q76); longer stretches one per width', () => {
     expect([23, 22.5, 27.5, 50, 56].map((len) => seatsIn(len, 28))).toEqual([1, 0, 1, 1, 2]);
     expect([22, 23, 46, 48].map((len) => seatsIn(len, 24))).toEqual([0, 1, 1, 2]);
-    // Andre's sofa: 152″ sides, a 32″ table in the middle of each (23 | 32 | 23): 7 seats, a marker on each.
-    const split = tableTargets(standardU({ L: 152, R: 152 })).filter((t) => t.placement.at === 'split' && t.placement.run === 'left')[0]!;
-    expect(desc(split.config, 'left')).toEqual(['armless 23', 'table 32', 'oneArm 37=23+14@end']);
+    // Andre's sofa: 152″ sides, a new 24″ table in the middle of each (27 | 24 | 27), then widened to 32″ (23 | 32 | 23): a marker on each seat.
+    const split = tableTargets(standardU({ L: 152, R: 152, table: 32 })).filter((t) => t.placement.at === 'split' && t.placement.run === 'left')[0]!;
+    expect(desc(split.config, 'left')).toEqual(['armless 27', 'table 24', 'oneArm 41=27+14@end']);
     const l = solo(split.config);
     expect(buildLayout(l).seats.count).toBe(markers(l).length);
+    const t = split.config.runs.left!.find((p) => p.kind === 'table')!.id;
+    const wide = resizeTable(split.config, t, 32).config;
+    expect(desc(wide, 'left')).toEqual(['armless 23', 'table 32', 'oneArm 37=23+14@end']);
+    expect(buildLayout(solo(wide)).seats.count).toBe(markers(solo(wide)).length);
   });
 
   it('the layout picks the number: the Standard U at 36″ deep is 7 comfortable, 8 snug', () => {
-    const l = deepFreeze(solo(setMeasurements(standardU(), { D: 36 }).config));
+    const l = deepFreeze(solo(setMeasurements(standardU({ table: 32 }), { D: 36 }).config));
     expect(buildLayout(l).seats).toMatchObject({ comfortable: 7, snug: 8, count: 7, label: 'Seats 7' });
     const s = setSnug(l, true).layout;
     expect(buildLayout(s).seats).toMatchObject({ count: 8, label: 'Seats 8 · snug' });
@@ -53,7 +58,7 @@ describe('the seat label', () => {
 
 describe('Snug on the layout', () => {
   it('setSnug: same reference when unchanged; off leaves no key', () => {
-    const l = deepFreeze(solo(standardU()));
+    const l = deepFreeze(solo(standardU({ table: 32 })));
     expect(setSnug(l, false).layout).toBe(l);
     const on = setSnug(l, true).layout;
     expect(on.snug).toBe(true);
@@ -64,9 +69,9 @@ describe('Snug on the layout', () => {
 
   it('link v6: a last N token only when snug; every older link byte for byte', () => {
     const cases: [string, Layout][] = [
-      ['U', solo(standardU())],
+      ['U', solo(standardU({ table: 32 }))],
       ['straight', solo(standardStraight())],
-      ['U + room', setRoom(solo(standardU()), { w: 240, d: 200 }).layout],
+      ['U + room', setRoom(solo(standardU({ table: 32 })), { w: 240, d: 200 }).layout],
       ['T', teeLayout({ total: 229, stem: 110 })],
     ];
     for (const [name, l] of cases) {
@@ -84,7 +89,7 @@ describe('Snug on the layout', () => {
 
   it('golden v6 links (kept forever)', () => {
     const GOLDEN_V6: Record<string, string> = {
-      uSnug: encodeLayout(setSnug(solo(standardU()), true).layout),
+      uSnug: encodeLayout(setSnug(solo(standardU({ table: 32 })), true).layout),
       straightRoomSnug: encodeLayout(setSnug(setRoom(solo(standardStraight()), { w: 200, d: 150 }).layout, true).layout),
     };
     expect(GOLDEN_V6).toEqual({
@@ -102,7 +107,7 @@ describe('Snug on the layout', () => {
 
 describe('the markers agree with the count', () => {
   const configs: Config[] = [];
-  for (const D of [36, 40, 44]) for (const W of [140, 188, 240, 300]) configs.push(setMeasurements(standardU(), { D, W }).config);
+  for (const D of [36, 40, 44]) for (const W of [140, 188, 240, 300]) configs.push(setMeasurements(standardU({ table: 32 }), { D, W }).config);
   configs.push(standardL('left'), standardL('right', { W: 120, R: 100 }), standardStraight(), standardStraight({ W: 212 }), blankConfig('U'));
   for (const c of [...configs]) {
     const t = centralTable(c);
@@ -112,7 +117,7 @@ describe('the markers agree with the count', () => {
   }
   // Q76: seats of 23–27″ either side of a table in the middle of a side (Andre's 152″ sides: 23 | 32 | 23).
   for (const L of [140, 148, 152, 156]) {
-    for (const t of tableTargets(standardU({ L, R: L }))) if (t.placement.at === 'split') configs.push(t.config);
+    for (const t of tableTargets(standardU({ L, R: L, table: 32 }))) if (t.placement.at === 'split') configs.push(t.config);
   }
   for (const c of [...configs]) for (const w of [21, 24, 30]) configs.push(setSeatWidth(c, w).config);
 
@@ -134,7 +139,7 @@ describe('the markers agree with the count', () => {
   });
 
   it('the Standard U, in order round the sofa: left leg from its end, left corner, back, right corner, right leg', () => {
-    const b = buildHaven(standardU());
+    const b = buildHaven(standardU({ table: 32 }));
     const m = seatMarkers(b, { snug: false, seatWidth: 28, snugWidth: 24 });
     expect(m).toHaveLength(7);
     const [l1, l2, w1, back, w2, r1, r2] = m as [[number, number], [number, number], [number, number], [number, number], [number, number], [number, number], [number, number]];
@@ -152,7 +157,7 @@ describe('the markers agree with the count', () => {
     const b = buildHaven(standardStraight()); // 14+46 | 46+14
     const m = seatMarkers(b, { snug: false, seatWidth: 28, snugWidth: 24 });
     expect(m.map(([x]) => +x.toFixed(2))).toEqual([29.33, 60, 90.67]);
-    const t = centralTable(standardStraight()).config; // 14+30 | 32 | 30+14
-    expect(seatMarkers(buildHaven(t), { snug: false, seatWidth: 28, snugWidth: 24 }).map(([x]) => x)).toEqual([29, 91]);
+    const t = centralTable(standardStraight()).config; // 14+34 | 24 | 34+14
+    expect(seatMarkers(buildHaven(t), { snug: false, seatWidth: 28, snugWidth: 24 }).map(([x]) => x)).toEqual([31, 89]);
   });
 });

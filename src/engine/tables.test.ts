@@ -27,25 +27,25 @@ describe('tables', () => {
   });
 
   it('E5 tableSplitOddRemainder: L 132.5, split the left leg: [13.5][32][27 = 13 + 14]', () => {
-    const u = deepFreeze(standardU({ L: 132.5 }));
+    const u = deepFreeze(standardU({ L: 132.5, table: 32 }));
     const c = op.moveTable(u, tableId(u), { run: 'left', at: 'split', pieceId: idAt(u, 'left', 0) });
     expect(desc(c, 'left')).toEqual(['armless 13.5', 'table 32', 'oneArm 27=13+14@end']);
   });
 
   it('a table between two seats: both give up its width equally (Andre, 2026-11-09), a split group too', () => {
-    const g = standardU({ W: 272 }); // back [T][60][60] (split group)
+    const g = standardU({ W: 272, table: 32 }); // back [T][60][60] (split group)
     const uneven = op.dragSeam(g, 'back', 2, 10);
     expect(desc(uneven, 'back')).toEqual(['table 32', 'armless 70', 'armless 50']);
     expect(desc(op.addPiece(uneven, 'table', { run: 'back', at: 'seam', seam: 2 }), 'back')).toEqual([
-      'table 32', 'armless 44', 'table 32', 'armless 44',
+      'table 32', 'armless 48', 'table 24', 'armless 48',
     ]);
     const even = op.addPiece(g, 'table', { run: 'back', at: 'seam', seam: 2 });
-    expect(desc(even, 'back')).toEqual(['table 32', 'armless 44', 'table 32', 'armless 44']);
+    expect(desc(even, 'back')).toEqual(['table 32', 'armless 48', 'table 24', 'armless 48']); // the new table: 24″
     expect(even.runs.back!.every((p) => p.splitGroup === undefined)).toBe(true);
   });
 
   it('absorber tie-break (a seat added at a seam): nearest seat, then the LARGER cushion, then the lower index', () => {
-    const uneven = op.dragSeam(standardU({ W: 272 }), 'back', 2, 10); // [T][70][50]
+    const uneven = op.dragSeam(standardU({ W: 272, table: 32 }), 'back', 2, 10); // [T][70][50]
     expect(desc(op.addPiece(uneven, 'armless', { run: 'back', at: 'seam', seam: 2 }), 'back')).toEqual([
       'table 32', 'armless 34', 'armless 36', 'armless 50',
     ]);
@@ -53,13 +53,13 @@ describe('tables', () => {
 
   it('several tables: end cap "table" adds one; same-run seam moves are pure reorders', () => {
     const u = U();
-    expect(desc(op.setEndCap(u, 'right', 'table'), 'right')).toEqual(['armless 40', 'table 32']);
+    expect(desc(op.setEndCap(u, 'right', 'table'), 'right')).toEqual(['armless 48', 'table 24']); // a new table: 24″
     expect(desc(op.moveTable(u, tableId(u), { run: 'back', at: 'seam', seam: 1 }), 'back')).toEqual(['armless 36', 'table 32']);
     expect(raw.moveTable(u, tableId(u), { run: 'back', at: 'seam', seam: 0 })).toEqual({ config: u, rejected: null });
   });
 
   it('E30b replaceArm_onTableEnd_refused', () => {
-    const c = op.setEndCap(U(), 'left', 'table'); // left [armless 40][table 32] + the back table
+    const c = op.setEndCap(U(), 'left', 'table'); // left [armless 48][table 24] + the back table
     refused(raw.moveTable(c, tableId(c), { run: 'left', at: 'replaceArm' }), c, 'notAllowed');
   });
 });

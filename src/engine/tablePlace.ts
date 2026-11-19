@@ -2,8 +2,9 @@
 // (at a seam); at an open end it takes the arm's place (seat | table, never
 // seat | arm | table: Andre, Phase 3c fixes, Q72); and it may split a seat in
 // two when both halves stay 23″ or more (Q73). A new table starts at the
-// standard 32″; if that would leave a seat under 23″ it steps down to 28, 24,
-// then 20″; if none fits: "Not enough seat for a table here." Between two seats
+// standard 24″ (Andre, 2026-11-18; 32″ before); if that would leave a seat
+// under 23″ it steps down to 20″; if neither fits: "Not enough seat for a
+// table here." Between two seats
 // with the lock on, both seats shrink equally (placement.ts shareSeam); with
 // the lock off the seats keep their size and the sofa grows. Saved layouts and
 // links are never re-placed: only new edits use this.
@@ -14,8 +15,8 @@ import { cushionOf, isSeat, SEAT_WARN, TABLE_DEFAULT } from './pieces';
 import { insertPiece } from './placement';
 import type { Config, EditResult, Placement, Pt } from './types';
 
-/** A new table's widths, tried in order. */
-export const TABLE_STEPS = [TABLE_DEFAULT, 28, 24, 20] as const;
+/** A new table's widths, tried in order: the standard, then 4″ narrower down to 20″. */
+export const TABLE_STEPS: readonly number[] = [TABLE_DEFAULT, 20].filter((w, i, a) => w <= TABLE_DEFAULT && a.indexOf(w) === i);
 export const NO_TABLE_ROOM = 'Not enough seat for a table here.';
 
 /** Seat cushions by id, every run. */
@@ -40,7 +41,7 @@ export function tableFits(before: Config, after: Config): boolean {
 const tableAt = (config: Config, placement: Placement, w: number): EditResult =>
   edit(config, (d, alloc) => insertPiece(d, alloc, { id: alloc('p'), kind: 'table', length: w }, placement));
 
-/** A new table at the placement: 32″, else the widest step that leaves every seat it shrinks at 23″ or more. */
+/** A new table at the placement: 24″, else the widest step that leaves every seat it shrinks at 23″ or more. */
 export function addTable(config: Config, placement: Placement): EditResult {
   for (const w of TABLE_STEPS) {
     const r = tableAt(config, placement, w);

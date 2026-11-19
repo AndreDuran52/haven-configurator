@@ -24,7 +24,7 @@ const GOLDEN_V5: Record<string, string> = {
 
 const room = (l: Layout) => buildLayout(l).room!;
 const codes = (l: Layout) => buildLayout(l).warnings.map((w) => w.code);
-const uRoom = () => setRoom(solo(standardU()), { w: 240, d: 200 }).layout; // the U is 188 × 132
+const uRoom = () => setRoom(solo(standardU({ table: 32 })), { w: 240, d: 200 }).layout; // the U is 188 × 132
 
 describe('placing the room', () => {
   it('the first room is centred on the sofa: 26″ each side, 34″ back and front', () => {
@@ -72,7 +72,7 @@ describe('placing the room', () => {
     expect(stuck.layout).toBe(wall);
     expect(stuck.rejected?.message).toBe('The sofa is against the back wall');
     expect(room(nudgeRoom(l, 'left', 40).layout).gaps).toMatchObject({ left: 0, right: 52 });
-    expect(nudgeRoom(solo(standardU()), 'left').rejected?.message).toBe('Add the room first');
+    expect(nudgeRoom(solo(standardU({ table: 32 })), 'left').rejected?.message).toBe('Add the room first');
   });
 
   it('resizing keeps the mode; a room on a T is centred on both halves', () => {
@@ -89,7 +89,7 @@ describe('placing the room', () => {
     expect(setRoom(l, { w: 240 }).layout).toBe(l);
     expect(setRoomGap(l, 'left', -1).layout).toBe(l);
     expect(placeRoom(l, 'center').layout).toBe(l);
-    const none = solo(standardU());
+    const none = solo(standardU({ table: 32 }));
     expect(placeRoom(none, 'backWall').rejected?.message).toBe('Add the room first');
     const cleared = clearRoom(l).layout;
     expect('room' in cleared).toBe(false);
