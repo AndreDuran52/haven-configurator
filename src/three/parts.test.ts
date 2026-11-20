@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { buildHaven, setArmWidth, standardL, standardU, type BuildResult, type Pt } from '@/engine';
-import { buildParts, LEG_INSET } from './parts';
+import { addLoose, buildHaven, setArmWidth, standardL, standardU, type BuildResult, type Pt } from '@/engine';
+import { buildParts, LEG_INSET, UPHOLSTERY, WOOD_EASE } from './parts';
 
 const built = buildHaven(standardU({ table: 32 }));
 const kindOf = (b: BuildResult, id: string) => b.pieces.find((q) => q.id === id)?.kind;
@@ -21,19 +21,30 @@ function edgeDistance(poly: Pt[], [x, y]: Pt): number {
 describe('table style (Andre, 2026-09-26/27): the top flush with the seat', () => {
   const tableParts = (style: 'standard' | 'allWood') => buildParts(built, style).prisms.filter((p) => kindOf(built, p.pieceId) === 'table');
 
-  it('standard: a 2″ wood top on a fabric base with the seat’s seam, 1–9½–16–18', () => {
-    const [base, band, top] = tableParts('standard');
-    expect(base).toMatchObject({ mat: 'body', z0: 1, z1: 9.5 });
-    expect(band).toMatchObject({ mat: 'body', z0: 9.5, z1: 16 });
-    expect(top).toMatchObject({ mat: 'wood', z0: 16, z1: 18 });
+  it('standard (Andre, 2026-11-20): one plain fabric block 1–16, no seam, and a 2″ square wood top 16–18 flush with it', () => {
+    const parts = tableParts('standard');
+    expect(parts.map((p) => p.key.split(':').pop())).toEqual(['base', 'top']);
+    const [base, top] = parts;
+    expect(base).toMatchObject({ mat: 'body', z0: 1, z1: 16 });
+    expect(base!.edges.puff ?? 0).toBe(0);
+    expect(base!.upper).toBeUndefined();
+    expect(top).toMatchObject({ mat: 'wood', z0: 16, z1: 18, edges: { top: WOOD_EASE, bottom: WOOD_EASE, corner: WOOD_EASE } });
     expect(base!.poly).toEqual(top!.poly);
-    expect(bbox(band!.poly)).toEqual([60.125, 0, 91.875, 44]);
+    expect(bbox(top!.poly)).toEqual([60, 0, 92, 44]);
   });
 
-  it('all wood: one solid wood block, 1–18', () => {
+  it('all wood: one solid wood block, 1–18, the same eased square edges', () => {
     const parts = tableParts('allWood');
     expect(parts).toHaveLength(1);
-    expect(parts[0]).toMatchObject({ mat: 'wood', z0: 1, z1: 18 });
+    expect(parts[0]).toMatchObject({ mat: 'wood', z0: 1, z1: 18, edges: { top: WOOD_EASE, bottom: WOOD_EASE, corner: WOOD_EASE } });
+  });
+
+  it('the coffee table’s top: the same ⅛″ eased square edge (Andre, 2026-11-20), its size unchanged', () => {
+    const c = buildHaven(addLoose(standardU(), 'coffeeTable').config);
+    const coffee = c.pieces.find((q) => q.kind === 'coffeeTable')!;
+    const top = buildParts(c).prisms.find((p) => p.key === `${coffee.id}:top`)!;
+    expect(top.edges).toEqual({ top: WOOD_EASE, corner: WOOD_EASE, bottom: WOOD_EASE });
+    expect(top.poly).toEqual(coffee.polygon);
   });
 });
 
@@ -41,21 +52,38 @@ describe('the real Haven (Andre, 2026-09-27)', () => {
   const parts = buildParts(built);
   const part = (key: string) => parts.prisms.find((p) => p.key === key)!;
 
-  it('seat pieces: an 8″ back frame 1–27 (2026-11-18), a tight seat (base 1–9½, flat band 9½–18, the stitch line in the exact middle, Andre 2026-11-11), 23″ arms', () => {
+  it('seat pieces: an 8″ back frame 1–27 (2026-11-18), the tight seat one upholstered block 1–18 stitched at 9½ (Andre 2026-11-20), 23″ arms', () => {
     // p2: the armless 36 on the back run, x 92..128.
     expect(part('p2:frame')).toMatchObject({ z0: 1, z1: 27, mat: 'body' });
     expect(bbox(part('p2:frame').poly)).toEqual([92, 0, 128, 8]);
-    expect(part('p2:base')).toMatchObject({ z0: 1, z1: 9.5, mat: 'body' });
-    expect(bbox(part('p2:base').poly)).toEqual([92, 8, 128, 44]);
-    expect(part('p2:seat')).toMatchObject({ z0: 9.5, z1: 18, mat: 'cushion' });
-    expect(bbox(part('p2:seat').poly)).toEqual([92.125, 8, 127.875, 44]);
+    expect(part('p2:seat')).toMatchObject({ z0: 1, z1: 18, mat: 'cushion', edges: { ...UPHOLSTERY, seamAt: 9.5 } });
+    // Below the stitching the whole footprint (Top parity); above it the ⅛″ seam to each neighbour.
+    expect(bbox(part('p2:seat').poly)).toEqual([92, 8, 128, 44]);
+    expect(bbox(part('p2:seat').upper!)).toEqual([92.125, 8, 127.875, 44]);
+    // One block: nothing stacked under a seat, no band on a table.
+    expect(parts.prisms.some((p) => p.key.endsWith(':base') && kindOf(built, p.pieceId) !== 'table')).toBe(false);
+    expect(parts.prisms.some((p) => p.key.endsWith(':band'))).toBe(false);
     // p3: the left leg's one-arm 72, its arm at the front end (y 118..132); the frame stops at the arm.
     expect(part('p3:arm')).toMatchObject({ z0: 1, z1: 23 });
     expect(bbox(part('p3:arm').poly)).toEqual([0, 118, 44, 132]);
     expect(bbox(part('p3:frame').poly)).toEqual([0, 60, 8, 118]);
-    expect(bbox(part('p3:seat').poly)).toEqual([8, 60.125, 44, 117.875]);
+    expect(bbox(part('p3:seat').upper!)).toEqual([8, 60.125, 44, 117.875]);
     // Nothing is crowned any more: every seat top is flat at 18.
     for (const p of parts.prisms.filter((q) => q.key.endsWith(':seat'))) expect(p.z1).toBe(18);
+  });
+
+  it('the loose ottoman (Andre, 2026-11-20): one plain block, no seam', () => {
+    const c = buildHaven(addLoose(standardU(), 'ottoman').config);
+    const id = c.pieces.find((q) => q.kind === 'ottoman')!.id;
+    const own = buildParts(c).prisms.filter((p) => p.pieceId === id);
+    expect(own).toHaveLength(1);
+    expect(own[0]!.edges.puff ?? 0).toBe(0);
+    expect(own[0]!.edges.seamAt).toBeUndefined();
+  });
+
+  it('arms and back frames (Andre, 2026-11-20): the seat’s edges, flat faces', () => {
+    for (const k of ['p3:arm', 'p3:frame', 'p2:frame', 'wedge:backLeft:frameA', 'wedge:backLeft:frameB'])
+      expect(part(k).edges, k).toEqual({ top: UPHOLSTERY.top, corner: UPHOLSTERY.corner, bottom: UPHOLSTERY.bottom });
   });
 
   it('arm width (Andre, 2026-09-28): a 10″ arm renders 10″ wide, the frame and seat take the rest of the piece', () => {
@@ -70,8 +98,7 @@ describe('the real Haven (Andre, 2026-09-27)', () => {
     expect(part('wedge:backLeft:frameA').poly).toEqual([[0, 0], [60, 0], [60, 8], [0, 8]]);
     expect(part('wedge:backLeft:frameB').poly).toEqual([[0, 8], [8, 8], [8, 60], [0, 60]]);
     expect(part('wedge:backLeft:seat').poly).toEqual([[8, 8], [60, 8], [60, 44], [44, 60], [8, 60]]);
-    expect(part('wedge:backLeft:base')).toMatchObject({ z0: 1, z1: 9.5 });
-    expect(part('wedge:backLeft:seat')).toMatchObject({ z0: 9.5, z1: 18 });
+    expect(part('wedge:backLeft:seat')).toMatchObject({ z0: 1, z1: 18, edges: { seamAt: 9.5 } });
     expect(bbox(part('wedge:backRight:seat').poly)).toEqual([128, 8, 180, 60]);
   });
 
