@@ -21,7 +21,7 @@ function edgeDistance(poly: Pt[], [x, y]: Pt): number {
 describe('table style (Andre, 2026-09-26/27): the top flush with the seat', () => {
   const tableParts = (style: 'standard' | 'allWood') => buildParts(built, style).prisms.filter((p) => kindOf(built, p.pieceId) === 'table');
 
-  it('standard (Andre, 2026-11-20): one plain fabric block 1–16, no seam, and a 2″ square wood top 16–18 flush with it', () => {
+  it('standard (Andre, 2026-11-20): one plain fabric block 1–16, no seam, and a 2″ square wood top 16–18, ⅛″ inside it on every side', () => {
     const parts = tableParts('standard');
     expect(parts.map((p) => p.key.split(':').pop())).toEqual(['base', 'top']);
     const [base, top] = parts;
@@ -29,8 +29,10 @@ describe('table style (Andre, 2026-09-26/27): the top flush with the seat', () =
     expect(base!.edges.puff ?? 0).toBe(0);
     expect(base!.upper).toBeUndefined();
     expect(top).toMatchObject({ mat: 'wood', z0: 16, z1: 18, edges: { top: WOOD_EASE, bottom: WOOD_EASE, corner: WOOD_EASE } });
-    expect(base!.poly).toEqual(top!.poly);
-    expect(bbox(top!.poly)).toEqual([60, 0, 92, 44]);
+    // The corners line up (the base takes the wood's small corner) and the wood never sticks out.
+    expect(base!.edges.corner).toBe(WOOD_EASE);
+    expect(bbox(base!.poly)).toEqual([60, 0, 92, 44]);
+    expect(bbox(top!.poly)).toEqual([60.125, 0.125, 91.875, 43.875]);
   });
 
   it('all wood: one solid wood block, 1–18, the same eased square edges', () => {

@@ -59,8 +59,11 @@ export const UPHOLSTERY = { top: 1, corner: 0.75, bottom: 0.5, puff: 0.2, pinch:
 export const WOOD_EASE = 0.125;
 const FLAT: Edges = { top: UPHOLSTERY.top, corner: UPHOLSTERY.corner, bottom: UPHOLSTERY.bottom };
 const WOOD: Edges = { top: WOOD_EASE, corner: WOOD_EASE, bottom: WOOD_EASE };
-/** A table base under its wood top: the top edge hidden by the wood, so barely eased (no shadow line, photo 2). */
-const UNDER_WOOD: Edges = { ...FLAT, top: WOOD_EASE };
+/**
+ * A table base under its wood top: the top edge hidden by the wood, so barely eased (no shadow line, photo 2),
+ * and the wood's own small vertical corner, so the two line up at every corner (Andre, 2026-11-20).
+ */
+const UNDER_WOOD: Edges = { ...FLAT, top: WOOD_EASE, corner: WOOD_EASE };
 /** Legs sit this far in from every outside edge: hidden under the body (Andre, 2026-09-27). */
 export const LEG_INSET = 5;
 /** Pieces longer than this get a centre pair of legs (plan §6, 3D-05). */
@@ -163,9 +166,9 @@ export function buildParts(built: BuildResult, tableStyle: TableStyle = 'standar
       if (tableStyle === 'allWood') add(piece, 'top', foot, p.table.z0, p.table.z1, WOOD, 'wood');
       else {
         // The standard Haven table (Andre, 2026-11-20): one plain fabric block up to a
-        // 2″ square wood top, flush with it on every side.
+        // 2″ square wood top, ⅛″ smaller on every side: it never sticks out past the fabric.
         add(piece, 'base', foot, p.tableBase.z0, p.tableBase.z1, UNDER_WOOD, 'body');
-        add(piece, 'top', foot, p.tableTop.z0, p.tableTop.z1, WOOD, 'wood');
+        add(piece, 'top', insetPolygon(foot, WOOD_EASE), p.tableTop.z0, p.tableTop.z1, WOOD, 'wood');
       }
       continue;
     }
