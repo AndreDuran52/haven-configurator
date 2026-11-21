@@ -38,8 +38,8 @@ export const SQUARE_PILLOW = { w: 20, h: 20, t: 6, lean: 10 };
 export const BALL_PILLOW = 11;
 /** No square ever lies back further than this from upright (Andre, 2026-11-18). */
 export const PILLOW_MAX_LEAN = 15;
-/** How far a down pillow settles into the seat under it (its top ends about 5–6″ above the back cushions'). */
-const SINK = 1.5;
+/** How far a down pillow settles into the seat under it (Andre, 2026-11-20: resting on the seat, no more than ½″ in; a ball half of that). Its top ends about 7″ above the back cushions'. */
+const SINK = 0.5;
 /** The space kept between soft things that touch, inches. */
 const PAD = 0.25;
 /** How far a ball presses into the down squares behind it (their boxes are fuller than the pillows' tapered bottoms). */

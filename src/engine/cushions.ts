@@ -60,7 +60,13 @@ function pivotAhead(a: number): number {
 /** How far the box's back goes behind the frame's face at its top (the soft back sits that much inside the box). */
 const TOUCH = 0.15;
 
-const pivotHeight = (d: HavenDims, a: number): number => d.seatHeight - BACK_CUSHION_SINK - BACK_CUSHION.depth * Math.sin(a);
+const pivotHeight = (d: HavenDims, a: number, sink: number = BACK_CUSHION_SINK): number => d.seatHeight - sink - BACK_CUSHION.depth * Math.sin(a);
+/**
+ * The lean was settled when the cushions stood 1″ into the seat (2026-11-18) and is kept now
+ * that they rest on it (Andre, 2026-11-20: "keep the lean"): solved as if still 1″ in. Raised
+ * ¾″, the back stands about 0.2″ off the frame's top edge, behind the cushion, unseen.
+ */
+const LEAN_SINK = 1;
 
 /**
  * How far the back cushions lean (degrees): just enough that, with the front
@@ -73,7 +79,7 @@ export function cushionLean(d: HavenDims): number {
   // a little inside the box, so the box goes TOUCH behind the face: the frame presses that flat (cushionHalf).
   const gap = (deg: number) => {
     const a = (deg * Math.PI) / 180;
-    return pivotAhead(a) - (d.backHeight - pivotHeight(d, a)) * Math.tan(a) + TOUCH;
+    return pivotAhead(a) - (d.backHeight - pivotHeight(d, a, LEAN_SINK)) * Math.tan(a) + TOUCH;
   };
   let [lo, hi] = [2, 30];
   for (let i = 0; i < 40; i++) {

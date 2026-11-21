@@ -111,9 +111,9 @@ describe('the person (plan Q79)', () => {
     expect([p.w, p.h, p.t, p.lean]).toEqual([SQUARE_PILLOW.w, SQUARE_PILLOW.h, SQUARE_PILLOW.t, SQUARE_PILLOW.lean]);
     expect(p.press!.depth).toBeGreaterThan(0);
     expect(p.press!.depth).toBeLessThanOrEqual(2);
-    // It stands on the seat (settled 1½″ in) between the cushion's face and his back.
+    // It stands on the seat (settled ½″ in; Andre, 2026-11-20) between the cushion's face and his back.
     const a = (p.lean * Math.PI) / 180;
-    expect(p.c[1] - (p.h / 2) * Math.cos(a) - (p.t / 2) * Math.sin(a)).toBeCloseTo(16.5, 6);
+    expect(p.c[1] - (p.h / 2) * Math.cos(a) - (p.t / 2) * Math.sin(a)).toBeCloseTo(17.5, 6);
     expect(p.c[0]).toBeGreaterThan(cushion.front(27) - 0.5);
     expect(p.c[0]).toBeLessThan(f.spine[6]!.p[0]);
     // The seat left in front of the pillow's foot (6″ in front of its bottom-back edge).

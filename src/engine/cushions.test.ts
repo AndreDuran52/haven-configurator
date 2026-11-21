@@ -36,7 +36,7 @@ describe('loose back cushions (Andre, 2026-09-27)', () => {
     expect(Object.fromEntries(count)).toEqual({ p2: 1, p3: 2, p4: 2, 'wedge:backLeft': 2, 'wedge:backRight': 2 });
   });
 
-  it('lean back 12° (±1°), their front foot 1″ into the seat, 8″ deep; the box holds the soft top (it peaks at 31″, three/softGeometry.test)', () => {
+  it('lean back about 15° (±1°), their front foot resting ¼″ into the seat (Andre, 2026-11-20), 8″ deep; the box holds the soft top (it peaks at 31″, three/softGeometry.test)', () => {
     for (const [name, c] of layouts) {
       const b = buildHaven(c);
       for (const k of backCushions(b)) {
@@ -44,9 +44,10 @@ describe('loose back cushions (Andre, 2026-09-27)', () => {
           .map((q) => q[2])
           .sort((x, y) => x - y);
         const lean = (k.lean * Math.PI) / 180;
-        // The back foot is buried so the front foot sits 1″ under the 18″ seat (a leaning box lifts its front).
-        expect(zs[0]! + k.t * Math.sin(lean), `${name} ${k.key}`).toBeCloseTo(17, 9);
-        expect(zs[2]!, `${name} ${k.key}`).toBeCloseTo(17, 9);
+        // The box's front foot rests ¼″ into the 18″ seat; its back foot is lower (a leaning box), but the
+        // soft shape is flat on the seat there (cushionProfile: nothing below 17¾″).
+        expect(zs[0]! + k.t * Math.sin(lean), `${name} ${k.key}`).toBeCloseTo(17.75, 9);
+        expect(zs[2]!, `${name} ${k.key}`).toBeCloseTo(17.75, 9);
         expect(boxTop(k) - 31, `${name} ${k.key}`).toBeGreaterThan(0);
         expect(boxTop(k) - 31, `${name} ${k.key}`).toBeLessThan(1);
         expect(k.t).toBe(8);

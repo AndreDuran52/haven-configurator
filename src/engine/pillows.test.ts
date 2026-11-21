@@ -61,14 +61,14 @@ describe('pillows (Q15; Andre 2026-11-18: like his styled Haven picture)', () =>
           expect(polys.some((poly) => inPoly([x, y], poly)), `${p.key} (${x.toFixed(1)}, ${y.toFixed(1)})`).toBe(true);
           expect(blocked.some((r) => x > r.x + 0.01 && x < r.x + r.w - 0.01 && y > r.y + 0.01 && y < r.y + r.h - 0.01), `${p.key} over an arm or table`).toBe(false);
         }
-        // Squares rest on their bottom-back edge, settled 1½″ into the seat; balls on their underside, ¾″ in.
+        // They rest on the seat (Andre, 2026-11-20): squares on their bottom-back edge, ½″ in; balls on their underside, ¼″ in.
         const bottom = p.kind === 'square' ? Math.min(...corners.map((q) => q[2])) : p.z - p.h / 2;
-        expect(bottom, p.key).toBeCloseTo(p.kind === 'square' ? 16.5 : 17.25, 9);
+        expect(bottom, p.key).toBeCloseTo(p.kind === 'square' ? 17.5 : 17.75, 9);
       }
     }
   });
 
-  it('they stand up (Andre, 2026-11-18): 6″ thick, leaning 10°, never more than 15°, facing straight out (0–8°), tops 5–6½″ above the back cushions', () => {
+  it('they stand up (Andre, 2026-11-18): 6″ thick, leaning 10°, never more than 15°, facing straight out (0–8°), tops 6–7½″ above the back cushions (resting on the seat, 2026-11-20)', () => {
     expect(SQUARE_PILLOW).toEqual({ w: 20, h: 20, t: 6, lean: 10 });
     for (const D of [36, 40, 44]) {
       for (const c of [standardU({ D }), standardL('left', { D }), standardL('right', { D }), standardStraight({ D })]) {
@@ -80,8 +80,8 @@ describe('pillows (Q15; Andre 2026-11-18: like his styled Haven picture)', () =>
           const yaw = (Math.acos(Math.min(1, p.facing[0] * inward[0] + p.facing[1] * inward[1])) * 180) / Math.PI;
           expect(yaw, p.key).toBeLessThanOrEqual(8 + 1e-9);
           const top = Math.max(...pillowCorners(p).map((q) => q[2]));
-          expect(top - 31, `D${D} ${p.key}`).toBeGreaterThan(5);
-          expect(top - 31, `D${D} ${p.key}`).toBeLessThan(6.5);
+          expect(top - 31, `D${D} ${p.key}`).toBeGreaterThan(6);
+          expect(top - 31, `D${D} ${p.key}`).toBeLessThan(7.5);
         }
       }
     }

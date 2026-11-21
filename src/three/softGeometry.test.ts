@@ -21,7 +21,7 @@ const inBox = (g: BufferGeometry, w: number, h: number, t: number) =>
   vertices(g).every((v) => Math.abs(v.x) <= w / 2 + 1e-6 && Math.abs(v.y) <= h / 2 + 1e-6 && Math.abs(v.z) <= t / 2 + 1e-6);
 
 describe('soft geometry stays inside the engine’s boxes (what the anchors and the ortho fit use)', () => {
-  it('loose back cushions: inside their boxes; placed, their front foot is in the seat and they peak at 31″ (Andre, 2026-09-27)', () => {
+  it('loose back cushions: inside their boxes; placed, they rest on the seat (¼″ in, nothing deeper; Andre, 2026-11-20) and peak at 31″', () => {
     for (const c of [standardU(), standardL('left'), standardU({ D: 36 })]) {
       for (const k of backCushions(buildHaven(c))) {
         const g = looseCushion(k.w, k);
@@ -31,9 +31,9 @@ describe('soft geometry stays inside the engine’s boxes (what the anchors and 
         const bottom = Math.min(...world.map((v) => v.y));
         expect(top, k.key).toBeGreaterThan(30.9);
         expect(top, k.key).toBeLessThanOrEqual(31 + 1e-6);
-        // Sunk into the 18″ seat, never below its 9½″ stitch line.
-        expect(bottom, k.key).toBeGreaterThan(15);
-        expect(bottom, k.key).toBeLessThan(18);
+        // Resting on the 18″ seat: the underside ¼″ in, no vertex below it.
+        expect(bottom, k.key).toBeGreaterThan(17.75 - 1e-3);
+        expect(bottom, k.key).toBeLessThan(17.76);
         g.dispose();
       }
     }

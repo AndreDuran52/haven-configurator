@@ -4,7 +4,7 @@
 // Inside its leaning box (BACK_CUSHION_SHAPE, cushionFit): 5″ at the
 // stitching filling to 8″ at a low forward belly, a little slimmer toward a
 // half-round top, the bottom front rolled under, the back pressed flat where
-// it meets the frame. Not in the engine barrel: import it by this path (it
+// it meets the frame, the underside lying flat on the seat (2026-11-20). Not in the engine barrel: import it by this path (it
 // loads with the 3D view and the Side drawing, never the entry chunk).
 import { BACK_CUSHION_SHAPE as S, cushionFit, cushionLean, type CushionFit as Fit, type HavenDims, type Pt } from './index';
 
@@ -81,8 +81,21 @@ export const RING = { roll: 5, mid: 10, top: 9 } as const;
 export function cushionRing(fit: CushionFit, w: number, x: number, inset = 0): Pt[] {
   const H = cushionTop(fit, w, x) - inset;
   const ups = ringUps(H, body(fit, w, x, 1), RING);
-  const at = (up: number, side: 1 | -1): Pt => [side * cushionHalf(fit, w, x, up, side, inset), up - fit.h / 2];
+  const at = (up: number, side: 1 | -1): Pt => rested(fit, [side * cushionHalf(fit, w, x, up, side, inset), up - fit.h / 2]);
   return [...ups.map((u) => at(u, 1)), [0, H - fit.h / 2], ...ups.reverse().map((u) => at(u, -1))];
+}
+
+/**
+ * The cushion rests on the seat (Andre, 2026-11-20): its leaning box's front
+ * bottom edge is on the rest plane (BACK_CUSHION_SINK into the seat) and its
+ * back bottom edge would be t·sin(lean) under it, so whatever falls below the
+ * plane is lifted straight up onto it: a flat underside on the seat, the
+ * rolled front edge above it, nothing through the seat.
+ */
+function rested(fit: CushionFit, [z, y]: Pt): Pt {
+  const a = rad(fit.lean);
+  const under = fit.t * Math.sin(a) - ((y + fit.h / 2) * Math.cos(a) + (z + fit.t / 2) * Math.sin(a));
+  return under > 0 ? [z + under * Math.sin(a), y + under * Math.cos(a)] : [z, y];
 }
 
 /** Box frame -> the side plane (t from the sofa's back, z above the floor). */
