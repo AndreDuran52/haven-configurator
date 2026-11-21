@@ -97,7 +97,7 @@ const FOOT_SQUASH = 2;
 /** Upright (Andre, 2026-11-18): how far his lower back presses into the extra pillow (6″ at the belly, about 5″ where he leans on it; his seat presses into its foot). */
 const PILLOW_SQUASH = 1;
 /** How far the pillow settles into the seat (as the sofa's throw pillows: engine pillows SINK). */
-const PILLOW_SINK = 1.5;
+const PILLOW_SINK = 0.5;
 /** Upright with the pillow: the knees may end this far past the front edge (as in Lounge); any further, there's no room for the pillow. */
 const KNEE_PAST_UPRIGHT = 6;
 /** How far the extra pillow's back presses into the soft back cushion it leans on. */

@@ -43,8 +43,12 @@ export interface Profiles {
 
 /** The standard table's wood top thickness (Andre, 2026-09-26). */
 export const TABLE_TOP_THICKNESS = 2;
-/** How far the loose back cushions sink into the seat under them. */
-export const BACK_CUSHION_SINK = 1;
+/**
+ * How far the loose back cushions settle into the seat under them (Andre, 2026-11-20:
+ * they rest on the seat, the rolled bottom edge showing; 1″ before). Their underside
+ * lies flat on the seat at this depth (engine/cushionProfile).
+ */
+export const BACK_CUSHION_SINK = 0.25;
 
 export function profiles(d: HavenDims): Profiles {
   return {

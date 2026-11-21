@@ -106,13 +106,13 @@ describe('purity, undo and refusals (G6)', () => {
 });
 
 describe('profiles and world', () => {
-  it('profiles.ts (the real Haven, 2026-09-27): legs 0–1, tight seat 1–9½–18 (stitch line in the middle, 2026-11-11), 8″ back frame 1–27 (2026-11-18), loose back cushions taking 10″, 17–31, arm 23, table 18', () => {
+  it('profiles.ts (the real Haven, 2026-09-27): legs 0–1, tight seat 1–9½–18 (stitch line in the middle, 2026-11-11), 8″ back frame 1–27 (2026-11-18), loose back cushions taking 10″, resting ¼″ into the seat (2026-11-20), 17¾–31, arm 23, table 18', () => {
     const p = profiles(U().dims);
     expect(p.leg).toEqual({ z0: 0, z1: 1 });
     expect(p.seatBase).toEqual({ z0: 1, z1: 9.5 });
     expect(p.seat).toEqual({ z0: 9.5, z1: 18 });
     expect(p.backFrame).toEqual({ t0: 0, t1: 8, z0: 1, z1: 27 });
-    expect(p.looseBack).toEqual({ t0: 8, t1: 18, z0: 17, z1: 31, sink: 1 });
+    expect(p.looseBack).toEqual({ t0: 8, t1: 18, z0: 17.75, z1: 31, sink: 0.25 });
     expect([p.arm.z1, p.table.z1, p.tableTop.z0, p.ottoman.z1, p.coffeeTable.z1]).toEqual([23, 18, 16, 18, 16]);
   });
 

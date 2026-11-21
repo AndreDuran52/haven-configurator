@@ -1,4 +1,4 @@
-// Parts -> meshes (plan §7.4): rounded prisms, the loose back cushions (soft
+// Parts -> meshes (plan §7.4): upholstered blocks, the loose back cushions (soft
 // geometry at their engine anchors), legs, gap decals. Geometry is rebuilt when
 // the parts change and disposed with them. 1 px pixel-constant outlines (drei <Outlines>, default
 // screenspace={false}, the pixel-constant mode) are a depth cue (§7.3).
@@ -6,7 +6,7 @@ import { useEffect, useMemo } from 'react';
 import { CylinderGeometry, PlaneGeometry, type Material } from 'three';
 import { Outlines } from '@react-three/drei';
 import { GAP_DECAL_HEIGHT } from '@/ortho/fitPoints';
-import { roundedPrism } from './prism';
+import { upholsteredBlock } from './block';
 import { decalMaterial, type MaterialSet } from './materials';
 import type { BackCushion } from '@/engine';
 import type { Parts } from './parts';
@@ -16,7 +16,7 @@ const LINE = '#4a4038';
 const LEG_RADIUS = 0.75; // 1.5″ round legs (Q14)
 
 export function SofaModel({ parts, mats, showLoose }: { parts: Parts; mats: MaterialSet; showLoose: boolean }) {
-  const prisms = useMemo(() => parts.prisms.map((p) => ({ part: p, geo: roundedPrism(p.poly, p.z0, p.z1, p.r) })), [parts]);
+  const prisms = useMemo(() => parts.prisms.map((p) => ({ part: p, geo: upholsteredBlock(p.poly, p.z0, p.z1, p.edges, p.upper) })), [parts]);
   // Loose back cushions: one soft geometry per size (most seats share one).
   const backs = useMemo(() => {
     const bySize = new Map<string, ReturnType<typeof looseCushion>>();

@@ -33,11 +33,15 @@ describe('the side drawing (plan Q78)', () => {
     expect(sideSection(DEFAULT_DIMS, 36).cushion).toEqual(s.cushion);
     // Its face leans back: further back near the top than at the belly.
     expect(s.cushionFront(29)).toBeLessThan(s.cushionFront(20) - 2);
-    // It rests on the frame's top edge (8″ back, 27″ up): its back within ½″ of it there, never through it below.
+    // It leans to the frame's top edge (8″ back, 27″ up): its back within ¾″ of it there (raised onto the seat
+    // with its lean kept, 2026-11-20, it stands about 0.2″ further off), never through it below.
     const nearTop = s.cushion.filter((p) => p[1] > 26 && p[1] < 28 && p[0] < 12).map((p) => p[0]);
     expect(Math.min(...nearTop)).toBeGreaterThanOrEqual(7.9);
-    expect(Math.min(...nearTop)).toBeLessThan(8.5);
+    expect(Math.min(...nearTop)).toBeLessThan(8.75);
     expect(Math.min(...s.cushion.filter((p) => p[1] < 26).map((p) => p[0]))).toBeGreaterThanOrEqual(7.95);
+    // It rests on the seat (Andre, 2026-11-20): nothing below ¼″ into the 18″ seat, and the underside lies flat there.
+    expect(Math.min(...zs)).toBeCloseTo(17.75, 6);
+    expect(s.cushion.filter((p) => Math.abs(p[1] - 17.75) < 1e-6).length).toBeGreaterThan(3);
   });
 
   it('the legs stand under the sofa, on the floor', () => {

@@ -24,7 +24,7 @@ export interface Finish {
 export const FABRICS: readonly Fabric[] = [{ key: 'boucle-white', name: 'White bouclé', color: '#efebe3', weave: 'boucle' }];
 
 export const FINISHES: readonly Finish[] = [
-  { key: 'walnut', name: 'Walnut', color: '#7b5538', grain: '#4a2f1c' },
+  { key: 'walnut', name: 'Walnut', color: '#7b5b45', grain: '#5a412f' }, // matte medium walnut, less orange (Andre, 2026-11-20)
   { key: 'darkWood', name: 'Dark wood', color: '#3b2a20', grain: '#1f1510' },
 ];
 

@@ -78,8 +78,9 @@ function woodMap(base: string, grain: string) {
       for (let i = 0; i < 140; i++) {
         const y = r() * s;
         const dark = r() < 0.5;
-        g.strokeStyle = dark ? grain : 'rgba(255,235,210,0.12)';
-        g.globalAlpha = dark ? 0.35 : 1;
+        // Faint grain (Andre, 2026-11-20): a matte top, not a striped one.
+        g.strokeStyle = dark ? grain : 'rgba(255,235,210,0.06)';
+        g.globalAlpha = dark ? 0.2 : 1;
         g.lineWidth = 0.5 + r() * 2.5;
         g.beginPath();
         g.moveTo(0, y);
@@ -173,7 +174,8 @@ export function makeMaterials(fabric: string, finish: TableFinish): MaterialSet 
   const cushion = new MeshStandardMaterial({ color: new Color(f.color), roughness: 0.95, ...weave });
   const fin = finishOf(finish);
   const wMap = woodMap(fin.color, fin.grain);
-  const wood = new MeshStandardMaterial({ map: wMap, roughness: 0.5 });
+  // Matte, no gloss, for both finishes (Andre, 2026-11-20).
+  const wood = new MeshStandardMaterial({ map: wMap, roughness: 0.9 });
   const weaveMap = linenBump();
   // Matte linen, no sheen (Andre, 2026-11-18): full roughness and only a faint weave.
   const taupe = new MeshStandardMaterial({ color: PILLOW_COLOR.taupe, roughness: 1, metalness: 0, bumpMap: weaveMap, bumpScale: 0.1 });
